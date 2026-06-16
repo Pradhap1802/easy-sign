@@ -6,7 +6,7 @@ from odoo.exceptions import UserError
 class SignRequestItem(models.Model):
     _name = "sign.request.item"
     _description = "Signature Request Item (Signer)"
-    _order = "id asc"
+    _order = "signer_index asc, id asc"
     _rec_name = "signer_name"
 
     request_id = fields.Many2one(
@@ -34,7 +34,6 @@ class SignRequestItem(models.Model):
         ],
         string="Status",
         default="pending",
-        tracking=True,
         readonly=True,
     )
     access_token = fields.Char(
@@ -66,6 +65,16 @@ class SignRequestItem(models.Model):
         string="Signing URL",
         compute="_compute_sign_url",
         store=False,
+    )
+    signer_index = fields.Integer(
+        string="Signer #",
+        default=1,
+        help="1 = first signer, 2 = second signer, etc.",
+    )
+    field_value_ids = fields.One2many(
+        "sign.request.field.value",
+        "request_item_id",
+        string="Field Values",
     )
 
     @api.depends("access_token")

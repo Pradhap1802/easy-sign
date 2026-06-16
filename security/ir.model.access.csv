@@ -2,3 +2,8 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_sign_request_user,sign.request user,model_sign_request,base.group_user,1,1,1,1
 access_sign_request_item_user,sign.request.item user,model_sign_request_item,base.group_user,1,1,1,1
 access_sign_log_user,sign.log user,model_sign_log,base.group_user,1,1,1,0
+access_sign_template_user,sign.template user,model_sign_template,base.group_user,1,1,1,1
+access_sign_template_field_user,sign.template.field user,model_sign_template_field,base.group_user,1,1,1,1
+access_sign_request_field_value_user,sign.request.field.value user,model_sign_request_field_value,base.group_user,1,1,1,1
+access_sign_template_send_wizard_user,sign.template.send.wizard user,model_sign_template_send_wizard,base.group_user,1,1,1,1
+access_sign_template_send_wizard_signer_user,sign.template.send.wizard.signer user,model_sign_template_send_wizard_signer,base.group_user,1,1,1,1

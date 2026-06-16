@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_sign_template_send_wizard_form" model="ir.ui.view">
+        <field name="name">sign.template.send.wizard.form</field>
+        <field name="model">sign.template.send.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Send Template for Signature">
+                <sheet>
+                    <div class="oe_title">
+                        <h2>
+                            <field name="template_id" readonly="1"/>
+                        </h2>
+                    </div>
+                    <group string="Signers">
+                        <field name="signer_line_ids" nolabel="1">
+                            <list editable="bottom">
+                                <field name="signer_index" string="Signer #" readonly="1"/>
+                                <field name="signer_name" string="Name" placeholder="Full Name"/>
+                                <field name="signer_email" string="Email" placeholder="email@example.com"/>
+                            </list>
+                        </field>
+                    </group>
+                    <group>
+                        <group string="Options">
+                            <field name="expiry_date" string="Expiry Date (optional)"/>
+                        </group>
+                    </group>
+                    <group string="Invitation Message">
+                        <field name="message" nolabel="1" widget="html"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_send" string="Send for Signature"
+                            type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

@@ -5,7 +5,7 @@
         <delete model="mail.template" search="[('name','=','Easy Sign - Signing Invitation')]"/>
         <record id="mail_template_sign_request" model="mail.template">
             <field name="name">Easy Sign - Signing Invitation</field>
-            <field name="model_id" ref="easy_sign.model_sign_request_item"/>
+            <field name="model_id" search="[('model', '=', 'sign.request.item')]"/>
             <field name="subject">[SIGN] Please sign: {{ object.request_id.document_name or object.request_id.name }}</field>
             <field name="email_from">{{ (object.request_id.user_id.email_formatted or user.email_formatted) }}</field>
             <field name="email_to">{{ object.signer_email }}</field>

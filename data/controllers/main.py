@@ -37,7 +37,7 @@ class EasySignController(http.Controller):
         item = self._get_item_by_token(token)
 
         if not item:
-            return request.render("easy_sign.sign_invalid", {
+            return request.render("easy-sign.sign_invalid", {
                 "error_title": "Invalid Link",
                 "error_message": "This signing link is invalid or does not exist.",
             })
@@ -45,27 +45,27 @@ class EasySignController(http.Controller):
         sign_request = item.request_id
 
         if sign_request.state == "cancelled" or item.state == "cancelled":
-            return request.render("easy_sign.sign_invalid", {
+            return request.render("easy-sign.sign_invalid", {
                 "error_title": "Request Cancelled",
                 "error_message": "This signature request has been cancelled.",
             })
 
         if self._is_expired(sign_request):
             sign_request.sudo().write({"state": "expired"})
-            return request.render("easy_sign.sign_invalid", {
+            return request.render("easy-sign.sign_invalid", {
                 "error_title": "Link Expired",
                 "error_message": f"This signing link expired on {sign_request.expiry_date}.",
             })
 
         if item.state == "signed":
-            return request.render("easy_sign.sign_success", {
+            return request.render("easy-sign.sign_success", {
                 "item": item,
                 "sign_request": sign_request,
                 "already_done": True,
             })
 
         if item.state == "declined":
-            return request.render("easy_sign.sign_declined", {
+            return request.render("easy-sign.sign_declined", {
                 "item": item,
                 "sign_request": sign_request,
                 "already_done": True,
@@ -80,7 +80,7 @@ class EasySignController(http.Controller):
                 "ip_address": request.httprequest.remote_addr,
             })
 
-        return request.render("easy_sign.sign_page", {
+        return request.render("easy-sign.sign_page", {
             "item": item,
             "sign_request": sign_request,
             "token": token,

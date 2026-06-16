@@ -4,8 +4,15 @@
     <menuitem
         id="menu_easy_sign_root"
         name="Easy Sign"
-        web_icon="easy_sign,static/description/icon.png"
+        web_icon="easy-sign,static/description/icon.png"
         sequence="105"/>
+
+    <menuitem
+        id="menu_sign_templates"
+        name="Templates"
+        parent="menu_easy_sign_root"
+        action="action_sign_template"
+        sequence="5"/>
 
     <menuitem
         id="menu_sign_requests"

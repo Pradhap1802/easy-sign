@@ -1,43 +1,40 @@
 {
-    "name": "Easy Sign - Electronic Signature",
-    "version": "18.0.1.0.0",
-    "summary": "Self-hosted electronic signature: send PDF documents for signing directly from Odoo",
+    "name": "Easy Sign",
+    "version": "18.0.2.0.0",
+    "summary": "Self-hosted electronic signature with PDF template editor and field placement",
     "description": """
 Easy Sign - Electronic Signature for Odoo 18
 =============================================
 
-A complete self-hosted electronic signature solution that works 100% inside Odoo
-with no external APIs or third-party services required.
+A complete self-hosted electronic signature solution with:
 
-Features:
----------
-* Upload PDF documents and add signers (name + email)
-* Odoo sends each signer a unique signing link via email
-* Signers open the link without needing an Odoo account
-* Draw signatures on a canvas (mouse and touch support)
-* Automatic signed document creation after all parties sign
+* PDF Document Templates — upload once, reuse forever
+* Visual Template Editor — drag-and-drop fields onto PDF pages
+* Field Types: Signature, Initial, Full Name, Date, Email, Text, Checkbox
+* Per-signer field assignment (Signer 1 fills their own fields)
+* Clients fill the PDF with interactive overlaid widgets
+* Signed PDF embeds all values at their exact positions
 * Full audit trail with IP addresses and timestamps
-* Expiry date support
-* Decline with reason support
-* Mobile responsive signing page
+* Expiry date support and Decline with reason
     """,
     "category": "Tools/Sign",
-    "author": "Ahmed Kamal",
-    "website": "https://www.linkedin.com/in/ahmed-kamal-97569316b/",
     "license": "LGPL-3",
     "depends": ["mail", "web"],
     "data": [
         "security/ir.model.access.csv",
         "data/ir_sequence.xml",
         "data/mail_template.xml",
-        "templates/sign_page.xml",
+        "views/sign_template_views.xml",
+        "views/sign_template_send_wizard_views.xml",
         "views/sign_request_views.xml",
         "views/menus.xml",
+        "templates/sign_page.xml",
+        "templates/template_editor.xml",
     ],
     "assets": {
         "web.assets_frontend": [
-            "easy_sign/static/src/css/sign_public.css",
-            "easy_sign/static/src/js/sign_public.js",
+            "easy-sign/static/src/css/sign_public.css",
+            "easy-sign/static/src/js/sign_public.js",
         ],
     },
     "images": [

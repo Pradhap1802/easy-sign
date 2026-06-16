@@ -7,6 +7,24 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 
+def _get_pdf_rw():
+    """Return (PdfReader, PdfWriter) from Odoo's bundled pypdf.
+    Odoo 18 ships pypdf inside odoo.tools.pdf.
+    """
+    try:
+        from odoo.tools.pdf import OdooPdfFileReader as PdfReader, OdooPdfFileWriter as PdfWriter  # noqa
+        return PdfReader, PdfWriter
+    except ImportError:
+        pass
+    # Plain pypdf (available in Odoo's venv)
+    try:
+        from pypdf import PdfReader, PdfWriter  # type: ignore[import-untyped]  # noqa
+        return PdfReader, PdfWriter
+    except ImportError:
+        pass
+    return None, None
+
+
 class SignRequest(models.Model):
     _name = "sign.request"
     _description = "Electronic Signature Request"
@@ -61,10 +79,21 @@ class SignRequest(models.Model):
         tracking=True,
         help="The signing link will stop working after this date.",
     )
+    template_id = fields.Many2one(
+        "sign.template",
+        string="Template",
+        ondelete="set null",
+        help="Template used to create this request",
+    )
     request_item_ids = fields.One2many(
         "sign.request.item",
         "request_id",
         string="Signers",
+    )
+    field_value_ids = fields.One2many(
+        "sign.request.field.value",
+        "request_id",
+        string="Field Values",
     )
     log_ids = fields.One2many(
         "sign.log",
@@ -348,21 +377,14 @@ class SignRequest(models.Model):
         self.ensure_one()
         _logger.info("_create_signed_document called for %s", self.name)
 
-        try:
-            from odoo.tools.pdf import PdfReader, PdfWriter
-        except Exception:
-            try:
-                from pypdf import PdfReader, PdfWriter
-            except ImportError:
-                try:
-                    from PyPDF2 import PdfReader, PdfWriter
-                except ImportError:
-                    _logger.warning("No PDF library available — saving original as signed document.")
-                    self.write({
-                        "signed_document": self.document,
-                        "signed_document_name": f"signed_{self.document_name or 'document.pdf'}",
-                    })
-                    return
+        PdfReader, PdfWriter = _get_pdf_rw()
+        if PdfReader is None:
+            _logger.warning("No PDF library available — saving original as signed document.")
+            self.write({
+                "signed_document": self.document,
+                "signed_document_name": f"signed_{self.document_name or 'document.pdf'}",
+            })
+            return
 
         try:
             pdf_bytes = base64.b64decode(self.document)
@@ -377,13 +399,13 @@ class SignRequest(models.Model):
             )
             _logger.info("Found %d signed items with signatures", len(signed_items))
 
+            # ── 1. Stamp legacy signature overlay (plain-canvas requests) ──
             if signed_items and len(writer.pages) > 0:
                 last_page = writer.pages[-1]
                 page_w = float(last_page.mediabox.width)
                 page_h = float(last_page.mediabox.height)
 
                 overlay_bytes = self._build_signature_overlay(page_w, page_h, signed_items)
-
                 if overlay_bytes:
                     overlay_reader = PdfReader(io.BytesIO(overlay_bytes))
                     overlay_page = overlay_reader.pages[0]
@@ -392,8 +414,20 @@ class SignRequest(models.Model):
                     elif hasattr(last_page, 'mergePage'):
                         last_page.mergePage(overlay_page)
                     _logger.info("Signature overlay merged into last page of %s", self.name)
-                else:
-                    _logger.warning("No overlay generated — signatures will not appear in PDF")
+
+            # ── 2. Stamp template field values at their positions ──────────
+            if self.template_id and self.field_value_ids:
+                field_overlay = self._build_field_value_overlay(writer)
+                if field_overlay:
+                    fov_reader = PdfReader(io.BytesIO(field_overlay))
+                    for page_num, fov_page in enumerate(fov_reader.pages):
+                        if page_num < len(writer.pages):
+                            dest = writer.pages[page_num]
+                            if hasattr(dest, 'merge_page'):
+                                dest.merge_page(fov_page)
+                            elif hasattr(dest, 'mergePage'):
+                                dest.mergePage(fov_page)
+                    _logger.info("Field value overlay merged for %s", self.name)
 
             writer.add_metadata({
                 "/Title": self.document_name or self.name,
@@ -413,12 +447,84 @@ class SignRequest(models.Model):
 
         except Exception as e:
             _logger.error("Error in _create_signed_document for %s: %s", self.name, e, exc_info=True)
-            self.write(
-                {
-                    "signed_document": self.document,
-                    "signed_document_name": f"signed_{self.document_name or 'document.pdf'}",
-                }
-            )
+            self.write({
+                "signed_document": self.document,
+                "signed_document_name": f"signed_{self.document_name or 'document.pdf'}",
+            })
+
+    def _build_field_value_overlay(self, writer):
+        """Build a multi-page reportlab PDF that stamps all field values at their template positions."""
+        try:
+            from reportlab.pdfgen import canvas as rl_canvas
+            from reportlab.lib.utils import ImageReader
+            from PIL import Image
+        except ImportError as e:
+            _logger.warning("reportlab/PIL not available for field value overlay: %s", e)
+            return None
+
+        # Group field values by page
+        by_page = {}
+        for fv in self.field_value_ids:
+            pg = fv.page
+            by_page.setdefault(pg, []).append(fv)
+
+        if not by_page:
+            return None
+
+        num_pages = len(writer.pages)
+        buf = io.BytesIO()
+
+        for page_num in range(1, num_pages + 1):
+            pdf_page = writer.pages[page_num - 1]
+            page_w = float(pdf_page.mediabox.width)
+            page_h = float(pdf_page.mediabox.height)
+
+            c = rl_canvas.Canvas(buf, pagesize=(page_w, page_h))
+
+            fvs = by_page.get(page_num, [])
+            for fv in fvs:
+                # Convert % to PDF points (origin is bottom-left in PDF)
+                x = fv.pos_x / 100.0 * page_w
+                # PDF Y origin is bottom-left; our pos_y is top-left %
+                y_top = fv.pos_y / 100.0 * page_h
+                w = fv.width / 100.0 * page_w
+                h = fv.height / 100.0 * page_h
+                # Convert top-left Y to bottom-left Y
+                y = page_h - y_top - h
+
+                try:
+                    if fv.field_type in ('signature', 'initial') and fv.signature_value:
+                        sig_bytes = base64.b64decode(fv.signature_value)
+                        img = Image.open(io.BytesIO(sig_bytes))
+                        if img.mode in ('RGBA', 'LA'):
+                            bg = Image.new('RGBA', img.size, (255, 255, 255, 0))
+                            bg.paste(img, mask=img.split()[-1])
+                            img = bg
+                        c.drawImage(ImageReader(img), x, y, width=w, height=h,
+                                    preserveAspectRatio=True, mask='auto')
+
+                    elif fv.field_type == 'checkbox':
+                        if fv.value and fv.value.lower() in ('true', '1', 'yes'):
+                            c.setFont('Helvetica-Bold', min(h * 0.8, 14))
+                            c.setFillColorRGB(0.09, 0.37, 0.09)
+                            c.drawString(x + 2, y + h * 0.1, '✓')
+
+                    elif fv.value:
+                        font_size = max(7, min(h * 0.55, 11))
+                        c.setFont('Helvetica', font_size)
+                        c.setFillColorRGB(0.07, 0.07, 0.07)
+                        # Clip text to field width
+                        text = fv.value
+                        c.drawString(x + 2, y + (h - font_size) / 2, text)
+
+                except Exception as ex:
+                    _logger.error("Field value stamp error for field %s: %s", fv.field_type, ex)
+
+            c.showPage()
+
+        c.save()
+        buf.seek(0)
+        return buf.getvalue()
 
     def _notify_all_signed(self):
         """Notify the requester that all parties have signed."""
