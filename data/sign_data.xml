@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="sign_item_type_signature" model="sign.item.type">
+            <field name="name">Signature</field>
+            <field name="item_type">signature</field>
+            <field name="tip">Sign</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.04</field>
+        </record>
+        <record id="sign_item_type_initial" model="sign.item.type">
+            <field name="name">Initials</field>
+            <field name="item_type">initial</field>
+            <field name="tip">Initial</field>
+            <field name="default_width">0.10</field>
+            <field name="default_height">0.04</field>
+        </record>
+        <record id="sign_item_type_text" model="sign.item.type">
+            <field name="name">Text</field>
+            <field name="item_type">text</field>
+            <field name="tip">Text</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_textarea" model="sign.item.type">
+            <field name="name">Multiline Text</field>
+            <field name="item_type">textarea</field>
+            <field name="tip">Multiline Text</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.04</field>
+        </record>
+        <record id="sign_item_type_checkbox" model="sign.item.type">
+            <field name="name">Checkbox</field>
+            <field name="item_type">checkbox</field>
+            <field name="tip">Checkbox</field>
+            <field name="default_width">0.02</field>
+            <field name="default_height">0.02</field>
+        </record>
+
+        <record id="sign_item_role_default" model="sign.item.role">
+            <field name="name">Signer 1</field>
+            <field name="default" eval="True"/>
+            <field name="sequence">1</field>
+        </record>
+    </data>
+</odoo>

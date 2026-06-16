@@ -1,144 +1,100 @@
-import secrets
-from odoo import api, fields, models
+# -*- coding: utf-8 -*-
+import uuid
+from datetime import datetime
+from odoo import api, fields, models, _, Command
 from odoo.exceptions import UserError
+from odoo.tools import get_lang
 
 
 class SignRequestItem(models.Model):
     _name = "sign.request.item"
-    _description = "Signature Request Item (Signer)"
-    _order = "signer_index asc, id asc"
-    _rec_name = "signer_name"
+    _description = "Sign Request Item"
 
-    request_id = fields.Many2one(
-        "sign.request",
-        string="Signature Request",
-        ondelete="cascade",
-        required=True,
-        index=True,
-    )
-    signer_name = fields.Char(string="Signer Name", required=True)
-    signer_email = fields.Char(string="Signer Email", required=True)
-    partner_id = fields.Many2one(
-        "res.partner",
-        string="Contact",
-        help="Optional: link to an existing Odoo contact",
-    )
-    state = fields.Selection(
-        [
-            ("pending", "Pending"),
-            ("sent", "Invitation Sent"),
-            ("viewed", "Viewed"),
-            ("signed", "Signed"),
-            ("declined", "Declined"),
-            ("cancelled", "Cancelled"),
-        ],
-        string="Status",
-        default="pending",
-        readonly=True,
-    )
-    access_token = fields.Char(
-        string="Access Token",
-        copy=False,
-        readonly=True,
-        index=True,
-    )
-    signature = fields.Binary(
-        string="Signature Image",
-        attachment=True,
-        copy=False,
-    )
-    signed_date = fields.Datetime(
-        string="Signed On",
-        readonly=True,
-        copy=False,
-    )
-    declined_reason = fields.Text(
-        string="Decline Reason",
-        copy=False,
-    )
-    ip_address = fields.Char(
-        string="IP Address",
-        copy=False,
-        readonly=True,
-    )
-    sign_url = fields.Char(
-        string="Signing URL",
-        compute="_compute_sign_url",
-        store=False,
-    )
-    signer_index = fields.Integer(
-        string="Signer #",
-        default=1,
-        help="1 = first signer, 2 = second signer, etc.",
-    )
-    field_value_ids = fields.One2many(
-        "sign.request.field.value",
-        "request_item_id",
-        string="Field Values",
-    )
+    def _default_access_token(self):
+        return str(uuid.uuid4())
 
-    @api.depends("access_token")
-    def _compute_sign_url(self):
-        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
-        for item in self:
-            if item.access_token:
-                item.sign_url = f"{base_url}/sign/view/{item.access_token}"
-            else:
-                item.sign_url = False
+    sign_request_id = fields.Many2one('sign.request', string="Sign Request", required=True, ondelete='cascade')
+    partner_id = fields.Many2one('res.partner', string="Signer", required=True)
+    role_id = fields.Many2one('sign.item.role', string="Role", ondelete='restrict')
+    access_token = fields.Char('Security Token', required=True, default=_default_access_token, readonly=True, copy=False)
+    state = fields.Selection([
+        ('sent', 'Sent'),
+        ('viewed', 'Viewed'),
+        ('completed', 'Signed'),
+        ('canceled', 'Cancelled'),
+    ], default='sent', string='State')
+    signing_date = fields.Datetime('Signed on')
+    signature = fields.Binary(string='Signature')
+    is_mail_sent = fields.Boolean(default=False, string="Mail sent")
+    signer_email = fields.Char(string="Signer email", related="partner_id.email")
 
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get("access_token"):
-                vals["access_token"] = secrets.token_urlsafe(32)
         return super().create(vals_list)
 
-    def action_sign(self, signature_b64, ip_address=None):
-        self.ensure_one()
-        if self.state in ("signed", "declined", "cancelled"):
-            raise UserError(
-                f"This signing request is already in state: {self.state}"
+    def send_signature_accesses(self):
+        base_url = self.get_base_url()
+        for item in self:
+            item.write({'is_mail_sent': True})
+            partner = item.partner_id
+            lang = get_lang(self.env, partner.lang).code
+            subject = _("Signature Request: %s", item.sign_request_id.reference)
+            link = "%s/sign/document/%s/%s" % (base_url, item.sign_request_id.id, item.access_token)
+            body = self.env['ir.qweb']._render('easy_sign.sign_template_mail', {
+                'record': item.sign_request_id,
+                'recipient': partner,
+                'link': link,
+                'subject': subject,
+            }, lang=lang, minimal_qcontext=True)
+            item.sign_request_id._message_send_mail(
+                body,
+                'mail.mail_notification_light',
+                {'record_name': item.sign_request_id.reference},
+                {'model_description': _('Signature')},
+                {'email_to': partner.email, 'subject': subject},
+                force_send=True,
+                lang=lang,
             )
-        self.write(
-            {
-                "state": "signed",
-                "signature": signature_b64,
-                "signed_date": fields.Datetime.now(),
-                "ip_address": ip_address,
-            }
-        )
-        self.env["sign.log"].sudo().create(
-            {
-                "request_id": self.request_id.id,
-                "request_item_id": self.id,
-                "action": "signed",
-                "ip_address": ip_address,
-            }
-        )
-        self.request_id.sudo()._check_all_signed()
-        return True
+            self.env['sign.log'].sudo().create({
+                'sign_request_id': item.sign_request_id.id,
+                'sign_request_item_id': item.id,
+                'action': 'send',
+            })
 
-    def action_decline(self, reason=None, ip_address=None):
+    def _sign(self, signature_values):
         self.ensure_one()
-        if self.state in ("signed", "declined", "cancelled"):
-            raise UserError(
-                f"This signing request is already in state: {self.state}"
-            )
-        self.write(
-            {
-                "state": "declined",
-                "declined_reason": reason,
-                "ip_address": ip_address,
-            }
-        )
-        self.env["sign.log"].sudo().create(
-            {
-                "request_id": self.request_id.id,
-                "request_item_id": self.id,
-                "action": "declined",
-                "ip_address": ip_address,
-                "notes": reason,
-            }
-        )
-        self.request_id.sudo()._notify_declined(self)
-        return True
+        if self.state != 'sent' and self.state != 'viewed':
+            raise UserError(_("This signature has already been processed or cancelled"))
+        self.write({
+            'state': 'completed',
+            'signing_date': fields.Datetime.now(),
+        })
+        SignRequestItemValue = self.env['sign.request.item.value']
+        for sign_item_id, value in signature_values.items():
+            if isinstance(value, dict):
+                frame_value = value.get('frame')
+                value = value.get('value')
+            else:
+                frame_value = None
+            SignRequestItemValue.sudo().create({
+                'sign_request_id': self.sign_request_id.id,
+                'sign_request_item_id': self.id,
+                'sign_item_id': int(sign_item_id),
+                'value': value,
+                'frame_value': frame_value,
+            })
+        self.env['sign.log'].sudo().create({
+            'sign_request_id': self.sign_request_id.id,
+            'sign_request_item_id': self.id,
+            'action': 'sign',
+        })
+        if all(item.state == 'completed' for item in self.sign_request_id.request_item_ids):
+            self.sign_request_id._sign()
+
+    def _refuse(self, refusal_reason):
+        self.ensure_one()
+        self.write({'state': 'canceled'})
+        self.sign_request_id._refuse(self.partner_id, refusal_reason)
+
+    def _cancel(self):
+        self.write({'state': 'canceled'})

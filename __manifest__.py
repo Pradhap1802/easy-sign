@@ -1,46 +1,61 @@
+# -*- coding: utf-8 -*-
+# Part of Odoo. See LICENSE file for full copyright and licensing details.
 {
-    "name": "Easy Sign",
-    "version": "18.0.2.0.0",
-    "summary": "Self-hosted electronic signature with PDF template editor and field placement",
-    "description": """
-Easy Sign - Electronic Signature for Odoo 18
-=============================================
-
-A complete self-hosted electronic signature solution with:
-
-* PDF Document Templates — upload once, reuse forever
-* Visual Template Editor — drag-and-drop fields onto PDF pages
-* Field Types: Signature, Initial, Full Name, Date, Email, Text, Checkbox
-* Per-signer field assignment (Signer 1 fills their own fields)
-* Clients fill the PDF with interactive overlaid widgets
-* Signed PDF embeds all values at their exact positions
-* Full audit trail with IP addresses and timestamps
-* Expiry date support and Decline with reason
+    'name': 'Easy Sign',
+    'version': '18.0.1.0',
+    'category': 'Sales/Sign',
+    'sequence': 105,
+    'summary': "Send documents to sign online and handle filled copies",
+    'description': """
+Sign and complete your documents easily. Customize your documents with text and signature fields and send them to your recipients.
+Let your customers follow the signature process easily.
     """,
-    "category": "Tools/Sign",
-    "license": "LGPL-3",
-    "depends": ["mail", "web"],
-    "data": [
-        "security/ir.model.access.csv",
-        "data/ir_sequence.xml",
-        "data/mail_template.xml",
-        "views/sign_template_views.xml",
-        "views/sign_template_send_wizard_views.xml",
-        "views/sign_request_views.xml",
-        "views/menus.xml",
-        "templates/sign_page.xml",
-        "templates/template_editor.xml",
+    'depends': ['mail', 'attachment_indexation', 'portal'],
+    'data': [
+        'security/security.xml',
+        'security/ir.model.access.csv',
+        'data/sign_data.xml',
+        'data/mail_templates.xml',
+        'views/menus.xml',
+        'wizard/sign_send_request_wizard_views.xml',
+        'views/sign_template_views.xml',
+        'views/sign_request_views.xml',
+        'views/sign_log_views.xml',
+        'templates/sign_page.xml',
+        'templates/template_editor.xml',
     ],
-    "assets": {
-        "web.assets_frontend": [
-            "easy-sign/static/src/css/sign_public.css",
-            "easy-sign/static/src/js/sign_public.js",
+    'application': True,
+    'installable': True,
+    'license': 'LGPL-3',
+    'assets': {
+        'web.assets_backend': [
+            'easy_sign/static/src/scss/sign_common.scss',
+            'easy_sign/static/src/scss/sign_backend.scss',
         ],
-    },
-    "images": [
-        "static/description/main_screenshot.png",
-    ],
-    "installable": True,
-    "application": True,
-    "auto_install": False,
+        'web.assets_frontend': [
+            'easy_sign/static/src/scss/sign_common.scss',
+            'easy_sign/static/src/scss/sign_frontend.scss',
+        ],
+        'easy_sign.assets_pdf_iframe': [
+            'web/static/src/libs/fontawesome/css/font-awesome.css',
+            'web/static/lib/bootstrap/scss/_functions.scss',
+            'web/static/src/scss/functions.scss',
+            'web/static/src/scss/pre_variables.scss',
+            'web/static/lib/bootstrap/scss/_variables.scss',
+            'web/static/lib/bootstrap/scss/_variables-dark.scss',
+            'web/static/lib/bootstrap/scss/_maps.scss',
+            'web/static/lib/bootstrap/scss/vendor/_rfs.scss',
+            'web/static/lib/bootstrap/scss/mixins/_deprecate.scss',
+            'web/static/lib/bootstrap/scss/mixins/_utilities.scss',
+            'web/static/lib/bootstrap/scss/mixins/_breakpoints.scss',
+            'web/static/lib/bootstrap/scss/mixins/_grid.scss',
+            'web/static/lib/bootstrap/scss/_utilities.scss',
+            'web/static/src/scss/bs_mixins_overrides.scss',
+            'web/static/lib/bootstrap/scss/utilities/_api.scss',
+            'web/static/src/scss/utils.scss',
+            'web/static/src/scss/primary_variables.scss',
+            'web/static/src/scss/secondary_variables.scss',
+            'easy_sign/static/src/scss/iframe.scss',
+        ],
+    }
 }

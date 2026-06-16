@@ -1,24 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-    <menuitem
-        id="menu_easy_sign_root"
-        name="Easy Sign"
-        web_icon="easy-sign,static/description/icon.png"
-        sequence="105"/>
-
-    <menuitem
-        id="menu_sign_templates"
-        name="Templates"
-        parent="menu_easy_sign_root"
-        action="action_sign_template"
-        sequence="5"/>
-
-    <menuitem
-        id="menu_sign_requests"
-        name="Signature Requests"
-        parent="menu_easy_sign_root"
-        action="action_sign_request"
-        sequence="10"/>
-
+    <data>
+        <menuitem id="menu_sign" name="Sign" sequence="65"/>
+    </data>
 </odoo>

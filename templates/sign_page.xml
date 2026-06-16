@@ -1,784 +1,239 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-
-
-<template id="sign_page" name="Easy Sign - Sign Document">
-<html lang="en" id="esRoot">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <meta name="robots" content="noindex, nofollow"/>
-    <title>Sign Document - Easy Sign</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" t-attf-href="/easy-sign/static/src/css/sign_public.css"/>
-    <t t-if="has_fields">
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"/>
-    </t>
-    <style><![CDATA[
-        /* ── Field overlay styles (for template-based signing) ── */
-        .es-field-sign-overlay {
-            position: absolute; border-radius: 4px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 11px; font-weight: 600; border: 2px dashed;
-            overflow: hidden; transition: all .2s; z-index: 10;
-        }
-        .es-field-sign-overlay.type-signature  { background: rgba(37,99,235,.12);  border-color: #2563eb; color: #1d4ed8; }
-        .es-field-sign-overlay.type-initial    { background: rgba(124,58,237,.12); border-color: #7c3aed; color: #6d28d9; }
-        .es-field-sign-overlay.type-name       { background: rgba(8,145,178,.12);  border-color: #0891b2; color: #0e7490; }
-        .es-field-sign-overlay.type-date       { background: rgba(217,119,6,.12);  border-color: #d97706; color: #b45309; }
-        .es-field-sign-overlay.type-email      { background: rgba(220,38,38,.12);  border-color: #dc2626; color: #b91c1c; }
-        .es-field-sign-overlay.type-text       { background: rgba(22,163,74,.12);  border-color: #16a34a; color: #15803d; }
-        .es-field-sign-overlay.type-checkbox   { background: rgba(202,138,4,.12);  border-color: #ca8a04; color: #a16207; }
-        .es-field-sign-overlay.filled { border-style: solid; opacity: 0.85; }
-        .es-field-sign-overlay input,
-        .es-field-sign-overlay canvas {
-            position: absolute; inset: 0; width: 100%; height: 100%;
-            background: transparent; border: none; outline: none;
-            font-size: 12px; padding: 2px 4px; color: #1e293b;
-        }
-        .es-field-sign-overlay canvas { cursor: crosshair; }
-        .es-field-sign-overlay .fov-placeholder {
-            pointer-events: none; color: inherit; opacity: 0.6; font-size: 11px; padding: 2px 4px;
-        }
-        .es-field-sign-overlay .fov-clear {
-            position: absolute; top: -6px; right: -6px; width: 16px; height: 16px;
-            background: #ef4444; color: #fff; border-radius: 50%; font-size: 10px;
-            line-height: 16px; text-align: center; cursor: pointer; display: none; z-index: 20;
-        }
-        .es-field-sign-overlay.filled .fov-clear { display: block; }
-        /* PDF canvas pages stack */
-        .es-pdfjs-area { position: relative; }
-        .es-pdfjs-page { position: relative; margin-bottom: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); border-radius: 4px; overflow: visible; display: inline-block; }
-        .es-pdfjs-page canvas { display: block; border-radius: 4px; }
-
-        /* ── RTL / Language ── */
-        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:1.5px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s; }
-        .es-lang-btn:hover { background:rgba(255,255,255,.22); }
-        html[dir="rtl"] .es-main-row { flex-direction: row-reverse; }
-        html[dir="rtl"] .es-pdf-panel { border-right: none; border-left: 1px solid #e5e9f0; }
-        html[dir="rtl"] .es-navbar { flex-direction: row-reverse; }
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
-    ]]></style>
-</head>
-<body class="es-body">
-
-    <!-- Navbar -->
-    <nav class="es-navbar">
-        <div class="es-navbar-brand">
-            <span class="es-logo-icon">✎</span>
-            <span class="es-logo-text">Easy Sign</span>
-        </div>
-        <div class="es-navbar-right" style="display:flex;align-items:center;gap:12px;">
-            <span class="es-badge es-badge-pending">
-                <span class="es-i18n" data-en="Signature Required" data-ar="يلزم التوقيع">Signature Required</span>
-            </span>
-            <button class="es-lang-btn" id="esBtnLang" onclick="esToggleLang()">
-                <span>🌐</span>
-                <span id="esLangLabel">عربي</span>
-            </button>
-        </div>
-    </nav>
-
-    <div class="container-fluid es-container">
-        <div class="row g-0 es-main-row">
-
-            <!-- Left: PDF Viewer -->
-            <div class="col-lg-7 es-pdf-panel">
-                <div class="es-panel-header">
-                    <div class="es-panel-title">
-                        <span class="es-icon">📄</span>
-                        <span class="es-i18n" data-en="Document to Sign" data-ar="الوثيقة المطلوب توقيعها">Document to Sign</span>
+    <template id="sign_page" name="Sign Page">
+        <t t-call="web.html_container">
+            <t t-foreach="web.assets_common" t-as="asset">
+                <t t-esc="asset"/>
+            </t>
+            <t t-call="web.frontend_layout">
+                <div class="container">
+                    <h1>Sign Document</h1>
+                    <h2><t t-esc="sign_request.reference"/></h2>
+                    <div id="o_sign_root">
                     </div>
-                    <div class="es-doc-info">
-                        <strong t-esc="sign_request.document_name or sign_request.name"/>
-                    </div>
+                    <button id="o_sign_submit" class="btn btn-primary mt-3">Sign Document</button>
                 </div>
-                <div class="es-pdf-viewer-wrap" id="pdfViewerWrap">
-                    <!-- Template-mode: PDF.js with field overlays -->
-                    <t t-if="has_fields">
-                        <div class="es-pdfjs-area" id="pdfJsArea" style="padding:16px;text-align:center;min-height:400px;">
-                            <div id="pdfLoading" style="color:#64748b;padding:40px;">
-                                <div class="spinner-border text-primary" role="status" style="width:2rem;height:2rem;"/>
-                                <div class="mt-2">Loading document…</div>
+            </t>
+        </t>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+        <script>
+<![CDATA[
+            const TEMPLATE_ID = ]]><t t-esc="sign_request.template_id.id"/><![CDATA[;
+            const REQUEST_ID = ]]><t t-esc="sign_request.id"/><![CDATA[;
+            const ACCESS_TOKEN = ']]><t t-esc="access_token"/><![CDATA[';
+            const SIGN_ITEMS = ]]><t t-raw="json.dumps([{
+                'id': item.id,
+                'type': item.type_id.item_type,
+                'page': item.page,
+                'posX': item.posX,
+                'posY': item.posY,
+                'width': item.width,
+                'height': item.height,
+                'required': item.required
+            } for item in sign_request.template_id.sign_item_ids])"/><![CDATA[;
+
+            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+            let pdfDoc = null;
+            let pageNum = 1;
+            let pageRendering = false;
+            let pageNumPending = null;
+            let canvasList = [];
+            let signItemInputs = {};
+
+            async function renderPDF(url, canvasContainer) {
+                const loadingTask = pdfjsLib.getDocument(url);
+                pdfDoc = await loadingTask.promise;
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    await renderPage(i, canvasContainer);
+                }
+                renderSignItems();
+            }
+
+            async function renderPage(num, canvasContainer) {
+                const page = await pdfDoc.getPage(num);
+                const scale = 1.5;
+                const viewport = page.getViewport({scale: scale});
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.style.width = '100%';
+                canvasContainer.appendChild(canvas);
+                canvasList.push({canvas, viewport, pageNum: num});
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                await page.render(renderContext).promise;
+            }
+
+            function renderSignItems() {
+                SIGN_ITEMS.forEach(item => {
+                    const pageCanvasData = canvasList.find(c => c.pageNum === item.page);
+                    if (!pageCanvasData) return;
+                    const container = document.createElement('div');
+                    container.className = 'sign-item';
+                    container.style.position = 'absolute';
+                    container.style.left = (item.posX * 100) + '%';
+                    container.style.top = (item.posY * 100) + '%';
+                    container.style.width = (item.width * 100) + '%';
+                    container.style.height = (item.height * 100) + '%';
+                    container.style.border = '1px dashed #000';
+                    container.style.zIndex = 10;
+                    container.style.boxSizing = 'border-box';
+                    if (['signature', 'initial'].includes(item.type)) {
+                        container.addEventListener('click', () => openSignaturePad(item.id));
+                        container.innerHTML = '<span style="color: #888; margin:auto;">Click to sign</span>';
+                    } else if (item.type === 'checkbox') {
+                        container.innerHTML = '<input type="checkbox" class="form-check-input">';
+                    } else {
+                        container.innerHTML = '<input type="text" class="form-control">';
+                    }
+                    const canvas = pageCanvasData.canvas;
+                    canvas.style.position = 'relative';
+                    canvas.parentNode.style.position = 'relative';
+                    canvas.parentNode.insertBefore(container, canvas.nextSibling);
+                    signItemInputs[item.id] = { type: item.type, el: container };
+                });
+            }
+
+            let currentSignItemId = null;
+            let signatureData = {};
+
+            function openSignaturePad(itemId) {
+                currentSignItemId = itemId;
+                const modal = document.createElement('div');
+                modal.id = 'signature-modal';
+                modal.innerHTML = `
+                    <div class="modal" tabindex="-1" style="display: block;">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Sign Here</h5>
+                                    <button type="button" class="close" onclick="closeSignaturePad()">
+                                        <span>&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <canvas id="signature-pad" style="border:1px solid #000; width:100%; height:200px;"></canvas>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" onclick="closeSignaturePad()">Cancel</button>
+                                    <button type="button" class="btn btn-primary" onclick="saveSignature()">Save</button>
+                                </div>
                             </div>
                         </div>
-                    </t>
-                    <!-- Legacy mode: browser PDF object -->
-                    <t t-else="">
-                        <object t-att-data="document_url" type="application/pdf"
-                                class="es-pdf-object" id="pdfViewer">
-                            <div class="es-pdf-fallback">
-                                <p class="es-i18n" data-en="Your browser cannot display PDF inline." data-ar="المتصفح لا يدعم عرض PDF مباشرة.">Your browser cannot display PDF inline.</p>
-                                <a t-att-href="document_url" class="btn btn-outline-primary" target="_blank">
-                                    <span class="es-i18n" data-en="Open PDF in New Tab" data-ar="فتح الملف في تبويب جديد">Open PDF in New Tab</span>
-                                </a>
-                            </div>
-                        </object>
-                    </t>
-                </div>
-            </div>
-
-            <!-- Right: Sign Panel -->
-            <div class="col-lg-5 es-sign-panel">
-                <div class="es-sign-panel-inner">
-
-                    <div class="es-signer-info">
-                        <div class="es-avatar">
-                            <t t-esc="(item.signer_name or 'S')[0].upper()"/>
-                        </div>
-                        <div class="es-signer-details">
-                            <div class="es-signer-name" t-esc="item.signer_name"/>
-                            <div class="es-signer-email" t-esc="item.signer_email"/>
-                        </div>
                     </div>
+                `;
+                document.body.appendChild(modal);
+                const canvas = modal.querySelector('#signature-pad');
+                const ctx = canvas.getContext('2d');
+                let isDrawing = false;
+                let lastX = 0;
+                let lastY = 0;
+                canvas.addEventListener('mousedown', e => {
+                    isDrawing = true;
+                    [lastX, lastY] = getMousePos(canvas, e);
+                });
+                canvas.addEventListener('mouseup', () => isDrawing = false);
+                canvas.addEventListener('mouseout', () => isDrawing = false);
+                canvas.addEventListener('mousemove', e => {
+                    if (isDrawing) {
+                        const [x, y] = getMousePos(canvas, e);
+                        drawLine(ctx, lastX, lastY, x, y);
+                        [lastX, lastY] = [x, y];
+                    }
+                });
+            }
 
-                    <div class="es-request-info">
-                        <p class="es-info-label es-i18n" data-en="Requested by" data-ar="طلب من">Requested by</p>
-                        <p class="es-info-value" t-esc="sign_request.user_id.name"/>
-                        <t t-if="sign_request.expiry_date">
-                            <p class="es-info-label es-i18n" data-en="Expires on" data-ar="تنتهي في">Expires on</p>
-                            <p class="es-info-value es-expiry" t-esc="sign_request.expiry_date"/>
-                        </t>
-                    </div>
+            window.openSignaturePad = openSignaturePad;
 
-                    <!-- Template-mode instructions -->
-                    <t t-if="has_fields">
-                        <div class="es-instructions">
-                            <h5 class="es-section-title">Fill &amp; Sign</h5>
-                            <p class="es-instructions-text">
-                                Click each highlighted field on the document to fill it in.
-                                Signature fields open a drawing canvas.
-                                When all required fields are filled, click <strong>Submit</strong>.
-                            </p>
-                        </div>
-                        <!-- Progress bar -->
-                        <div style="margin-bottom:16px;">
-                            <div style="display:flex;justify-content:space-between;font-size:12px;color:#64748b;margin-bottom:4px;">
-                                <span id="progressLabel">0 of 0 fields filled</span>
-                            </div>
-                            <div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;">
-                                <div id="progressBar" style="height:100%;background:linear-gradient(90deg,#2563eb,#7c3aed);border-radius:3px;width:0%;transition:width .3s;"/>
-                            </div>
-                        </div>
-                        <button id="btnSign" type="button" class="es-btn-sign" t-att-data-token="token">
-                            <span id="btnSignText">✓ Submit Signed Document</span>
-                            <span id="btnSignSpinner" class="d-none">
-                                <span class="spinner-border spinner-border-sm me-2" role="status"/>
-                                Submitting…
-                            </span>
-                        </button>
-                    </t>
+            function getMousePos(canvas, evt) {
+                const rect = canvas.getBoundingClientRect();
+                return [
+                    evt.clientX - rect.left,
+                    evt.clientY - rect.top
+                ];
+            }
 
-                    <!-- Legacy signature canvas (no template) -->
-                    <t t-else="">
-                        <div class="es-instructions">
-                            <h5 class="es-section-title es-i18n" data-en="Draw Your Signature" data-ar="ارسم توقيعك">Draw Your Signature</h5>
-                            <p class="es-instructions-text es-i18n"
-                               data-en="Please review the document on the left, then draw your signature in the box below."
-                               data-ar="يرجى مراجعة الوثيقة ثم ارسم توقيعك في المربع أدناه.">
-                                Please review the document on the left, then draw your signature in the box below.
-                            </p>
-                        </div>
-                        <div class="es-canvas-wrap">
-                            <canvas id="signatureCanvas" width="480" height="180" class="es-canvas"/>
-                            <div class="es-canvas-hint es-i18n" data-en="Sign here ✍" data-ar="وقّع هنا ✍">Sign here ✍</div>
-                        </div>
-                        <div class="es-canvas-controls">
-                            <button id="btnClear" type="button" class="es-btn-clear">
-                                ↺ <span class="es-i18n" data-en="Clear" data-ar="مسح">Clear</span>
-                            </button>
-                            <span id="canvasStatus" class="es-canvas-status"/>
-                        </div>
-                        <button id="btnSign" type="button" class="es-btn-sign" t-att-data-token="token">
-                            <span id="btnSignText">✓ <span class="es-i18n" data-en="Sign Document" data-ar="توقيع الوثيقة">Sign Document</span></span>
-                            <span id="btnSignSpinner" class="d-none">
-                                <span class="spinner-border spinner-border-sm me-2" role="status"/>
-                                <span class="es-i18n" data-en="Submitting..." data-ar="جاري الإرسال...">Submitting...</span>
-                            </span>
-                        </button>
-                    </t>
+            function drawLine(ctx, x1, y1, x2, y2) {
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#000';
+                ctx.stroke();
+            }
 
-                    <div class="es-decline-section">
-                        <button id="btnShowDecline" type="button" class="es-btn-decline-link">
-                            <span class="es-i18n" data-en="I decline to sign this document" data-ar="أرفض التوقيع على هذه الوثيقة">I decline to sign this document</span>
-                        </button>
-                    </div>
-                    <div id="declineForm" class="es-decline-form d-none">
-                        <h6 class="es-section-title es-i18n" data-en="Reason for Declining" data-ar="سبب الرفض">Reason for Declining</h6>
-                        <textarea id="declineReason" rows="3" class="form-control es-textarea" placeholder="Optional: provide a reason..."/>
-                        <div class="es-decline-actions mt-2">
-                            <button id="btnCancelDecline" type="button" class="es-btn-cancel-decline">
-                                <span class="es-i18n" data-en="Cancel" data-ar="إلغاء">Cancel</span>
-                            </button>
-                            <button id="btnConfirmDecline" type="button" class="es-btn-confirm-decline" t-att-data-token="token">
-                                <span class="es-i18n" data-en="Confirm Decline" data-ar="تأكيد الرفض">Confirm Decline</span>
-                            </button>
-                        </div>
-                    </div>
+            function saveSignature() {
+                if (!currentSignItemId) return;
+                const modal = document.getElementById('signature-modal');
+                const canvas = modal.querySelector('#signature-pad');
+                const dataURL = canvas.toDataURL('image/png');
+                signatureData[currentSignItemId] = dataURL;
+                const signItem = signItemInputs[currentSignItemId];
+                if (signItem) {
+                    const img = document.createElement('img');
+                    img.src = dataURL;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    signItem.el.innerHTML = '';
+                    signItem.el.appendChild(img);
+                }
+                closeSignaturePad();
+            }
 
-                    <!-- Messages -->
-                    <div id="msgSuccess" class="es-msg es-msg-success d-none">
-                        <span class="es-msg-icon">✔</span>
-                        <div>
-                            <strong class="es-i18n" data-en="Signed successfully!" data-ar="تم التوقيع بنجاح!">Signed successfully!</strong>
-                            <p class="mb-0 es-i18n" data-en="Thank you. The document has been signed." data-ar="شكراً. تم توقيع الوثيقة.">Thank you. The document has been signed.</p>
-                        </div>
-                    </div>
-                    <div id="msgError" class="es-msg es-msg-error d-none">
-                        <span class="es-msg-icon">⚠</span>
-                        <div>
-                            <strong class="es-i18n" data-en="Error" data-ar="خطأ">Error</strong>
-                            <p id="msgErrorText" class="mb-0"/>
-                        </div>
-                    </div>
-                    <div id="msgDeclined" class="es-msg es-msg-declined d-none">
-                        <span class="es-msg-icon">✕</span>
-                        <div>
-                            <strong class="es-i18n" data-en="Signing declined" data-ar="تم رفض التوقيع">Signing declined</strong>
-                            <p class="mb-0 es-i18n" data-en="The requester has been notified." data-ar="تم إشعار مقدم الطلب.">The requester has been notified.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+            window.saveSignature = saveSignature;
 
-    <footer class="es-footer">
-        <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
-        <strong> Easy Sign</strong>
-    </footer>
+            function closeSignaturePad() {
+                const modal = document.getElementById('signature-modal');
+                if (modal) modal.remove();
+            }
 
-    <!-- Signature pad modal (for template signature fields) -->
-    <div id="sigModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;">
-        <div style="background:#fff;border-radius:14px;padding:24px;max-width:520px;width:95%;box-shadow:0 20px 60px rgba(0,0,0,.4);">
-            <h5 style="margin:0 0 4px;font-size:16px;color:#1e293b;font-weight:700;">✍️ Draw Signature</h5>
-            <p style="font-size:12px;color:#64748b;margin:0 0 12px;">Use mouse or finger to draw your signature</p>
-            <canvas id="modalSigCanvas" width="460" height="160" style="border:2px dashed #cbd5e1;border-radius:8px;cursor:crosshair;width:100%;display:block;"/>
-            <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
-                <button onclick="clearModalCanvas()" style="padding:8px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;font-size:13px;cursor:pointer;">↺ Clear</button>
-                <button onclick="closeModal(false)" style="padding:8px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;font-size:13px;cursor:pointer;">Cancel</button>
-                <button onclick="closeModal(true)" style="padding:8px 20px;border-radius:8px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;">Apply</button>
-            </div>
-        </div>
-    </div>
+            window.closeSignaturePad = closeSignaturePad;
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"/>
-    <script t-attf-src="/easy-sign/static/src/js/sign_public.js"/>
-
-    <!-- Template-field mode JS (injected when has_fields) -->
-    <t t-if="has_fields">
-    <script>
-        window.ES_DOC_URL = "<t t-out='document_url'/>";
-        window.ES_TOKEN = "<t t-out='token'/>";
-        window.ES_FIELDS_DATA = <t t-out='template_fields_json'/>;
-    </script>
-    <script><![CDATA[
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-
-    var DOC_URL     = window.ES_DOC_URL;
-    var TOKEN       = window.ES_TOKEN;
-    var FIELDS_DATA = window.ES_FIELDS_DATA;
-
-    var pages = [];   // { pageEl, canvas, renderedW, renderedH, pageNum }
-    var fieldValues = {};  // templateFieldId → { value, signatureDataUrl }
-    var totalRequired = 0;
-    var currentModalFieldId = null;
-    var modalCanvas = null, modalCtx = null, modalDrawing = false;
-
-    // ─── Render PDF with pdfjs ───────────────────────────────
-    async function renderSigningPDF() {
-        var pdf = await pdfjsLib.getDocument(DOC_URL).promise;
-        document.getElementById('pdfLoading').remove();
-        var area = document.getElementById('pdfJsArea');
-
-        for (var p = 1; p <= pdf.numPages; p++) {
-            var page = await pdf.getPage(p);
-            var viewport = page.getViewport({ scale: 1.3 });
-
-            var pageEl = document.createElement('div');
-            pageEl.className = 'es-pdfjs-page';
-            pageEl.dataset.pageNum = p;
-            pageEl.style.width = viewport.width + 'px';
-            pageEl.style.height = viewport.height + 'px';
-            pageEl.style.position = 'relative';
-
-            var canvas = document.createElement('canvas');
-            canvas.width  = viewport.width;
-            canvas.height = viewport.height;
-            pageEl.appendChild(canvas);
-            area.appendChild(pageEl);
-
-            pages.push({ pageEl, canvas, renderedW: viewport.width, renderedH: viewport.height, pageNum: p });
-        }
-
-        // Place field overlays instantly before rendering canvas pixels
-        placeFieldOverlays();
-
-        // Lazy load the actual canvas rendering
-        var observer = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-                if (entry.isIntersecting) {
-                    var pNum = parseInt(entry.target.dataset.pageNum);
-                    observer.unobserve(entry.target);
-                    pdf.getPage(pNum).then(function(page) {
-                        var viewport = page.getViewport({ scale: 1.3 });
-                        var ctx = entry.target.querySelector('canvas').getContext('2d');
-                        page.render({ canvasContext: ctx, viewport: viewport });
-                    });
+            document.getElementById('o_sign_submit').addEventListener('click', async () => {
+                const values = {};
+                Object.keys(signItemInputs).forEach(key => {
+                    const item = signItemInputs[key];
+                    if (['signature', 'initial'].includes(item.type)) {
+                        values[key] = signatureData[key];
+                    } else if (item.type === 'checkbox') {
+                        values[key] = item.el.querySelector('input').checked ? 'on' : 'off';
+                    } else {
+                        values[key] = item.el.querySelector('input').value;
+                    }
+                });
+                const formData = new FormData();
+                formData.append('data', JSON.stringify(values));
+                const response = await fetch('/sign/submit/' + REQUEST_ID + '/' + ACCESS_TOKEN, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.reload();
                 }
             });
-        }, { root: area, rootMargin: '800px' });
 
-        document.querySelectorAll('.es-pdfjs-page').forEach(function(el) {
-            observer.observe(el);
-        });
-    }
+            renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf', document.getElementById('o_sign_root'));
+]]>
+        </script>
+    </template>
 
-    // ─── Place field overlays ────────────────────────────────
-    function placeFieldOverlays() {
-        totalRequired = 0;
-        FIELDS_DATA.forEach(function(fd) {
-            if (fd.required) totalRequired++;
-            var pg = pages.find(function(p) { return p.pageNum === fd.page; });
-            if (!pg) return;
-
-            var pw = pg.renderedW, ph = pg.renderedH;
-            var ov = document.createElement('div');
-            ov.className = 'es-field-sign-overlay type-' + fd.field_type;
-            ov.dataset.fid = fd.id;
-            ov.style.left   = (fd.pos_x / 100 * pw) + 'px';
-            ov.style.top    = (fd.pos_y / 100 * ph) + 'px';
-            ov.style.width  = (fd.width  / 100 * pw) + 'px';
-            ov.style.height = (fd.height / 100 * ph) + 'px';
-            ov.style.position = 'absolute';
-
-            buildOverlayContent(ov, fd, pw, ph);
-
-            pg.pageEl.style.position = 'relative';
-            pg.pageEl.appendChild(ov);
-        });
-        updateProgress();
-    }
-
-    function buildOverlayContent(ov, fd, pw, ph) {
-        if (fd.field_type === 'signature' || fd.field_type === 'initial') {
-            // Click to open modal signature pad
-            var ph_label = document.createElement('div');
-            ph_label.className = 'fov-placeholder';
-            ph_label.textContent = fd.placeholder || (fd.field_type === 'signature' ? '✍️ Click to Sign' : '✍️ Click to Initial');
-            ov.appendChild(ph_label);
-
-            var clr = document.createElement('span');
-            clr.className = 'fov-clear'; clr.textContent = '✕';
-            clr.onclick = function(e) { e.stopPropagation(); clearField(fd.id, ov, ph_label); };
-            ov.appendChild(clr);
-
-            ov.onclick = function() { openSignatureModal(fd.id, ov, ph_label); };
-
-        } else if (fd.field_type === 'checkbox') {
-            var chk = document.createElement('input');
-            chk.type = 'checkbox';
-            chk.style.cssText = 'width:60%;height:60%;cursor:pointer;position:relative;';
-            chk.onchange = function() {
-                fieldValues[fd.id] = { value: chk.checked ? 'true' : '', signatureDataUrl: '' };
-                ov.classList.toggle('filled', chk.checked);
-                updateProgress();
-            };
-            ov.style.justifyContent = 'center';
-            ov.appendChild(chk);
-
-        } else {
-            // Text-based: name, date, email, text
-            var inp = document.createElement('input');
-            inp.type = fd.field_type === 'date' ? 'date' : 'text';
-            inp.placeholder = fd.placeholder || fd.field_type;
-            inp.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:none;background:transparent;padding:2px 6px;font-size:12px;color:#1e293b;';
-            inp.oninput = function() {
-                fieldValues[fd.id] = { value: inp.value, signatureDataUrl: '' };
-                ov.classList.toggle('filled', !!inp.value);
-                updateProgress();
-            };
-            ov.appendChild(inp);
-        }
-
-        // Pre-fill if existing value
-        if (fd.value) {
-            fieldValues[fd.id] = { value: fd.value, signatureDataUrl: '' };
-            ov.classList.add('filled');
-            var inp2 = ov.querySelector('input');
-            if (inp2 && inp2.type !== 'checkbox') inp2.value = fd.value;
-        }
-    }
-
-    // ─── Modal signature pad ─────────────────────────────────
-    function openSignatureModal(fieldId, ov, phLabel) {
-        currentModalFieldId = fieldId;
-        var modal = document.getElementById('sigModal');
-        modal.style.display = 'flex';
-        modalCanvas = document.getElementById('modalSigCanvas');
-        modalCtx = modalCanvas.getContext('2d');
-        clearModalCanvas();
-        modalCanvas.onmousedown  = startDraw;
-        modalCanvas.onmousemove  = draw;
-        modalCanvas.onmouseup    = stopDraw;
-        modalCanvas.onmouseleave = stopDraw;
-        modalCanvas.ontouchstart = function(e) { e.preventDefault(); startDraw(e.touches[0]); };
-        modalCanvas.ontouchmove  = function(e) { e.preventDefault(); draw(e.touches[0]); };
-        modalCanvas.ontouchend   = stopDraw;
-        modal._ov = ov; modal._phLabel = phLabel;
-    }
-
-    function startDraw(e) {
-        modalDrawing = true;
-        var r = modalCanvas.getBoundingClientRect();
-        modalCtx.beginPath();
-        modalCtx.moveTo(e.clientX - r.left, e.clientY - r.top);
-    }
-    function draw(e) {
-        if (!modalDrawing) return;
-        var r = modalCanvas.getBoundingClientRect();
-        var scaleX = modalCanvas.width / r.width;
-        var scaleY = modalCanvas.height / r.height;
-        modalCtx.lineTo((e.clientX - r.left) * scaleX, (e.clientY - r.top) * scaleY);
-        modalCtx.strokeStyle = '#1e293b'; modalCtx.lineWidth = 2;
-        modalCtx.lineCap = 'round'; modalCtx.stroke();
-    }
-    function stopDraw() { modalDrawing = false; }
-    function clearModalCanvas() { if (modalCtx) modalCtx.clearRect(0, 0, modalCanvas.width, modalCanvas.height); }
-
-    function closeModal(apply) {
-        var modal = document.getElementById('sigModal');
-        if (apply && currentModalFieldId !== null) {
-            var dataUrl = modalCanvas.toDataURL('image/png');
-            var ov = modal._ov;
-            var phLabel = modal._phLabel;
-            // Show the drawn signature in the overlay
-            ov.querySelectorAll('.sig-preview').forEach(function(el) { el.remove(); });
-            var img = document.createElement('img');
-            img.className = 'sig-preview';
-            img.src = dataUrl;
-            img.style.cssText = 'position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);object-fit:contain;pointer-events:none;';
-            ov.appendChild(img);
-            if (phLabel) phLabel.style.display = 'none';
-            ov.classList.add('filled');
-            fieldValues[currentModalFieldId] = { value: '', signatureDataUrl: dataUrl };
-            updateProgress();
-        }
-        modal.style.display = 'none';
-    }
-
-    function clearField(fieldId, ov, phLabel) {
-        delete fieldValues[fieldId];
-        ov.classList.remove('filled');
-        ov.querySelectorAll('.sig-preview').forEach(function(el) { el.remove(); });
-        if (phLabel) phLabel.style.display = '';
-        updateProgress();
-    }
-
-    // ─── Progress ────────────────────────────────────────────
-    function updateProgress() {
-        var filled = FIELDS_DATA.filter(function(fd) {
-            return fd.required ? !!fieldValues[fd.id] : true;
-        }).length;
-        var total = FIELDS_DATA.filter(function(fd) { return fd.required; }).length;
-        var allFilled = FIELDS_DATA.filter(function(fd) { return fd.required; }).every(function(fd) {
-            var fv = fieldValues[fd.id];
-            return fv && (fv.value || fv.signatureDataUrl);
-        });
-        document.getElementById('progressLabel').textContent =
-            Object.keys(fieldValues).length + ' of ' + total + ' required fields filled';
-        var pct = total > 0 ? Math.round(Object.keys(fieldValues).filter(function(k) {
-            var fv = fieldValues[k];
-            return fv && (fv.value || fv.signatureDataUrl);
-        }).length / total * 100) : 0;
-        document.getElementById('progressBar').style.width = Math.min(100, pct) + '%';
-    }
-
-    // ─── Submit ──────────────────────────────────────────────
-    document.getElementById('btnSign').addEventListener('click', async function() {
-        // Validate required fields
-        var missing = FIELDS_DATA.filter(function(fd) {
-            if (!fd.required) return false;
-            var fv = fieldValues[fd.id];
-            return !fv || (!fv.value && !fv.signatureDataUrl);
-        });
-        if (missing.length > 0) {
-            showError('Please fill all required fields: ' + missing.map(function(f) {
-                return f.placeholder || f.field_type;
-            }).join(', '));
-            return;
-        }
-
-        document.getElementById('btnSignText').classList.add('d-none');
-        document.getElementById('btnSignSpinner').classList.remove('d-none');
-        this.disabled = true;
-
-        var formData = new FormData();
-        FIELDS_DATA.forEach(function(fd) {
-            var fv = fieldValues[fd.id];
-            if (fv) {
-                formData.append('field_' + fd.id + '_value', fv.value || '');
-                formData.append('field_' + fd.id + '_signature', fv.signatureDataUrl || '');
-            }
-        });
-
-        try {
-            var resp = await fetch('/sign/submit/' + TOKEN, { method: 'POST', body: formData });
-            var data = await resp.json();
-            if (data.success) {
-                document.getElementById('btnSign').classList.add('d-none');
-                document.getElementById('msgSuccess').classList.remove('d-none');
-                setTimeout(function() { location.reload(); }, 2000);
-            } else {
-                showError(data.error || 'Submission failed.');
-                resetBtn();
-            }
-        } catch (e) {
-            showError('Network error: ' + e.message);
-            resetBtn();
-        }
-    });
-
-    function resetBtn() {
-        var btn = document.getElementById('btnSign');
-        btn.disabled = false;
-        document.getElementById('btnSignText').classList.remove('d-none');
-        document.getElementById('btnSignSpinner').classList.add('d-none');
-    }
-    function showError(msg) {
-        var el = document.getElementById('msgError');
-        document.getElementById('msgErrorText').textContent = msg;
-        el.classList.remove('d-none');
-    }
-
-    // Init
-    renderSigningPDF();
-    ]]></script>
-    </t>
-
-    <script><![CDATA[
-    // ── Language Switch ──────────────────────────────────────
-    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
-    function esApplyLang(lang) {
-        var root = document.getElementById('esRoot');
-        var label = document.getElementById('esLangLabel');
-        if (lang === 'ar') { root.setAttribute('dir','rtl'); root.setAttribute('lang','ar'); label.textContent='English'; }
-        else { root.setAttribute('dir','ltr'); root.setAttribute('lang','en'); label.textContent='عربي'; }
-        document.querySelectorAll('.es-i18n').forEach(function(el) {
-            var txt = el.getAttribute('data-' + lang);
-            if (txt) el.textContent = txt;
-        });
-        localStorage.setItem('es_lang', lang);
-        esCurrentLang = lang;
-    }
-    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
-    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
-    ]]></script>
-</body>
-</html>
-</template>
-
-<!-- ═══════════════════════════════════════════════════
-     SUCCESS PAGE
-═══════════════════════════════════════════════════ -->
-<template id="sign_success" name="Easy Sign - Signing Success">
-<html lang="en" id="esRoot">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Document Signed - Easy Sign</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" t-attf-href="/easy-sign/static/src/css/sign_public.css"/>
-    <style>
-        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #2563eb;background:#eff6ff;color:#2563eb;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:20px; }
-        .es-lang-btn:hover { background:#dbeafe; }
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
-        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
-    </style>
-</head>
-<body class="es-body es-result-body">
-    <div class="es-result-card es-result-success">
-        <div class="es-result-icon">&#10004;</div>
-
-        <button class="es-lang-btn" onclick="esToggleLang()">
-            🌐 <span id="esLangLabel">عربي</span>
-        </button>
-
-        <h2 class="es-result-title">
-            <t t-if="already_done">
-                <span class="es-i18n" data-en="Already Signed" data-ar="تم التوقيع مسبقاً">Already Signed</span>
+    <template id="sign_already_signed" name="Already Signed">
+        <t t-call="web.html_container">
+            <t t-call="web.frontend_layout">
+                <div class="container text-center mt-5">
+                    <h1>Document Already Signed</h1>
+                    <p>This document has already been signed or processed.</p>
+                </div>
             </t>
-            <t t-else="">
-                <span class="es-i18n" data-en="Document Signed!" data-ar="تم توقيع الوثيقة!">Document Signed!</span>
-            </t>
-        </h2>
-        <p class="es-result-message">
-            <t t-if="already_done">
-                <span class="es-i18n" data-en="You have already signed this document. Thank you!" data-ar="لقد وقّعت على هذه الوثيقة مسبقاً. شكراً!">You have already signed this document. Thank you!</span>
-            </t>
-            <t t-else="">
-                <span class="es-i18n" data-en="Thank you" data-ar="شكراً">Thank you</span>,
-                <strong t-esc="item.signer_name"/>!
-                <span class="es-i18n" data-en="Your signature has been recorded successfully." data-ar="تم تسجيل توقيعك بنجاح.">Your signature has been recorded successfully.</span>
-            </t>
-        </p>
-        <t t-if="item and item.signed_date">
-            <p class="es-result-meta">
-                <span class="es-i18n" data-en="Signed on:" data-ar="تاريخ التوقيع:">Signed on:</span>
-                <strong t-esc="item.signed_date"/>
-            </p>
         </t>
-        <div class="es-result-footer">
-            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
-            <strong> Easy Sign</strong>
-        </div>
-    </div>
-    <script><![CDATA[
-    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
-    function esApplyLang(lang) {
-        var root = document.getElementById('esRoot');
-        var label = document.getElementById('esLangLabel');
-        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-        root.setAttribute('lang', lang);
-        label.textContent = lang === 'ar' ? 'English' : 'عربي';
-        document.querySelectorAll('.es-i18n').forEach(function(el) {
-            var txt = el.getAttribute('data-' + lang);
-            if (txt) el.textContent = txt;
-        });
-        localStorage.setItem('es_lang', lang);
-        esCurrentLang = lang;
-    }
-    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
-    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
-    ]]></script>
-</body>
-</html>
-</template>
+    </template>
 
-
-<!-- ═══════════════════════════════════════════════════
-     DECLINED PAGE
-═══════════════════════════════════════════════════ -->
-<template id="sign_declined" name="Easy Sign - Signing Declined">
-<html lang="en" id="esRoot">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Signing Declined - Easy Sign</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" t-attf-href="/easy-sign/static/src/css/sign_public.css"/>
-    <style>
-        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:20px; }
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
-        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
-    </style>
-</head>
-<body class="es-body es-result-body">
-    <div class="es-result-card es-result-declined">
-        <div class="es-result-icon">&#10005;</div>
-
-        <button class="es-lang-btn" onclick="esToggleLang()">
-            🌐 <span id="esLangLabel">عربي</span>
-        </button>
-
-        <h2 class="es-result-title">
-            <span class="es-i18n" data-en="Signing Declined" data-ar="تم رفض التوقيع">Signing Declined</span>
-        </h2>
-        <p class="es-result-message">
-            <t t-if="already_done">
-                <span class="es-i18n" data-en="You have already declined to sign this document." data-ar="لقد رفضت التوقيع على هذه الوثيقة مسبقاً.">You have already declined to sign this document.</span>
-            </t>
-            <t t-else="">
-                <span class="es-i18n" data-en="You have declined to sign this document. The requester has been notified." data-ar="لقد رفضت التوقيع على الوثيقة. تم إشعار مقدم الطلب.">You have declined to sign this document. The requester has been notified.</span>
-            </t>
-        </p>
-        <t t-if="item and item.declined_reason">
-            <p class="es-result-meta">
-                <span class="es-i18n" data-en="Reason:" data-ar="السبب:">Reason:</span>
-                <em t-esc="item.declined_reason"/>
-            </p>
-        </t>
-        <div class="es-result-footer">
-            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
-            <strong> Easy Sign</strong>
-        </div>
-    </div>
-    <script><![CDATA[
-    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
-    function esApplyLang(lang) {
-        var root = document.getElementById('esRoot');
-        var label = document.getElementById('esLangLabel');
-        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-        root.setAttribute('lang', lang);
-        label.textContent = lang === 'ar' ? 'English' : 'عربي';
-        document.querySelectorAll('.es-i18n').forEach(function(el) {
-            var txt = el.getAttribute('data-' + lang);
-            if (txt) el.textContent = txt;
-        });
-        localStorage.setItem('es_lang', lang);
-        esCurrentLang = lang;
-    }
-    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
-    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
-    ]]></script>
-</body>
-</html>
-</template>
-
-
-<!-- ═══════════════════════════════════════════════════
-     INVALID / EXPIRED PAGE
-═══════════════════════════════════════════════════ -->
-<template id="sign_invalid" name="Easy Sign - Invalid Link">
-<html lang="en" id="esRoot">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Invalid Link - Easy Sign</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" t-attf-href="/easy-sign/static/src/css/sign_public.css"/>
-    <style>
-        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #f59e0b;background:#fffbeb;color:#92400e;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:20px; }
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
-        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
-    </style>
-</head>
-<body class="es-body es-result-body">
-    <div class="es-result-card es-result-invalid">
-        <div class="es-result-icon">&#9888;</div>
-
-        <button class="es-lang-btn" onclick="esToggleLang()">
-            🌐 <span id="esLangLabel">عربي</span>
-        </button>
-
-        <h2 class="es-result-title" t-esc="error_title or 'Invalid Link'"/>
-        <p class="es-result-message" t-esc="error_message or 'This signing link is invalid or has expired.'"/>
-        <div class="es-result-footer">
-            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
-            <strong> Easy Sign</strong>
-        </div>
-    </div>
-    <script><![CDATA[
-    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
-    function esApplyLang(lang) {
-        var root = document.getElementById('esRoot');
-        var label = document.getElementById('esLangLabel');
-        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-        root.setAttribute('lang', lang);
-        label.textContent = lang === 'ar' ? 'English' : 'عربي';
-        document.querySelectorAll('.es-i18n').forEach(function(el) {
-            var txt = el.getAttribute('data-' + lang);
-            if (txt) el.textContent = txt;
-        });
-        localStorage.setItem('es_lang', lang);
-        esCurrentLang = lang;
-    }
-    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
-    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
-    ]]></script>
-</body>
-</html>
-</template>
-
+    <template id="sign_pdf_iframe_templates">
+    </template>
 </odoo>

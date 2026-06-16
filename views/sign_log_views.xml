@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_sign_log_list" model="ir.ui.view">
+            <field name="name">sign.log.list</field>
+            <field name="model">sign.log</field>
+            <field name="arch" type="xml">
+                <list string="Sign Logs">
+                    <field name="sign_request_id"/>
+                    <field name="sign_request_item_id"/>
+                    <field name="partner_id"/>
+                    <field name="action"/>
+                    <field name="timestamp"/>
+                    <field name="ip_address"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_sign_log_form" model="ir.ui.view">
+            <field name="name">sign.log.form</field>
+            <field name="model">sign.log</field>
+            <field name="arch" type="xml">
+                <form string="Sign Log">
+                    <sheet>
+                        <group>
+                            <field name="sign_request_id"/>
+                            <field name="sign_request_item_id"/>
+                            <field name="partner_id"/>
+                            <field name="action"/>
+                            <field name="timestamp"/>
+                            <field name="ip_address"/>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>
