@@ -1,22 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="sign_page" name="Sign Page">
-        <t t-call="web.html_container">
-            <t t-foreach="web.assets_common" t-as="asset">
-                <t t-esc="asset"/>
-            </t>
-            <t t-call="web.frontend_layout">
-                <div class="container">
-                    <h1>Sign Document</h1>
-                    <h2><t t-esc="sign_request.reference"/></h2>
-                    <div id="o_sign_root">
-                    </div>
-                    <button id="o_sign_submit" class="btn btn-primary mt-3">Sign Document</button>
+        <t>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f0f0f0;
+                }
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                h1, h2 {
+                    color: #333;
+                }
+                .btn-primary {
+                    background-color: #007bff;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 20px;
+                }
+                .btn-primary:hover {
+                    background-color: #0056b3;
+                }
+                .modal {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0,0,0,0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 1000;
+                }
+                .modal-dialog {
+                    background-color: white;
+                    border-radius: 8px;
+                    width: 80%;
+                    max-width: 600px;
+                }
+                .modal-header, .modal-body, .modal-footer {
+                    padding: 15px;
+                }
+                .modal-header {
+                    border-bottom: 1px solid #eee;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+                .modal-footer {
+                    border-top: 1px solid #eee;
+                    text-align: right;
+                }
+                .close {
+                    background: none;
+                    border: none;
+                    font-size: 24px;
+                    cursor: pointer;
+                }
+                .btn-secondary {
+                    background-color: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin-right: 10px;
+                }
+            </style>
+            <div class="container">
+                <h1>Sign Document</h1>
+                <h2><t t-esc="sign_request.reference"/></h2>
+                <div id="o_sign_root">
                 </div>
-            </t>
-        </t>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-        <script>
+                <button id="o_sign_submit" class="btn-primary">Sign Document</button>
+            </div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+            <script>
 <![CDATA[
             const TEMPLATE_ID = ]]><t t-esc="sign_request.template_id.id"/><![CDATA[;
             const REQUEST_ID = ]]><t t-esc="sign_request.id"/><![CDATA[;
@@ -85,11 +157,11 @@
                     container.style.boxSizing = 'border-box';
                     if (['signature', 'initial'].includes(item.type)) {
                         container.addEventListener('click', () => openSignaturePad(item.id));
-                        container.innerHTML = '<span style="color: #888; margin:auto;">Click to sign</span>';
+                        container.innerHTML = '<span style="color: #888; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%;">Click to sign</span>';
                     } else if (item.type === 'checkbox') {
-                        container.innerHTML = '<input type="checkbox" class="form-check-input">';
+                        container.innerHTML = '<input type="checkbox" style="margin: auto; display: block; transform: scale(2);">';
                     } else {
-                        container.innerHTML = '<input type="text" class="form-control">';
+                        container.innerHTML = '<input type="text" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px;">';
                     }
                     const canvas = pageCanvasData.canvas;
                     canvas.style.position = 'relative';
@@ -106,23 +178,22 @@
                 currentSignItemId = itemId;
                 const modal = document.createElement('div');
                 modal.id = 'signature-modal';
+                modal.className = 'modal';
                 modal.innerHTML = `
-                    <div class="modal" tabindex="-1" style="display: block;">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Sign Here</h5>
-                                    <button type="button" class="close" onclick="closeSignaturePad()">
-                                        <span>&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <canvas id="signature-pad" style="border:1px solid #000; width:100%; height:200px;"></canvas>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" onclick="closeSignaturePad()">Cancel</button>
-                                    <button type="button" class="btn btn-primary" onclick="saveSignature()">Save</button>
-                                </div>
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Sign Here</h5>
+                                <button type="button" class="close" onclick="closeSignaturePad()">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <canvas id="signature-pad" style="border:1px solid #000; width:100%; height:200px;"></canvas>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn-secondary" onclick="closeSignaturePad()">Cancel</button>
+                                <button type="button" class="btn-primary" onclick="saveSignature()">Save</button>
                             </div>
                         </div>
                     </div>
@@ -220,17 +291,36 @@
 
             renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf', document.getElementById('o_sign_root'));
 ]]>
-        </script>
+            </script>
+        </t>
     </template>
 
     <template id="sign_already_signed" name="Already Signed">
-        <t t-call="web.html_container">
-            <t t-call="web.frontend_layout">
-                <div class="container text-center mt-5">
-                    <h1>Document Already Signed</h1>
-                    <p>This document has already been signed or processed.</p>
-                </div>
-            </t>
+        <t>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f0f0f0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 50px auto;
+                    background-color: white;
+                    padding: 40px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    text-align: center;
+                }
+                h1 {
+                    color: #333;
+                }
+            </style>
+            <div class="container">
+                <h1>Document Already Signed</h1>
+                <p>This document has already been signed or processed.</p>
+            </div>
         </t>
     </template>
 

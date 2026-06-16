@@ -31,7 +31,7 @@ class SignController(http.Controller):
         template = request.env['sign.template'].sudo().browse(template_id)
         if not template:
             return request.not_found()
-        return request.render('easy_sign.template_editor', {})
+        return request.render('easy_sign.template_editor', {'template': template})
 
     @http.route('/sign/document/<int:request_id>/<access_token>', type='http', auth='public', website=True)
     def sign_document_public(self, request_id, access_token, **kwargs):

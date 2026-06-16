@@ -1,17 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="template_editor">
-        <t t-call="web.html_container">
-            <t t-foreach="web.assets_common" t-as="asset">
-                <t t-esc="asset"/>
-            </t>
-            <t t-call="web.frontend_layout">
-                <div class="container">
-                    <h1>Edit Template</h1>
-                    <div id="o_template_editor">
-                    </div>
+        <t>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f0f0f0;
+                }
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    background-color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+                h1 {
+                    color: #333;
+                }
+            </style>
+            <div class="container">
+                <h1>Edit Template: <t t-esc="template.name"/></h1>
+                <div id="o_sign_root">
                 </div>
-            </t>
+            </div>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+            <script>
+<![CDATA[
+            const TEMPLATE_ID = ]]><t t-esc="template.id"/><![CDATA[;
+            const SIGN_ITEMS = ]]><t t-raw="json.dumps([{
+                'id': item.id,
+                'type': item.type_id.item_type,
+                'page': item.page,
+                'posX': item.posX,
+                'posY': item.posY,
+                'width': item.width,
+                'height': item.height,
+                'required': item.required
+            } for item in template.sign_item_ids])"/><![CDATA[;
+
+            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+            let pdfDoc = null;
+            let canvasList = [];
+
+            async function renderPDF(url, canvasContainer) {
+                const loadingTask = pdfjsLib.getDocument(url);
+                pdfDoc = await loadingTask.promise;
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    await renderPage(i, canvasContainer);
+                }
+            }
+
+            async function renderPage(num, canvasContainer) {
+                const page = await pdfDoc.getPage(num);
+                const scale = 1.5;
+                const viewport = page.getViewport({scale: scale});
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                canvas.style.width = '100%';
+                canvasContainer.appendChild(canvas);
+                canvasList.push({canvas, viewport, pageNum: num});
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                await page.render(renderContext).promise;
+            }
+
+            renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf', document.getElementById('o_sign_root'));
+]]>
+            </script>
         </t>
     </template>
 </odoo>

@@ -38,7 +38,9 @@ class SignRequest(models.Model):
     def _default_access_token(self):
         return str(uuid.uuid4())
 
-    template_id = fields.Many2one('sign.template', string="Template", required=True)
+    template_id = fields.Many2one('sign.template', string="Template")
+    document = fields.Binary(string="Document", attachment=True)
+    document_filename = fields.Char(string="Document Filename")
     subject = fields.Char(string="Email Subject")
     reference = fields.Char(required=True, string="Document Name", help="This is how the document will be named in the mail", default="New Signature Request")
     access_token = fields.Char('Security Token', required=True, default=_default_access_token, readonly=True, copy=False)
@@ -50,6 +52,22 @@ class SignRequest(models.Model):
         ("expired", "Expired"),
     ], default='sent', tracking=True, group_expand=True, copy=False, index=True)
     completed_document = fields.Binary(readonly=True, string="Completed Document", attachment=True, copy=False)
+    
+    @api.onchange('document')
+    def _onchange_document(self):
+        if self.document:
+            # Create a new template from the uploaded document
+            if not self.reference:
+                self.reference = self.document_filename or "New Signature Request"
+            template = self.env['sign.template'].create({
+                'name': self.reference,
+                'attachment_id': self.env['ir.attachment'].create({
+                    'name': self.document_filename or "Document",
+                    'datas': self.document,
+                    'type': 'binary',
+                }).id,
+            })
+            self.template_id = template
     nb_wait = fields.Integer(string="Sent Requests", compute="_compute_stats", store=True)
     nb_closed = fields.Integer(string="Completed Signatures", compute="_compute_stats", store=True)
     nb_total = fields.Integer(string="Requested Signatures", compute="_compute_stats", store=True)
@@ -75,6 +93,21 @@ class SignRequest(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('template_id') and not vals.get('document'):
+                raise ValidationError(_("Please either select a template or upload a document"))
+            if vals.get('document') and not vals.get('template_id'):
+                # Create a new template from the uploaded document
+                attachment = self.env['ir.attachment'].create({
+                    'name': vals.get('document_filename') or vals.get('reference') or "Document",
+                    'datas': vals.get('document'),
+                    'type': 'binary',
+                })
+                template = self.env['sign.template'].create({
+                    'name': vals.get('reference') or "New Template",
+                    'attachment_id': attachment.id,
+                })
+                vals['template_id'] = template.id
         sign_requests = super().create(vals_list)
         for sign_request in sign_requests:
             if not sign_request.request_item_ids:
@@ -126,6 +159,12 @@ class SignRequest(models.Model):
                 'type': 'ir.actions.act_url',
                 'url': '/sign/download/%(request_id)s/%(access_token)s/completed' % {'request_id': self.id, 'access_token': self.access_token},
             }
+
+    def go_to_edit_template(self):
+        self.ensure_one()
+        if not self.template_id:
+            raise UserError(_('Please upload a document or select a template first.'))
+        return self.template_id.go_to_custom_template()
 
     def open_logs(self):
         self.ensure_one()
