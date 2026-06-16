@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+<template id="sign_page" name="Easy Sign - Sign Document">
+<html lang="en" id="esRoot">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta name="robots" content="noindex, nofollow"/>
+    <title>Sign Document - Easy Sign</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" t-attf-href="/easy_sign/static/src/css/sign_public.css"/>
+    <style>
+        /* ── Language switch ── */
+        .es-lang-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 20px; border: 1.5px solid rgba(255,255,255,.35);
+            background: rgba(255,255,255,.12); color: #fff; font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: all .2s; font-family: 'Cairo', sans-serif;
+            letter-spacing: .3px;
+        }
+        .es-lang-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.6); }
+        .es-lang-flag { font-size: 16px; }
+
+        /* ── RTL (Arabic) mode ── */
+        html[dir="rtl"] body,
+        html[dir="rtl"] button,
+        html[dir="rtl"] input,
+        html[dir="rtl"] textarea {
+            font-family: 'Cairo', 'Segoe UI', Arial, sans-serif;
+            text-align: right;
+        }
+
+        /* Flip the two-column layout: sign panel on RIGHT → moves to LEFT in RTL */
+        html[dir="rtl"] .es-main-row { flex-direction: row-reverse; }
+
+        /* Border flips to left side */
+        html[dir="rtl"] .es-pdf-panel { border-right: none; border-left: 1px solid #e5e9f0; }
+
+        /* Navbar: brand on left, actions on right (reversed in RTL) */
+        html[dir="rtl"] .es-navbar { flex-direction: row-reverse; }
+        html[dir="rtl"] .es-navbar-brand { flex-direction: row-reverse; }
+
+        /* Panel header */
+        html[dir="rtl"] .es-panel-header { flex-direction: row-reverse; }
+        html[dir="rtl"] .es-panel-title { flex-direction: row-reverse; }
+
+        /* Signer info */
+        html[dir="rtl"] .es-signer-info { flex-direction: row-reverse; }
+        html[dir="rtl"] .es-signer-details { text-align: right; }
+
+        /* Request info / instructions */
+        html[dir="rtl"] .es-request-info,
+        html[dir="rtl"] .es-instructions,
+        html[dir="rtl"] .es-section-title,
+        html[dir="rtl"] .es-instructions-text,
+        html[dir="rtl"] .es-info-label,
+        html[dir="rtl"] .es-info-value { text-align: right; }
+
+        /* Canvas hint */
+        html[dir="rtl"] .es-canvas-hint { text-align: right; }
+
+        /* Canvas controls */
+        html[dir="rtl"] .es-canvas-controls { flex-direction: row-reverse; }
+
+        /* Decline form */
+        html[dir="rtl"] .es-decline-actions { flex-direction: row-reverse; }
+        html[dir="rtl"] .es-decline-form h6 { text-align: right; }
+
+        /* Messages */
+        html[dir="rtl"] .es-msg { flex-direction: row-reverse; text-align: right; }
+
+        /* Footer */
+        html[dir="rtl"] .es-footer { direction: rtl; }
+
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&amp;display=swap');
+    </style>
+</head>
+<body class="es-body">
+
+    <!-- Navbar -->
+    <nav class="es-navbar">
+        <div class="es-navbar-brand">
+            <span class="es-logo-icon">&#9998;</span>
+            <span class="es-logo-text">Easy Sign</span>
+        </div>
+        <div class="es-navbar-right" style="display:flex;align-items:center;gap:12px;">
+            <span class="es-badge es-badge-pending">
+                <span class="es-i18n" data-en="Signature Required" data-ar="يلزم التوقيع">Signature Required</span>
+            </span>
+            <!-- Language Switch Button -->
+            <button class="es-lang-btn" id="esBtnLang" onclick="esToggleLang()">
+                <span class="es-lang-flag">🌐</span>
+                <span id="esLangLabel">عربي</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container-fluid es-container">
+        <div class="row g-0 es-main-row">
+
+            <!-- Left: PDF Viewer -->
+            <div class="col-lg-7 es-pdf-panel">
+                <div class="es-panel-header">
+                    <div class="es-panel-title">
+                        <span class="es-icon">📄</span>
+                        <span class="es-i18n" data-en="Document to Sign" data-ar="الوثيقة المطلوب توقيعها">Document to Sign</span>
+                    </div>
+                    <div class="es-doc-info">
+                        <strong t-esc="sign_request.document_name or sign_request.name"/>
+                    </div>
+                </div>
+                <div class="es-pdf-viewer-wrap">
+                    <object t-att-data="document_url" type="application/pdf"
+                            class="es-pdf-object" id="pdfViewer">
+                        <div class="es-pdf-fallback">
+                            <p class="es-i18n" data-en="Your browser cannot display PDF inline." data-ar="المتصفح لا يدعم عرض PDF مباشرة.">Your browser cannot display PDF inline.</p>
+                            <a t-att-href="document_url" class="btn btn-outline-primary" target="_blank">
+                                <span class="es-i18n" data-en="Open PDF in New Tab" data-ar="فتح الملف في تبويب جديد">Open PDF in New Tab</span>
+                            </a>
+                        </div>
+                    </object>
+                </div>
+            </div>
+
+            <div class="col-lg-5 es-sign-panel">
+                <div class="es-sign-panel-inner">
+
+                    <div class="es-signer-info">
+                        <div class="es-avatar">
+                            <t t-esc="(item.signer_name or 'S')[0].upper()"/>
+                        </div>
+                        <div class="es-signer-details">
+                            <div class="es-signer-name" t-esc="item.signer_name"/>
+                            <div class="es-signer-email" t-esc="item.signer_email"/>
+                        </div>
+                    </div>
+
+                    <div class="es-request-info">
+                        <p class="es-info-label es-i18n" data-en="Requested by" data-ar="طلب من">Requested by</p>
+                        <p class="es-info-value" t-esc="sign_request.user_id.name"/>
+                        <t t-if="sign_request.expiry_date">
+                            <p class="es-info-label es-i18n" data-en="Expires on" data-ar="تنتهي في">Expires on</p>
+                            <p class="es-info-value es-expiry" t-esc="sign_request.expiry_date"/>
+                        </t>
+                    </div>
+
+                    <div class="es-instructions">
+                        <h5 class="es-section-title es-i18n" data-en="Draw Your Signature" data-ar="ارسم توقيعك">Draw Your Signature</h5>
+                        <p class="es-instructions-text es-i18n"
+                           data-en="Please review the document on the left, then draw your signature in the box below using your mouse or finger."
+                           data-ar="يرجى مراجعة الوثيقة، ثم ارسم توقيعك في المربع أدناه باستخدام الماوس أو إصبعك.">
+                            Please review the document on the left, then draw your signature in the box below using your mouse or finger.
+                        </p>
+                    </div>
+
+                    <div class="es-canvas-wrap">
+                        <canvas id="signatureCanvas" width="480" height="180" class="es-canvas"/>
+                        <div class="es-canvas-hint es-i18n" data-en="Sign here ✍" data-ar="وقّع هنا ✍">Sign here ✍</div>
+                    </div>
+
+                    <div class="es-canvas-controls">
+                        <button id="btnClear" type="button" class="es-btn-clear">
+                            &#8634; <span class="es-i18n" data-en="Clear" data-ar="مسح">Clear</span>
+                        </button>
+                        <span id="canvasStatus" class="es-canvas-status"/>
+                    </div>
+
+                    <button id="btnSign" type="button" class="es-btn-sign" t-att-data-token="token">
+                        <span id="btnSignText">
+                            &#10003; <span class="es-i18n" data-en="Sign Document" data-ar="توقيع الوثيقة">Sign Document</span>
+                        </span>
+                        <span id="btnSignSpinner" class="d-none">
+                            <span class="spinner-border spinner-border-sm me-2" role="status"/>
+                            <span class="es-i18n" data-en="Submitting..." data-ar="جاري الإرسال...">Submitting...</span>
+                        </span>
+                    </button>
+
+                    <div class="es-decline-section">
+                        <button id="btnShowDecline" type="button" class="es-btn-decline-link">
+                            <span class="es-i18n" data-en="I decline to sign this document" data-ar="أرفض التوقيع على هذه الوثيقة">I decline to sign this document</span>
+                        </button>
+                    </div>
+
+                    <div id="declineForm" class="es-decline-form d-none">
+                        <h6 class="es-section-title es-i18n" data-en="Reason for Declining" data-ar="سبب الرفض">Reason for Declining</h6>
+                        <textarea id="declineReason" rows="3" class="form-control es-textarea">
+                            <t t-att-placeholder="'Optional: provide a reason...'"/>
+                        </textarea>
+                        <div class="es-decline-actions mt-2">
+                            <button id="btnCancelDecline" type="button" class="es-btn-cancel-decline">
+                                <span class="es-i18n" data-en="Cancel" data-ar="إلغاء">Cancel</span>
+                            </button>
+                            <button id="btnConfirmDecline" type="button" class="es-btn-confirm-decline" t-att-data-token="token">
+                                <span class="es-i18n" data-en="Confirm Decline" data-ar="تأكيد الرفض">Confirm Decline</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div id="msgSuccess" class="es-msg es-msg-success d-none">
+                        <span class="es-msg-icon">&#10004;</span>
+                        <div>
+                            <strong class="es-i18n" data-en="Signed successfully!" data-ar="تم التوقيع بنجاح!">Signed successfully!</strong>
+                            <p class="mb-0 es-i18n" data-en="Thank you. The document has been signed." data-ar="شكراً. تم توقيع الوثيقة.">Thank you. The document has been signed.</p>
+                        </div>
+                    </div>
+                    <div id="msgError" class="es-msg es-msg-error d-none">
+                        <span class="es-msg-icon">&#9888;</span>
+                        <div>
+                            <strong class="es-i18n" data-en="Error" data-ar="خطأ">Error</strong>
+                            <p id="msgErrorText" class="mb-0"/>
+                        </div>
+                    </div>
+                    <div id="msgDeclined" class="es-msg es-msg-declined d-none">
+                        <span class="es-msg-icon">&#10005;</span>
+                        <div>
+                            <strong class="es-i18n" data-en="Signing declined" data-ar="تم رفض التوقيع">Signing declined</strong>
+                            <p class="mb-0 es-i18n" data-en="The requester has been notified." data-ar="تم إشعار مقدم الطلب.">The requester has been notified.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="es-footer">
+        <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
+        <strong> Easy Sign</strong>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"/>
+    <script t-attf-src="/easy_sign/static/src/js/sign_public.js"/>
+    <script><![CDATA[
+    // ── Language Switch ──────────────────────────────────────────
+    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
+
+    function esApplyLang(lang) {
+        var root = document.getElementById('esRoot');
+        var label = document.getElementById('esLangLabel');
+        if (lang === 'ar') {
+            root.setAttribute('dir', 'rtl');
+            root.setAttribute('lang', 'ar');
+            label.textContent = 'English';
+        } else {
+            root.setAttribute('dir', 'ltr');
+            root.setAttribute('lang', 'en');
+            label.textContent = 'عربي';
+        }
+        document.querySelectorAll('.es-i18n').forEach(function(el) {
+            var txt = el.getAttribute('data-' + lang);
+            if (txt) el.textContent = txt;
+        });
+        localStorage.setItem('es_lang', lang);
+        esCurrentLang = lang;
+    }
+
+    function esToggleLang() {
+        esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en');
+    }
+
+    // Apply saved language on load
+    document.addEventListener('DOMContentLoaded', function() {
+        esApplyLang(esCurrentLang);
+    });
+    ]]></script>
+</body>
+</html>
+</template>
+
+
+<!-- ═══════════════════════════════════════════════════
+     SUCCESS PAGE
+═══════════════════════════════════════════════════ -->
+<template id="sign_success" name="Easy Sign - Signing Success">
+<html lang="en" id="esRoot">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Document Signed - Easy Sign</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" t-attf-href="/easy_sign/static/src/css/sign_public.css"/>
+    <style>
+        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #2563eb;background:#eff6ff;color:#2563eb;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:20px; }
+        .es-lang-btn:hover { background:#dbeafe; }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
+        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="es-body es-result-body">
+    <div class="es-result-card es-result-success">
+        <div class="es-result-icon">&#10004;</div>
+
+        <button class="es-lang-btn" onclick="esToggleLang()">
+            🌐 <span id="esLangLabel">عربي</span>
+        </button>
+
+        <h2 class="es-result-title">
+            <t t-if="already_done">
+                <span class="es-i18n" data-en="Already Signed" data-ar="تم التوقيع مسبقاً">Already Signed</span>
+            </t>
+            <t t-else="">
+                <span class="es-i18n" data-en="Document Signed!" data-ar="تم توقيع الوثيقة!">Document Signed!</span>
+            </t>
+        </h2>
+        <p class="es-result-message">
+            <t t-if="already_done">
+                <span class="es-i18n" data-en="You have already signed this document. Thank you!" data-ar="لقد وقّعت على هذه الوثيقة مسبقاً. شكراً!">You have already signed this document. Thank you!</span>
+            </t>
+            <t t-else="">
+                <span class="es-i18n" data-en="Thank you" data-ar="شكراً">Thank you</span>,
+                <strong t-esc="item.signer_name"/>!
+                <span class="es-i18n" data-en="Your signature has been recorded successfully." data-ar="تم تسجيل توقيعك بنجاح.">Your signature has been recorded successfully.</span>
+            </t>
+        </p>
+        <t t-if="item and item.signed_date">
+            <p class="es-result-meta">
+                <span class="es-i18n" data-en="Signed on:" data-ar="تاريخ التوقيع:">Signed on:</span>
+                <strong t-esc="item.signed_date"/>
+            </p>
+        </t>
+        <div class="es-result-footer">
+            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
+            <strong> Easy Sign</strong>
+        </div>
+    </div>
+    <script><![CDATA[
+    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
+    function esApplyLang(lang) {
+        var root = document.getElementById('esRoot');
+        var label = document.getElementById('esLangLabel');
+        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        root.setAttribute('lang', lang);
+        label.textContent = lang === 'ar' ? 'English' : 'عربي';
+        document.querySelectorAll('.es-i18n').forEach(function(el) {
+            var txt = el.getAttribute('data-' + lang);
+            if (txt) el.textContent = txt;
+        });
+        localStorage.setItem('es_lang', lang);
+        esCurrentLang = lang;
+    }
+    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
+    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
+    ]]></script>
+</body>
+</html>
+</template>
+
+
+<!-- ═══════════════════════════════════════════════════
+     DECLINED PAGE
+═══════════════════════════════════════════════════ -->
+<template id="sign_declined" name="Easy Sign - Signing Declined">
+<html lang="en" id="esRoot">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Signing Declined - Easy Sign</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" t-attf-href="/easy_sign/static/src/css/sign_public.css"/>
+    <style>
+        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:20px; }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
+        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="es-body es-result-body">
+    <div class="es-result-card es-result-declined">
+        <div class="es-result-icon">&#10005;</div>
+
+        <button class="es-lang-btn" onclick="esToggleLang()">
+            🌐 <span id="esLangLabel">عربي</span>
+        </button>
+
+        <h2 class="es-result-title">
+            <span class="es-i18n" data-en="Signing Declined" data-ar="تم رفض التوقيع">Signing Declined</span>
+        </h2>
+        <p class="es-result-message">
+            <t t-if="already_done">
+                <span class="es-i18n" data-en="You have already declined to sign this document." data-ar="لقد رفضت التوقيع على هذه الوثيقة مسبقاً.">You have already declined to sign this document.</span>
+            </t>
+            <t t-else="">
+                <span class="es-i18n" data-en="You have declined to sign this document. The requester has been notified." data-ar="لقد رفضت التوقيع على الوثيقة. تم إشعار مقدم الطلب.">You have declined to sign this document. The requester has been notified.</span>
+            </t>
+        </p>
+        <t t-if="item and item.declined_reason">
+            <p class="es-result-meta">
+                <span class="es-i18n" data-en="Reason:" data-ar="السبب:">Reason:</span>
+                <em t-esc="item.declined_reason"/>
+            </p>
+        </t>
+        <div class="es-result-footer">
+            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
+            <strong> Easy Sign</strong>
+        </div>
+    </div>
+    <script><![CDATA[
+    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
+    function esApplyLang(lang) {
+        var root = document.getElementById('esRoot');
+        var label = document.getElementById('esLangLabel');
+        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        root.setAttribute('lang', lang);
+        label.textContent = lang === 'ar' ? 'English' : 'عربي';
+        document.querySelectorAll('.es-i18n').forEach(function(el) {
+            var txt = el.getAttribute('data-' + lang);
+            if (txt) el.textContent = txt;
+        });
+        localStorage.setItem('es_lang', lang);
+        esCurrentLang = lang;
+    }
+    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
+    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
+    ]]></script>
+</body>
+</html>
+</template>
+
+
+<!-- ═══════════════════════════════════════════════════
+     INVALID / EXPIRED PAGE
+═══════════════════════════════════════════════════ -->
+<template id="sign_invalid" name="Easy Sign - Invalid Link">
+<html lang="en" id="esRoot">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>Invalid Link - Easy Sign</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" t-attf-href="/easy_sign/static/src/css/sign_public.css"/>
+    <style>
+        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #f59e0b;background:#fffbeb;color:#92400e;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:20px; }
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
+        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
+    </style>
+</head>
+<body class="es-body es-result-body">
+    <div class="es-result-card es-result-invalid">
+        <div class="es-result-icon">&#9888;</div>
+
+        <button class="es-lang-btn" onclick="esToggleLang()">
+            🌐 <span id="esLangLabel">عربي</span>
+        </button>
+
+        <h2 class="es-result-title" t-esc="error_title or 'Invalid Link'"/>
+        <p class="es-result-message" t-esc="error_message or 'This signing link is invalid or has expired.'"/>
+        <div class="es-result-footer">
+            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
+            <strong> Easy Sign</strong>
+        </div>
+    </div>
+    <script><![CDATA[
+    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
+    function esApplyLang(lang) {
+        var root = document.getElementById('esRoot');
+        var label = document.getElementById('esLangLabel');
+        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        root.setAttribute('lang', lang);
+        label.textContent = lang === 'ar' ? 'English' : 'عربي';
+        document.querySelectorAll('.es-i18n').forEach(function(el) {
+            var txt = el.getAttribute('data-' + lang);
+            if (txt) el.textContent = txt;
+        });
+        localStorage.setItem('es_lang', lang);
+        esCurrentLang = lang;
+    }
+    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
+    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
+    ]]></script>
+</body>
+</html>
+</template>
+
+</odoo>

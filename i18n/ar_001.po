@@ -1,0 +1,787 @@
+# Arabic Translation for Easy Sign
+# This file contains the translation of the following modules:
+# 	* easy_sign
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-28 17:43+0000\n"
+"PO-Revision-Date: 2026-05-28 17:43+0000\n"
+"Last-Translator: Ahmed Kamal\n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=6; plural=n==0 ? 0 : n==1 ? 1 : n==2 ? 2 : n%100>=3 && n%100<=10 ? 3 : n%100>=11 && n%100<=99 ? 4 : 5;\n"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__access_token
+msgid "Access Token"
+msgstr "رمز الوصول"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__action
+msgid "Action"
+msgstr "الإجراء"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_needaction
+msgid "Action Needed"
+msgstr "يحتاج إجراء"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_ids
+msgid "Activities"
+msgstr "الأنشطة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_exception_decoration
+msgid "Activity Exception Decoration"
+msgstr "تزيين استثناء النشاط"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_state
+msgid "Activity State"
+msgstr "حالة النشاط"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_type_icon
+msgid "Activity Type Icon"
+msgstr "أيقونة نوع النشاط"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__all_signed
+msgid "All Signed"
+msgstr "تم التوقيع الكامل"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+msgid "Already Signed"
+msgstr "تم التوقيع مسبقاً"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Are you sure you want to cancel this signature request?"
+msgstr "هل أنت متأكد من إلغاء طلب التوقيع هذا؟"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_attachment_count
+msgid "Attachment Count"
+msgstr "عدد المرفقات"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__log_ids
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Audit Log"
+msgstr "سجل التدقيق"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Cancel"
+msgstr "إلغاء"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request__state__cancelled
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request_item__state__cancelled
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Cancelled"
+msgstr "ملغي"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Confirm Decline"
+msgstr "تأكيد الرفض"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__partner_id
+msgid "Contact"
+msgstr "جهة الاتصال"
+
+#. module: easy_sign
+#: model_terms:ir.actions.act_window,help:easy_sign.action_sign_request
+msgid "Create your first signature request"
+msgstr "أنشئ طلب التوقيع الأول"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__create_uid
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__create_uid
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__create_uid
+msgid "Created by"
+msgstr "أُنشئ بواسطة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__create_date
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__create_date
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__create_date
+msgid "Created on"
+msgstr "تاريخ الإنشاء"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__date
+msgid "Date & Time"
+msgstr "التاريخ والوقت"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__declined_reason
+msgid "Decline Reason"
+msgstr "سبب الرفض"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request_item__state__declined
+msgid "Declined"
+msgstr "مرفوض"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__display_name
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__display_name
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__display_name
+msgid "Display Name"
+msgstr "اسم العرض"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Document"
+msgstr "الوثيقة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__document
+msgid "Document (PDF)"
+msgstr "الوثيقة (PDF)"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_log__action__declined
+msgid "Document Declined"
+msgstr "وثيقة مرفوضة"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_log__action__signed
+msgid "Document Signed"
+msgstr "وثيقة موقّعة"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+msgid "Document Signed!"
+msgstr "تم توقيع الوثيقة!"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_log__action__viewed
+msgid "Document Viewed"
+msgstr "تمت مشاهدة الوثيقة"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Download Signed Document"
+msgstr "تحميل الوثيقة الموقّعة"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Download Signed PDF"
+msgstr "تحميل PDF الموقّع"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request__state__draft
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Draft"
+msgstr "مسودة"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Draw Your Signature"
+msgstr "ارسم توقيعك"
+
+#. module: easy_sign
+#: model:ir.ui.menu,name:easy_sign.menu_easy_sign_root
+msgid "Easy Sign"
+msgstr "التوقيع الإلكتروني"
+
+#. module: easy_sign
+#: model:mail.template,name:easy_sign.mail_template_sign_request
+msgid "Easy Sign - Signing Invitation"
+msgstr "Easy Sign - دعوة للتوقيع"
+
+#. module: easy_sign
+#: model:ir.model,name:easy_sign.model_sign_request
+msgid "Electronic Signature Request"
+msgstr "طلب توقيع إلكتروني"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Email Settings"
+msgstr "إعدادات البريد الإلكتروني"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__subject
+msgid "Email Subject"
+msgstr "موضوع البريد الإلكتروني"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request__state__expired
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Expired"
+msgstr "منتهي الصلاحية"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Expires on"
+msgstr "تنتهي في"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__expiry_date
+msgid "Expiry Date"
+msgstr "تاريخ الانتهاء"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__document_name
+msgid "File Name"
+msgstr "اسم الملف"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_follower_ids
+msgid "Followers"
+msgstr "المتابعون"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_partner_ids
+msgid "Followers (Partners)"
+msgstr "المتابعون (الشركاء)"
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__activity_type_icon
+msgid "Font awesome icon e.g. fa-tasks"
+msgstr "أيقونة Font Awesome مثل: fa-tasks"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request__state__signed
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Fully Signed"
+msgstr "موقّع بالكامل"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Group By"
+msgstr "تجميع حسب"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__has_message
+msgid "Has Message"
+msgstr "يحتوي رسالة"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "I decline to sign this document"
+msgstr "أرفض التوقيع على هذه الوثيقة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__id
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__id
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__id
+msgid "ID"
+msgstr "المعرّف"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__ip_address
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__ip_address
+msgid "IP Address"
+msgstr "عنوان IP"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_exception_icon
+msgid "Icon"
+msgstr "الأيقونة"
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__activity_exception_icon
+msgid "Icon to indicate an exception activity."
+msgstr "أيقونة للإشارة إلى نشاط استثنائي."
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__message_needaction
+msgid "If checked, new messages require your attention."
+msgstr "إذا كان محدداً، فإن الرسائل الجديدة تتطلب انتباهك."
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__message_has_error
+msgid "If checked, some messages have a delivery error."
+msgstr "إذا كان محدداً، يوجد خطأ في إرسال بعض الرسائل."
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Invitation Message"
+msgstr "رسالة الدعوة"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_log__action__sent
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request_item__state__sent
+msgid "Invitation Sent"
+msgstr "تم إرسال الدعوة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_is_follower
+msgid "Is Follower"
+msgstr "متابع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__write_uid
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__write_uid
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__write_uid
+msgid "Last Updated by"
+msgstr "آخر تحديث بواسطة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__write_date
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__write_date
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__write_date
+msgid "Last Updated on"
+msgstr "تاريخ آخر تحديث"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_has_error
+msgid "Message Delivery error"
+msgstr "خطأ في إرسال الرسالة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_ids
+msgid "Messages"
+msgstr "الرسائل"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__my_activity_date_deadline
+msgid "My Activity Deadline"
+msgstr "موعد نشاطي"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "My Requests"
+msgstr "طلباتي"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_calendar_event_id
+msgid "Next Activity Calendar Event"
+msgstr "حدث التقويم للنشاط القادم"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_date_deadline
+msgid "Next Activity Deadline"
+msgstr "موعد النشاط القادم"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_summary
+msgid "Next Activity Summary"
+msgstr "ملخص النشاط القادم"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_type_id
+msgid "Next Activity Type"
+msgstr "نوع النشاط القادم"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__notes
+msgid "Notes"
+msgstr "ملاحظات"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_needaction_counter
+msgid "Number of Actions"
+msgstr "عدد الإجراءات"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__message_has_error_counter
+msgid "Number of errors"
+msgstr "عدد الأخطاء"
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__message_needaction_counter
+msgid "Number of messages requiring action"
+msgstr "عدد الرسائل التي تتطلب إجراءً"
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__message_has_error_counter
+msgid "Number of messages with delivery error"
+msgstr "عدد الرسائل التي بها خطأ في الإرسال"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Open PDF in New Tab"
+msgstr "فتح PDF في تبويب جديد"
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request_item__partner_id
+msgid "Optional: link to an existing Odoo contact"
+msgstr "اختياري: ربط بجهة اتصال موجودة في Odoo"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Optional: provide a reason for declining..."
+msgstr "اختياري: اذكر سبب الرفض..."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "PDF Document"
+msgstr "وثيقة PDF"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request_item__state__pending
+msgid "Pending"
+msgstr "في الانتظار"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid ""
+"Please review the document on the left, then draw your signature\n"
+"                                    in the box below using your mouse or finger."
+msgstr "يرجى مراجعة الوثيقة، ثم ارسم توقيعك في المربع أدناه باستخدام الماوس أو إصبعك."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Reason for Declining"
+msgstr "سبب الرفض"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_declined
+msgid "Reason:"
+msgstr "السبب:"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__name
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Reference"
+msgstr "المرجع"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_log__action__cancelled
+msgid "Request Cancelled"
+msgstr "تم إلغاء الطلب"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__user_id
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Requested By"
+msgstr "طلب بواسطة"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Requested by"
+msgstr "طلب من"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Reset to Draft"
+msgstr "إعادة إلى المسودة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__activity_user_id
+msgid "Responsible User"
+msgstr "المستخدم المسؤول"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Search Signature Requests"
+msgstr "البحث في طلبات التوقيع"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_declined
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_invalid
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+msgid "Secured by <strong>Easy Sign</strong>"
+msgstr "مؤمّن بواسطة <strong>Easy Sign</strong>"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Send for Signature"
+msgstr "إرسال للتوقيع"
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request__state__sent
+msgid "Sent"
+msgstr "مُرسَل"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "Sent / Pending"
+msgstr "مُرسَل / في الانتظار"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Sign here"
+msgstr "وقّع هنا"
+
+#. module: easy_sign
+#: model:ir.model,name:easy_sign.model_sign_log
+msgid "Signature Audit Log"
+msgstr "سجل تدقيق التوقيع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__signature
+msgid "Signature Image"
+msgstr "صورة التوقيع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__request_id
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__request_id
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Signature Request"
+msgstr "طلب التوقيع"
+
+#. module: easy_sign
+#: model:ir.model,name:easy_sign.model_sign_request_item
+msgid "Signature Request Item (Signer)"
+msgstr "بند طلب التوقيع (الموقّع)"
+
+#. module: easy_sign
+#: model:ir.actions.act_window,name:easy_sign.action_sign_request
+#: model:ir.ui.menu,name:easy_sign.menu_sign_requests
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_list
+msgid "Signature Requests"
+msgstr "طلبات التوقيع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__signed_count
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request_item__state__signed
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_list
+msgid "Signed"
+msgstr "موقّع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__signed_document
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Signed Document"
+msgstr "الوثيقة الموقّعة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__signed_document_name
+msgid "Signed Document Name"
+msgstr "اسم الوثيقة الموقّعة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__signed_date
+msgid "Signed On"
+msgstr "تاريخ التوقيع"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+msgid "Signed on:"
+msgstr "تاريخ التوقيع:"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__request_item_id
+msgid "Signer"
+msgstr "الموقّع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__signer_email
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__signer_email
+msgid "Signer Email"
+msgstr "البريد الإلكتروني للموقّع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_log__signer_name
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__signer_name
+msgid "Signer Name"
+msgstr "اسم الموقّع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__request_item_ids
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_list
+msgid "Signers"
+msgstr "الموقّعون"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_declined
+msgid "Signing Declined"
+msgstr "تم رفض التوقيع"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "Signing Link"
+msgstr "رابط التوقيع"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__sign_url
+msgid "Signing URL"
+msgstr "رابط التوقيع"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_search
+msgid "State"
+msgstr "الحالة"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__state
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request_item__state
+msgid "Status"
+msgstr "الحالة"
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__activity_state
+msgid ""
+"Status based on activities\n"
+"Overdue: Due date is already passed\n"
+"Today: Activity date is today\n"
+"Planned: Future activities."
+msgstr ""
+"الحالة بناءً على الأنشطة\n"
+"متأخر: انتهى الموعد المحدد\n"
+"اليوم: تاريخ النشاط هو اليوم\n"
+"مخطط: أنشطة مستقبلية."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+msgid "Thank you,"
+msgstr "شكراً،"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Thank you. The document has been signed."
+msgstr "شكراً. تم توقيع الوثيقة بنجاح."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "The requester has been notified."
+msgstr "تم إشعار مقدم الطلب."
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__expiry_date
+msgid "The signing link will stop working after this date."
+msgstr "رابط التوقيع سيتوقف عن العمل بعد هذا التاريخ."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "This will send signing invitation emails to all signers. Continue?"
+msgstr "سيتم إرسال دعوات التوقيع بالبريد الإلكتروني لجميع الموقّعين. هل تريد المتابعة؟"
+
+#. module: easy_sign
+#: model:ir.model.fields,field_description:easy_sign.field_sign_request__signers_count
+msgid "Total Signers"
+msgstr "إجمالي الموقّعين"
+
+#. module: easy_sign
+#: model:ir.model.fields,help:easy_sign.field_sign_request__activity_exception_decoration
+msgid "Type of the exception activity on record."
+msgstr "نوع النشاط الاستثنائي في السجل."
+
+#. module: easy_sign
+#: model_terms:ir.actions.act_window,help:easy_sign.action_sign_request
+msgid ""
+"Upload a PDF document and add signers. Each signer will receive a\n"
+"                unique link to review and sign the document."
+msgstr ""
+"ارفع وثيقة PDF وأضف الموقّعين. سيتلقى كل موقّع\n"
+"رابطاً فريداً لمراجعة الوثيقة والتوقيع عليها."
+
+#. module: easy_sign
+#: model:ir.model.fields.selection,name:easy_sign.selection__sign_request_item__state__viewed
+msgid "Viewed"
+msgstr "تمت المشاهدة"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_declined
+msgid "You have already declined to sign this document."
+msgstr "لقد رفضت مسبقاً التوقيع على هذه الوثيقة."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+msgid "You have already signed this document. Thank you!"
+msgstr "لقد وقّعت على هذه الوثيقة مسبقاً. شكراً!"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_declined
+msgid ""
+"You have declined to sign this document. The requester has been notified."
+msgstr "لقد رفضت التوقيع على هذه الوثيقة. تم إشعار مقدم الطلب."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Your browser cannot display PDF files inline."
+msgstr "متصفحك لا يدعم عرض ملفات PDF مباشرة."
+
+#. module: easy_sign
+#: model:mail.template,subject:easy_sign.mail_template_sign_request
+msgid ""
+"[SIGN] Please sign: {{ object.request_id.document_name or "
+"object.request_id.name }}"
+msgstr ""
+"[توقيع] يرجى التوقيع على: {{ object.request_id.document_name or "
+"object.request_id.name }}"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "of"
+msgstr "من"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.view_sign_request_form
+msgid "signers have completed signing."
+msgstr "موقّع أتمّوا التوقيع."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "↺ Clear"
+msgstr "↺ مسح"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Sign here ✍"
+msgstr "وقّع هنا ✍"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Signature Required"
+msgstr "يلزم التوقيع"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Document to Sign"
+msgstr "الوثيقة المطلوب توقيعها"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Sign Document"
+msgstr "توقيع الوثيقة"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Submitting..."
+msgstr "جاري الإرسال..."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Signed successfully!"
+msgstr "تم التوقيع بنجاح!"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Error"
+msgstr "خطأ"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_page
+msgid "Signing declined"
+msgstr "تم رفض التوقيع"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+msgid "Already Signed"
+msgstr "تم التوقيع مسبقاً"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+msgid "Your signature has been recorded successfully."
+msgstr "تم تسجيل توقيعك بنجاح."
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_declined
+msgid "Signing Declined"
+msgstr "تم رفض التوقيع"
+
+#. module: easy_sign
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_success
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_declined
+#: model_terms:ir.ui.view,arch_db:easy_sign.sign_invalid
+msgid "Secured by"
+msgstr "مؤمّن بواسطة"

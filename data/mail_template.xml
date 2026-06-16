@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <!-- Force delete old broken template so it gets recreated clean -->
+        <delete model="mail.template" search="[('name','=','Easy Sign - Signing Invitation')]"/>
+        <record id="mail_template_sign_request" model="mail.template">
+            <field name="name">Easy Sign - Signing Invitation</field>
+            <field name="model_id" ref="easy_sign.model_sign_request_item"/>
+            <field name="subject">[SIGN] Please sign: {{ object.request_id.document_name or object.request_id.name }}</field>
+            <field name="email_from">{{ (object.request_id.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="email_to">{{ object.signer_email }}</field>
+            <field name="body_html"><![CDATA[
+<div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 620px; margin: 0 auto; background: #ffffff; border-radius: 14px; overflow: hidden; box-shadow: 0 6px 30px rgba(0,0,0,0.10);">
+
+    <!-- Header -->
+    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%); padding: 40px 36px; text-align: center;">
+        <div style="width: 60px; height: 60px; background: rgba(255,255,255,0.15); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+            <span style="font-size: 28px;">✍️</span>
+        </div>
+        <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">
+            Document Signature Request
+        </h1>
+        <p style="color: rgba(255,255,255,0.65); margin: 8px 0 0 0; font-size: 13px;">
+            {{ object.request_id.user_id.company_id.name or '' }}
+        </p>
+    </div>
+
+    <!-- Body -->
+    <div style="padding: 40px 36px;">
+
+        <p style="font-size: 16px; color: #1e293b; margin: 0 0 12px 0;">
+            Dear <strong>{{ object.signer_name }}</strong>,
+        </p>
+
+        <p style="font-size: 14px; color: #64748b; line-height: 1.7; margin: 0 0 24px 0;">
+            <strong style="color: #1e293b;">{{ object.request_id.user_id.name }}</strong>
+            has requested your electronic signature on the following document:
+        </p>
+
+        <!-- Document info box -->
+        <div style="background: #f0f4ff; border: 1px solid #c7d7fe; border-left: 4px solid #2563eb; padding: 18px 22px; border-radius: 0 10px 10px 0; margin: 0 0 24px 0;">
+            <p style="margin: 0; font-size: 15px; color: #1e293b; font-weight: 700;">
+                📄 {{ object.request_id.document_name or object.request_id.name }}
+            </p>
+            <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">
+                Reference: <strong>{{ object.request_id.name }}</strong>
+            </p>
+            {% if object.request_id.expiry_date %}
+            <p style="margin: 8px 0 0 0; font-size: 12px; color: #dc2626; font-weight: 600;">
+                ⏰ Expires on: {{ object.request_id.expiry_date }}
+            </p>
+            {% endif %}
+        </div>
+
+        {% if object.request_id.message %}
+        <!-- Custom message from requester -->
+        <div style="background: #fffbf0; border: 1px solid #fde68a; padding: 16px 20px; border-radius: 10px; margin: 0 0 24px 0;">
+            <p style="margin: 0 0 6px 0; font-size: 11px; color: #92400e; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Message from sender</p>
+            <p style="margin: 0; font-size: 14px; color: #555; line-height: 1.6;">{{ object.request_id.message | safe }}</p>
+        </div>
+        {% endif %}
+
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 32px 0 24px 0;">
+            <a href="{{ object.sign_url }}"
+               style="display: inline-block;
+                      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+                      color: #ffffff;
+                      text-decoration: none;
+                      padding: 16px 48px;
+                      border-radius: 10px;
+                      font-size: 16px;
+                      font-weight: 700;
+                      letter-spacing: 0.3px;
+                      box-shadow: 0 6px 20px rgba(37,99,235,0.35);">
+                ✍️ Review &amp; Sign Document
+            </a>
+        </div>
+
+        <!-- Fallback URL -->
+        <p style="font-size: 12px; color: #94a3b8; text-align: center; margin: 0 0 6px 0;">
+            If the button doesn't work, copy this link into your browser:
+        </p>
+        <p style="font-size: 11px; text-align: center; margin: 0 0 30px 0; word-break: break-all;">
+            <a href="{{ object.sign_url }}" style="color: #2563eb;">{{ object.sign_url }}</a>
+        </p>
+
+        <!-- Security note -->
+        <div style="border-top: 1px solid #f1f5f9; padding-top: 20px;">
+            <p style="font-size: 11px; color: #94a3b8; margin: 0; line-height: 1.6; text-align: center;">
+                🔒 This link is unique to you and should not be shared with others.<br/>
+                By signing, you agree to sign this document electronically.
+            </p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="background: #f8fafc; padding: 20px 36px; text-align: center; border-top: 1px solid #e2e8f0;">
+        <p style="margin: 0; font-size: 11px; color: #94a3b8;">
+            Powered by <strong style="color: #1e293b;">Easy Sign</strong> — Secure Electronic Signatures
+        </p>
+    </div>
+
+</div>
+]]></field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+    </data>
+</odoo>
