@@ -442,8 +442,8 @@
                 .es-viewer::-webkit-scrollbar { width: 6px; }
                 .es-viewer::-webkit-scrollbar-track { background: transparent; }
                 .es-viewer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-                .es-sidebar::-webkit-scrollbar { width: 4px; }
-                .es-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+                .es-sidebar::-webkit-scrollbar, #es-signers-list::-webkit-scrollbar { width: 4px; }
+                .es-sidebar::-webkit-scrollbar-thumb, #es-signers-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
                 .es-props-panel::-webkit-scrollbar { width: 4px; }
                 .es-props-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 
@@ -597,36 +597,50 @@
                 }
                 /* Per-signer mini field cards */
                 .es-signer-fields {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 5px;
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 8px;
                     margin-top: 8px;
                     padding-top: 8px;
                     border-top: 1px solid rgba(255,255,255,0.05);
                 }
                 .es-signer-field-card {
                     display: flex;
-                    flex-direction: column;
                     align-items: center;
-                    gap: 2px;
-                    padding: 6px 8px;
-                    border-radius: 8px;
-                    border: 1.5px solid rgba(255,255,255,0.06);
-                    background: rgba(255,255,255,0.03);
+                    gap: 8px;
+                    padding: 8px 10px;
+                    border-radius: 6px;
+                    border: 1px solid;
                     cursor: grab;
-                    transition: background 0.12s, border-color 0.12s, transform 0.1s;
-                    min-width: 50px;
-                    text-align: center;
+                    transition: all 0.15s ease;
                     user-select: none;
+                    font-size: 12px;
+                    font-weight: 500;
+                    text-align: left;
                 }
                 .es-signer-field-card:hover {
-                    transform: translateY(-2px);
-                    background: rgba(255,255,255,0.07);
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
                 }
-                .es-signer-field-card:active { cursor: grabbing; transform: scale(0.95); }
+                .es-signer-field-card:active { cursor: grabbing; }
                 .es-signer-field-card.dragging { opacity: 0.5; }
-                .es-sfc-icon { font-size: 16px; line-height: 1; }
-                .es-sfc-label { font-size: 9px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.8; }
+                .es-sfc-icon { font-size: 14px; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
+                .es-sfc-label { font-size: 11px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.9; }
+                .es-signer-field-add-btn {
+                    padding: 8px;
+                    border-radius: 6px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 4px;
+                }
+                .es-signer-field-add-btn:hover {
+                    background: rgba(255,255,255,0.05);
+                }
                 .es-btn-send {
                     background: linear-gradient(135deg, #059669, #10b981);
                     color: white;
@@ -698,34 +712,147 @@
                     font-size: 12px; color: #94a3b8;
                 }
                 .es-modal-signer-item strong { color: #e2e8f0; }
+                /* Odoo-like Header Styles */
+                .es-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 0 24px;
+                    height: 64px;
+                    background: #1e1e2d;
+                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                    flex-shrink: 0;
+                    z-index: 100;
+                }
+                .es-header-left {
+                    display: flex;
+                    align-items: center;
+                    gap: 16px;
+                }
+                .es-header-buttons {
+                    display: flex;
+                    gap: 8px;
+                    align-items: center;
+                }
+                .es-btn-primary-odoo {
+                    background: #71639e;
+                    color: #ffffff;
+                    font-weight: 500;
+                    font-size: 13px;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    border: 1px solid transparent;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                .es-btn-primary-odoo:hover {
+                    background: #5c5082;
+                }
+                .es-btn-secondary-odoo {
+                    background: transparent;
+                    color: #94a3b8;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    font-weight: 500;
+                    font-size: 13px;
+                    padding: 8px 16px;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                }
+                .es-btn-secondary-odoo:hover {
+                    background: rgba(255,255,255,0.05);
+                    color: #e2e8f0;
+                }
+                .es-header-divider {
+                    width: 1px;
+                    height: 24px;
+                    background: rgba(255,255,255,0.1);
+                }
+                .es-template-title-container {
+                    display: flex;
+                    flex-direction: column;
+                }
+                .es-template-breadcrumb {
+                    font-size: 11px;
+                    color: #10b981;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.05em;
+                }
+                .es-template-name-row {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    margin-top: 2px;
+                }
+                .es-template-name-title {
+                    font-size: 15px;
+                    font-weight: 600;
+                    color: #f1f5f9;
+                }
+                .es-template-gear-btn {
+                    background: transparent;
+                    border: none;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    font-size: 14px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: color 0.15s;
+                }
+                .es-template-gear-btn:hover {
+                    color: #f1f5f9;
+                }
+                .es-cloud-save-status {
+                    color: #10b981;
+                    font-size: 14px;
+                    display: flex;
+                    align-items: center;
+                    cursor: default;
+                }
             </style>
 
             <!-- HEADER -->
             <div class="es-header">
                 <div class="es-header-left">
-                    <div class="es-logo">&#9998;</div>
-                    <div>
-                        <div class="es-title" id="es-template-name">
-                            <t t-esc="template.name"/>
+                    <div class="es-header-buttons">
+                        <button class="es-btn-primary-odoo" id="es-btn-send" onclick="openSendModal()">
+                            Send
+                        </button>
+                        <button class="es-btn-primary-odoo" style="background:#5c5082;" id="es-btn-save" onclick="saveTemplate()">
+                            Save
+                        </button>
+                        <button class="es-btn-secondary-odoo" id="es-btn-discard" onclick="discardChanges()">
+                            Discard
+                        </button>
+                    </div>
+                    <div class="es-header-divider"></div>
+                    <div class="es-template-title-container">
+                        <div class="es-template-breadcrumb">Templates</div>
+                        <div class="es-template-name-row">
+                            <span class="es-template-name-title" id="es-template-name">
+                                <t t-esc="template.name"/>
+                            </span>
+                            <button class="es-template-gear-btn" title="Template Settings">&#9881;</button>
+                            <span class="es-cloud-save-status" id="es-save-status" title="Saved to cloud">
+                                &#9729;&#65039;&#10003;
+                            </span>
                         </div>
-                        <div class="es-subtitle">Template Editor</div>
                     </div>
                 </div>
-                <div class="es-header-actions">
-                    <div class="es-save-status" id="es-save-status">
-                        <span>&#9679;</span> <span id="es-save-text">Unsaved changes</span>
+                <div style="display:flex;align-items:center;gap:16px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:12px;color:#94a3b8;">Tags:</span>
+                        <select class="es-signer-select" style="width:120px;padding:4px 8px;font-size:12px;background:#141625;border-color:rgba(255,255,255,0.08);">
+                            <option value="">Choose tag...</option>
+                            <option value="agreement">Agreement</option>
+                            <option value="contract">Contract</option>
+                            <option value="internal">Internal</option>
+                        </select>
                     </div>
-                    <button class="es-btn es-btn-ghost" id="es-btn-back" onclick="window.history.back()">
+                    <button class="es-btn-secondary-odoo" id="es-btn-back" onclick="window.history.back()">
                         &#8592; Back
-                    </button>
-                    <button class="es-btn es-btn-danger" id="es-btn-discard" onclick="discardChanges()">
-                        &#10005; Discard
-                    </button>
-                    <button class="es-btn es-btn-primary" id="es-btn-save" onclick="saveTemplate()">
-                        &#10003; Save Template
-                    </button>
-                    <button class="es-btn es-btn-send" id="es-btn-send" onclick="openSendModal()">
-                        &#9993; Send for Signing
                     </button>
                 </div>
             </div>
@@ -734,29 +861,18 @@
             <div class="es-main">
                 <!-- SIDEBAR -->
                 <div class="es-sidebar">
-                    <!-- Field palette (shown when no field selected) -->
-                    <div id="es-field-palette">
-                        <div class="es-sidebar-section" style="flex:1;overflow-y:auto;">
-                            <div class="es-sidebar-title" style="display:flex;align-items:center;gap:6px;">
-                                Placed Fields <span class="es-field-count" id="es-field-count-badge">0</span>
-                            </div>
-                            <div id="es-placed-list" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
-                                <div style="font-size:12px;color:#334155;text-align:center;padding:12px 0;" id="es-placed-empty">
-                                    No fields placed yet
-                                </div>
-                            </div>
-                        </div>
+                    <div id="es-field-palette" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
                         <!-- Signers Section -->
-                        <div class="es-signers-section" id="es-signers-section">
+                        <div class="es-signers-section" id="es-signers-section" style="flex:1; display:flex; flex-direction:column; overflow:hidden; border-top:none;">
                             <div class="es-signers-header">
-                                <div class="es-sidebar-title" style="margin-bottom:0;">Signers <span class="es-signers-count" id="es-signers-count">0</span></div>
-                                <button class="es-btn-add-signer" onclick="addSignerRow()" title="Add another signer">
-                                    &#43; Add Signer
+                                <div class="es-sidebar-title" style="margin-bottom:0; font-size:14px; font-weight:600; color:#e2e8f0; text-transform:none; letter-spacing:normal;">Signers</div>
+                                <button class="es-btn-add-signer" onclick="addSignerRow()" title="Add another signer" style="background:transparent; border:none; color:#10b981; font-weight:600; font-size:13px; cursor:pointer;">
+                                    Add
                                 </button>
                             </div>
-                            <div id="es-signers-list" style="margin-top:10px;">
+                            <div id="es-signers-list" style="margin-top:10px; flex:1; overflow-y:auto;">
                                 <div class="es-no-signers-hint" id="es-no-signers-hint">
-                                    Click &quot;Add Signer&quot; to add recipients
+                                    Click &quot;Add&quot; to add recipients
                                 </div>
                             </div>
                         </div>
@@ -848,7 +964,17 @@
             </div>
 
             <!-- PDF.js -->
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+            <script>
+                // Bypass AMD loader for PDF.js
+                window._temp_define = window.define;
+                window.define = undefined;
+            </script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"> </script>
+            <script>
+                // Restore AMD loader
+                window.define = window._temp_define;
+                delete window._temp_define;
+            </script>
             <script>
 <![CDATA[
 (function() {
@@ -870,6 +996,105 @@ let signItems = [];   // { _id, id, type_id, type, page, posX, posY, width, heig
 let nextLocalId = -1; // negative IDs = newly created (not yet saved)
 let selectedItemId = null;
 let isDirty = false;
+let isEditMode = false;
+
+function setEditMode(mode) {
+    isEditMode = mode;
+    updateEditModeUI();
+}
+
+function updateEditModeUI() {
+    const btnSave = document.getElementById('es-btn-save');
+    const btnDiscard = document.getElementById('es-btn-discard');
+    const btnEdit = document.getElementById('es-btn-edit');
+    const status = document.getElementById('es-save-status');
+    const btnSend = document.getElementById('es-btn-send');
+    
+    if (isEditMode) {
+        if (btnSave) btnSave.style.display = '';
+        if (btnDiscard) btnDiscard.style.display = '';
+        if (btnEdit) btnEdit.style.display = 'none';
+        if (status) status.style.display = '';
+        if (btnSend) btnSend.disabled = true;
+    } else {
+        if (btnSave) btnSave.style.display = 'none';
+        if (btnDiscard) btnDiscard.style.display = 'none';
+        if (btnEdit) btnEdit.style.display = '';
+        if (status) status.style.display = 'none';
+        if (btnSend) btnSend.disabled = false;
+    }
+    
+    const btnAddSigner = document.querySelector('.es-btn-add-signer');
+    if (btnAddSigner) {
+        btnAddSigner.style.display = isEditMode ? '' : 'none';
+    }
+    
+    const list = document.getElementById('es-signers-list');
+    if (list) {
+        const rows = list.querySelectorAll('.es-signer-row');
+        rows.forEach(row => {
+            const idx = row.id.replace('signer-row-', '');
+            
+            const nameEl = document.getElementById('signer-name-' + idx);
+            const emailEl = document.getElementById('signer-email-' + idx);
+            const roleEl = document.getElementById('signer-role-' + idx);
+            
+            if (nameEl) nameEl.disabled = !isEditMode;
+            if (emailEl) emailEl.disabled = !isEditMode;
+            if (roleEl) roleEl.disabled = !isEditMode;
+            
+            const btnRemove = row.querySelector('.es-signer-remove');
+            if (btnRemove) {
+                btnRemove.style.display = isEditMode ? '' : 'none';
+            }
+            
+            const dragHint = row.querySelector('.es-drag-hint');
+            if (dragHint) {
+                dragHint.style.display = isEditMode ? '' : 'none';
+            }
+            
+            const fieldCards = row.querySelectorAll('.es-signer-field-card');
+            fieldCards.forEach(card => {
+                if (isEditMode) {
+                    card.setAttribute('draggable', 'true');
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                    card.style.cursor = 'grab';
+                } else {
+                    card.setAttribute('draggable', 'false');
+                    card.style.opacity = '0.35';
+                    card.style.pointerEvents = 'none';
+                    card.style.cursor = 'default';
+                }
+            });
+        });
+    }
+    
+    const fieldOverlays = document.querySelectorAll('.sign-field-item');
+    fieldOverlays.forEach(el => {
+        if (isEditMode) {
+            el.style.pointerEvents = 'auto';
+            el.style.cursor = 'move';
+            
+            const resizeHandle = el.querySelector('.sign-field-resize');
+            if (resizeHandle) resizeHandle.style.display = '';
+            
+            const deleteBtn = el.querySelector('.sign-field-delete');
+            if (deleteBtn) deleteBtn.style.display = '';
+        } else {
+            el.style.pointerEvents = 'none';
+            el.style.cursor = 'default';
+            
+            const resizeHandle = el.querySelector('.sign-field-resize');
+            if (resizeHandle) resizeHandle.style.display = 'none';
+            
+            const deleteBtn = el.querySelector('.sign-field-delete');
+            if (deleteBtn) deleteBtn.style.display = 'none';
+        }
+    });
+
+    deselectAll();
+}
 
 // PDF state
 let pdfDoc = null;
@@ -878,7 +1103,7 @@ let pageWrappers = {}; // pageNum → { wrapper, canvas, viewport }
 /* ========================================================
    INIT PDF.js
    ======================================================== */
-const pdfjsLib = window['pdfjs-dist/build/pdf'];
+const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 /* ========================================================
@@ -926,6 +1151,8 @@ function onSidebarDragStart(e) {
         typeName: card.dataset.typeName,
         signerIdx:   signerIdx,
         signerColor: signerColor,
+        defName: card.dataset.defName || '',
+        defPlaceholder: card.dataset.defPlaceholder || '',
     };
     card.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'copy';
@@ -934,7 +1161,7 @@ function onSidebarDragStart(e) {
 
 /* ========================================================
    PAGE WRAPPER DROP HANDLERS
-   ======================================================== */
+   ======================================================= */
 function attachPageDropHandlers(wrapper, pageNum) {
     wrapper.addEventListener('dragover', e => {
         if (!dragPayload) return;
@@ -952,7 +1179,7 @@ function attachPageDropHandlers(wrapper, pageNum) {
         wrapper.classList.remove('drag-over');
         if (!dragPayload) return;
 
-        const { typeId, itemType, typeName, signerIdx, signerColor } = dragPayload;
+        const { typeId, itemType, typeName, signerIdx, signerColor, defName, defPlaceholder } = dragPayload;
         dragPayload = null;
 
         const rect = wrapper.getBoundingClientRect();
@@ -986,8 +1213,8 @@ function attachPageDropHandlers(wrapper, pageNum) {
             height: defH,
             required: true,
             responsible_id: signerRoleId,
-            name: '',
-            placeholder: '',
+            name: defName || '',
+            placeholder: defPlaceholder || '',
             _signerIdx:   signerIdx   || null,
             _signerColor: signerColor || null,
         };
@@ -995,7 +1222,7 @@ function attachPageDropHandlers(wrapper, pageNum) {
         placeFieldOnPage(item);
         selectItem(item._id);
         markDirty();
-        updatePlacedList();
+        updateSignerFieldCounts();
     });
 }
 
@@ -1003,59 +1230,73 @@ function attachPageDropHandlers(wrapper, pageNum) {
    RENDER PDF & PLACE EXISTING ITEMS
    ======================================================== */
 async function renderPDF(url) {
-    const loadingTask = pdfjsLib.getDocument(url);
-    pdfDoc = await loadingTask.promise;
+    try {
+        const loadingTask = pdfjsLib.getDocument(url);
+        pdfDoc = await loadingTask.promise;
 
-    const viewer = document.getElementById('es-viewer');
-    document.getElementById('es-loading').remove();
+        const viewer = document.getElementById('es-viewer');
+        const loadingEl = document.getElementById('es-loading');
+        if (loadingEl) loadingEl.remove();
 
-    for (let i = 1; i <= pdfDoc.numPages; i++) {
-        const page = await pdfDoc.getPage(i);
-        const scale = 1.8;
-        const viewport = page.getViewport({ scale });
+        for (let i = 1; i <= pdfDoc.numPages; i++) {
+            const page = await pdfDoc.getPage(i);
+            const scale = 1.8;
+            const viewport = page.getViewport({ scale });
 
-        // Page label
-        const labelEl = document.createElement('div');
-        labelEl.className = 'es-page-label';
-        labelEl.textContent = `Page ${i} of ${pdfDoc.numPages}`;
+            // Page label
+            const labelEl = document.createElement('div');
+            labelEl.className = 'es-page-label';
+            labelEl.textContent = `Page ${i} of ${pdfDoc.numPages}`;
 
-        // Wrapper
-        const wrapper = document.createElement('div');
-        wrapper.className = 'es-page-wrapper';
-        wrapper.dataset.page = i;
-        wrapper.style.position = 'relative';
-        wrapper.style.maxWidth = '900px';
-        wrapper.style.width = '100%';
+            // Wrapper
+            const wrapper = document.createElement('div');
+            wrapper.className = 'es-page-wrapper';
+            wrapper.dataset.page = i;
+            wrapper.style.position = 'relative';
+            wrapper.style.maxWidth = '900px';
+            wrapper.style.width = '100%';
 
-        // Canvas
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width  = viewport.width;
-        canvas.style.display = 'block';
-        canvas.style.width = '100%';
+            // Canvas
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width  = viewport.width;
+            canvas.style.display = 'block';
+            canvas.style.width = '100%';
 
-        wrapper.appendChild(canvas);
-        viewer.appendChild(wrapper);
-        viewer.appendChild(labelEl);
+            wrapper.appendChild(canvas);
+            viewer.appendChild(wrapper);
+            viewer.appendChild(labelEl);
 
-        const renderCtx = { canvasContext: ctx, viewport };
-        await page.render(renderCtx).promise;
+            const renderCtx = { canvasContext: ctx, viewport };
+            await page.render(renderCtx).promise;
 
-        pageWrappers[i] = { wrapper, canvas, viewport };
-        attachPageDropHandlers(wrapper, i);
+            pageWrappers[i] = { wrapper, canvas, viewport };
+            attachPageDropHandlers(wrapper, i);
 
-        // Empty hint
-        const hint = document.createElement('div');
-        hint.className = 'es-empty-hint';
-        hint.id = `page-hint-${i}`;
-        hint.innerHTML = `<div class="es-empty-hint-icon">&#8681;</div><div class="es-empty-hint-text">Drag a field here</div>`;
-        wrapper.appendChild(hint);
+            // Empty hint
+            const hint = document.createElement('div');
+            hint.className = 'es-empty-hint';
+            hint.id = `page-hint-${i}`;
+            hint.innerHTML = `<div class="es-empty-hint-icon">&#8681;</div><div class="es-empty-hint-text">Drag a field here</div>`;
+            wrapper.appendChild(hint);
+        }
+
+        // Place existing items
+        signItems.forEach(item => placeFieldOnPage(item));
+    } catch (err) {
+        console.error("Error loading PDF:", err);
+        const loadingText = document.querySelector('.es-loading-text');
+        if (loadingText) {
+            loadingText.style.color = '#ef4444';
+            loadingText.textContent = 'Error loading PDF: ' + err.message;
+        }
+        const spinner = document.querySelector('.es-spinner');
+        if (spinner) {
+            spinner.style.borderTopColor = '#ef4444';
+            spinner.style.animationPlayState = 'paused';
+        }
     }
-
-    // Place existing items
-    signItems.forEach(item => placeFieldOnPage(item));
-    updatePlacedList();
 }
 
 /* ========================================================
@@ -1116,6 +1357,9 @@ function placeFieldOnPage(item) {
     });
 
     pw.wrapper.appendChild(el);
+    if (typeof updateSignerFieldCounts === 'function') {
+        updateSignerFieldCounts();
+    }
 }
 
 /* ========================================================
@@ -1377,7 +1621,7 @@ function syncPropsToItem() {
         applyRoleColorToEl(el, item.responsible_id, item._signerColor || null);
     }
     markDirty();
-    updatePlacedList();
+    updateSignerFieldCounts();
 }
 
 document.getElementById('es-prop-name').addEventListener('input', syncPropsToItem);
@@ -1417,55 +1661,10 @@ function deleteItem(itemId) {
     });
 
     markDirty();
-    updatePlacedList();
+    updateSignerFieldCounts();
 }
 
-/* ========================================================
-   PLACED FIELDS LIST
-   ======================================================== */
-function updatePlacedList() {
-    const list = document.getElementById('es-placed-list');
-    const empty = document.getElementById('es-placed-empty');
-    const badge = document.getElementById('es-field-count-badge');
 
-    badge.textContent = signItems.length;
-
-    if (signItems.length === 0) {
-        empty.style.display = '';
-        // Remove all row items
-        list.querySelectorAll('.es-placed-row').forEach(r => r.remove());
-        return;
-    }
-    empty.style.display = 'none';
-    list.querySelectorAll('.es-placed-row').forEach(r => r.remove());
-
-    signItems.forEach(item => {
-        const meta = getTypeMeta(item.type);
-        const row = document.createElement('div');
-        row.className = 'es-placed-row';
-        row.style.cssText = `
-            display:flex; align-items:center; gap:8px; padding:7px 8px;
-            border-radius:8px; cursor:pointer;
-            background: rgba(255,255,255,0.03);
-            border:1px solid transparent;
-            transition:all 0.15s; margin-bottom:3px;
-        `;
-        row.innerHTML = `
-            <div style="width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;background:rgba(255,255,255,0.07);">${meta.icon}</div>
-            <div style="flex:1;min-width:0;">
-                <div style="font-size:12px;font-weight:600;color:#cbd5e1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name || meta.label}</div>
-                <div style="font-size:10px;color:#475569;">Page ${item.page}</div>
-            </div>
-        `;
-        row.addEventListener('click', () => {
-            selectItem(item._id);
-            // Scroll to it
-            const el = document.getElementById(`sfi-${item._id}`);
-            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-        list.appendChild(row);
-    });
-}
 
 /* ========================================================
    DIRTY / STATUS
@@ -1473,17 +1672,25 @@ function updatePlacedList() {
 function markDirty() {
     isDirty = true;
     const status = document.getElementById('es-save-status');
+    if (status) {
+        status.style.color = '#fbbf24';
+        status.title = 'Unsaved changes';
+        status.innerHTML = '&#9729;&#65039;&#9679;';
+    }
     const txt = document.getElementById('es-save-text');
-    status.className = 'es-save-status';
-    txt.textContent = 'Unsaved changes';
+    if (txt) txt.textContent = 'Unsaved changes';
 }
 
 function markSaved() {
     isDirty = false;
     const status = document.getElementById('es-save-status');
+    if (status) {
+        status.style.color = '#10b981';
+        status.title = 'All changes saved';
+        status.innerHTML = '&#9729;&#65039;&#10003;';
+    }
     const txt = document.getElementById('es-save-text');
-    status.className = 'es-save-status saved';
-    txt.textContent = 'All changes saved';
+    if (txt) txt.textContent = 'All changes saved';
 }
 
 /* ========================================================
@@ -1652,23 +1859,42 @@ function buildRoleOptions(selectedRoleId) {
     return html;
 }
 
+const ALL_FIELD_TYPES = [
+    { typeId: 1, itemType: 'signature', name: 'Signature', label: 'Signature', icon: '✍' },
+    { typeId: 2, itemType: 'initial',   name: 'Initials',  label: 'Initials',  icon: '📝' },
+    { typeId: 3, itemType: 'text',      name: 'Name',      label: 'Name',      icon: '👤', defName: 'Name', defPlaceholder: 'Name' },
+    { typeId: 3, itemType: 'text',      name: 'Email',     label: 'Email',     icon: '✉', defName: 'Email', defPlaceholder: 'Email' },
+    { typeId: 3, itemType: 'text',      name: 'Phone',     label: 'Phone',     icon: '📞', defName: 'Phone', defPlaceholder: 'Phone' },
+    { typeId: 3, itemType: 'text',      name: 'Company',   label: 'Company',   icon: '🏢', defName: 'Company', defPlaceholder: 'Company' },
+    { typeId: 3, itemType: 'text',      name: 'Text',      label: 'Text',      icon: 'A' },
+    { typeId: 4, itemType: 'textarea',  name: 'Multiline', label: 'Multiline', icon: '≡' },
+    { typeId: 5, itemType: 'checkbox',  name: 'Checkbox',  label: 'Checkbox',  icon: '☑' },
+    { typeId: 5, itemType: 'checkbox',  name: 'Radio',     label: 'Radio',     icon: '⚪', defName: 'Radio' },
+    { typeId: 3, itemType: 'text',      name: 'Selection', label: 'Selection', icon: '▼', defName: 'Selection' },
+    { typeId: 3, itemType: 'text',      name: 'Date',      label: 'Date',      icon: '📅', defName: 'Date', defPlaceholder: 'Date' },
+    { typeId: 3, itemType: 'text',      name: 'Strikethrough', label: 'Strikethrough', icon: '̶S', defName: 'Strikethrough' },
+    { typeId: 1, itemType: 'signature', name: 'Stamp',     label: 'Stamp',     icon: '🖼', defName: 'Stamp' }
+];
+
 function buildSignerFieldCards(signerIdx, color) {
     let html = '<div class="es-signer-fields" id="signer-fields-' + signerIdx + '">';
-    SIGN_ITEM_TYPES.forEach(function(t) {
-        const meta = getTypeMeta(t.item_type);
+    ALL_FIELD_TYPES.forEach(function(t) {
         html += '<div class="es-signer-field-card"' +
             ' draggable="true"' +
-            ' data-type-id="' + t.id + '"' +
-            ' data-item-type="' + t.item_type + '"' +
+            ' data-type-id="' + t.typeId + '"' +
+            ' data-item-type="' + t.itemType + '"' +
             ' data-type-name="' + t.name + '"' +
             ' data-signer-idx="' + signerIdx + '"' +
             ' data-signer-color="' + color + '"' +
-            ' style="border-color:' + color + '33;color:' + color + ';"' +
-            ' title="Drag to place ' + t.name + ' for Signer ' + signerIdx + '">' +
-            '<span class="es-sfc-icon">' + meta.icon + '</span>' +
-            '<span class="es-sfc-label">' + meta.label + '</span>' +
+            (t.defName ? ' data-def-name="' + t.defName + '"' : '') +
+            (t.defPlaceholder ? ' data-def-placeholder="' + t.defPlaceholder + '"' : '') +
+            ' style="background:' + color + '18; border-color:' + color + '33; color:' + color + ';"' +
+            ' title="Drag to place ' + t.label + ' for Signer ' + signerIdx + '">' +
+            '<span class="es-sfc-icon">' + t.icon + '</span>' +
+            '<span class="es-sfc-label">' + t.label + '</span>' +
         '</div>';
     });
+    html += '<button class="es-signer-field-add-btn" style="grid-column: span 2; background:' + color + '10; border: 1px dashed ' + color + '44; color:' + color + ';" onclick="event.preventDefault();">+ Add Field</button>';
     html += '</div>';
     return html;
 }
@@ -1725,7 +1951,20 @@ function buildSignersPanel() {
                 }
             }
         });
+        updateSignerFieldCounts();
     }
+}
+
+function updateSignerFieldCounts() {
+    const list = document.getElementById('es-signers-list');
+    if (!list) return;
+    const rows = list.querySelectorAll('.es-signer-row');
+    rows.forEach(row => {
+        const idx = parseInt(row.id.replace('signer-row-', ''), 10);
+        const count = signItems.filter(item => item._signerIdx === idx).length;
+        const badge = row.querySelector('.es-signer-badge');
+        if (badge) badge.textContent = count;
+    });
 }
 
 function addSignerRow(data) {
@@ -1746,15 +1985,19 @@ function addSignerRow(data) {
     const roleVal  = (data && data.role_id) ? data.role_id : getNextUnusedRoleId();
 
     row.innerHTML =
-        '<div class="es-signer-row-header">' +
-            '<span class="es-signer-num" style="color:' + color + ';">' +
+        '<div class="es-signer-row-header" style="display:flex; align-items:center; justify-content:space-between; width:100%;">' +
+            '<span class="es-signer-num" style="color:' + color + '; font-weight:600; font-size:13px; display:inline-flex; align-items:center;">' +
                 '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:5px;"></span>' +
                 'Signer ' + idx +
             '</span>' +
-            '<button class="es-signer-remove" title="Remove signer"' +
-                ' onclick="removeSignerRow(' + idx + ')">&#215;</button>' +
+            '<div style="display:flex; align-items:center; gap:6px;">' +
+                '<span class="es-signer-badge" style="font-size:10px; font-weight:700; min-width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border-radius:50%; padding:0 4px; background:' + color + '22; color:' + color + '; border:1px solid ' + color + '44;">0</span>' +
+                '<button class="es-signer-menu-btn" title="Signer Actions" style="background:transparent; border:none; color:#64748b; cursor:pointer; font-size:14px; line-height:1; padding:2px 4px; border-radius:4px;">&#8942;</button>' +
+                '<button class="es-signer-remove" title="Remove signer" style="width:18px; height:18px; display:flex; align-items:center; justify-content:center; border-radius:4px; border:none; background:rgba(239,68,68,0.1); color:#f87171; font-size:12px; cursor:pointer; line-height:1; padding:0;"' +
+                    ' onclick="removeSignerRow(' + idx + ')">&#215;</button>' +
+            '</div>' +
         '</div>' +
-        '<div class="es-signer-inputs">' +
+        '<div class="es-signer-inputs" style="display:flex; flex-direction:column; gap:4px; margin-top:4px; margin-bottom:4px;">' +
             '<input class="es-signer-input" type="text"' +
                 ' id="signer-name-' + idx + '"' +
                 ' placeholder="Full name..."' +
@@ -1771,13 +2014,11 @@ function addSignerRow(data) {
                   '</select>'
                 : '') +
         '</div>' +
-        buildSignerFieldCards(idx, color) +
-        '<div class="es-drag-hint" style="margin-top:4px;font-size:10px;">' +
-            '<span>&#10021;</span> Drag fields above onto the PDF' +
-        '</div>';
+        buildSignerFieldCards(idx, color);
 
     list.appendChild(row);
     updateSignerCount();
+    updateSignerFieldCounts();
 
     // Attach drag events to this signer's field cards
     const fieldCards = row.querySelectorAll('.es-signer-field-card');
@@ -1856,6 +2097,7 @@ function removeSignerRow(idx) {
         if (hint) hint.style.display = '';
     }
     markDirty();
+    updateSignerFieldCounts();
 }
 window.removeSignerRow = removeSignerRow;
 
@@ -1979,6 +2221,7 @@ async function confirmSend() {
 }
 window.confirmSend = confirmSend;
 
+isEditMode = (signItems.length === 0);
 buildSignersPanel();
 renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf');
 

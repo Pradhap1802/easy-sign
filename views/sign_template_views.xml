@@ -75,6 +75,5 @@
             <field name="context">{'search_default_active': 1}</field>
         </record>
 
-        <menuitem id="menu_sign_template" name="Templates" parent="easy_sign.menu_sign" action="action_sign_template" sequence="10"/>
     </data>
 </odoo>

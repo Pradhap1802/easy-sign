@@ -87,7 +87,17 @@
                 </div>
                 <button id="o_sign_submit" class="btn-primary">Sign Document</button>
             </div>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+            <script>
+                // Bypass AMD loader for PDF.js
+                window._temp_define = window.define;
+                window.define = undefined;
+            </script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"> </script>
+            <script>
+                // Restore AMD loader
+                window.define = window._temp_define;
+                delete window._temp_define;
+            </script>
             <script>
 <![CDATA[
             const TEMPLATE_ID = ]]><t t-esc="sign_request.template_id.id"/><![CDATA[;
@@ -104,7 +114,7 @@
                 'required': item.required
             } for item in sign_request.template_id.sign_item_ids])"/><![CDATA[;
 
-            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
             let pdfDoc = null;
@@ -115,12 +125,17 @@
             let signItemInputs = {};
 
             async function renderPDF(url, canvasContainer) {
-                const loadingTask = pdfjsLib.getDocument(url);
-                pdfDoc = await loadingTask.promise;
-                for (let i = 1; i <= pdfDoc.numPages; i++) {
-                    await renderPage(i, canvasContainer);
+                try {
+                    const loadingTask = pdfjsLib.getDocument(url);
+                    pdfDoc = await loadingTask.promise;
+                    for (let i = 1; i <= pdfDoc.numPages; i++) {
+                        await renderPage(i, canvasContainer);
+                    }
+                    renderSignItems();
+                } catch (err) {
+                    console.error("Error loading PDF:", err);
+                    canvasContainer.innerHTML = `<div style="color:#ef4444; padding:20px; text-align:center; font-weight:bold;">Error loading PDF: ${err.message}</div>`;
                 }
-                renderSignItems();
             }
 
             async function renderPage(num, canvasContainer) {

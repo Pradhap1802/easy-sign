@@ -51,11 +51,15 @@
             <field name="model">sign.request</field>
             <field name="arch" type="xml">
                 <list string="Sign Requests">
-                    <field name="reference"/>
-                    <field name="template_id"/>
-                    <field name="state"/>
-                    <field name="progress"/>
-                    <field name="completion_date"/>
+                    <field name="create_date" string="Date"/>
+                    <field name="reference" string="Name"/>
+                    <field name="create_uid" string="Sent by"/>
+                    <field name="signer_info" string="Signers" widget="html"/>
+                    <field name="state" string="Status" widget="badge" decoration-success="state == 'signed'" decoration-info="state == 'sent'" decoration-danger="state == 'canceled'"/>
+                    <field name="validity_date" string="Valid Until"/>
+                    <button name="action_resend" string="Resend" type="object" icon="fa-refresh" class="btn-link" invisible="state != 'sent'"/>
+                    <button name="go_to_signable_document" string="Sign" type="object" icon="fa-pencil" class="btn-link" invisible="state != 'sent'"/>
+                    <button name="get_completed_document" string="Download" type="object" icon="fa-download" class="btn-link" invisible="state != 'signed'"/>
                 </list>
             </field>
         </record>
@@ -92,6 +96,5 @@
             <field name="context">{'search_default_active': 1}</field>
         </record>
 
-        <menuitem id="menu_sign_request" name="Documents" parent="easy_sign.menu_sign" action="action_sign_request" sequence="20"/>
     </data>
 </odoo>

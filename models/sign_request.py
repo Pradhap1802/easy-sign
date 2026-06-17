@@ -13,6 +13,7 @@ from reportlab.platypus import Paragraph
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from markupsafe import Markup
+from datetime import timedelta
 from PIL import UnidentifiedImageError
 
 from odoo import api, fields, models, _, Command, tools
@@ -52,6 +53,11 @@ class SignRequest(models.Model):
         ("expired", "Expired"),
     ], default='sent', tracking=True, group_expand=True, copy=False, index=True)
     completed_document = fields.Binary(readonly=True, string="Completed Document", attachment=True, copy=False)
+    validity_date = fields.Date(
+        string="Valid Until",
+        default=lambda self: fields.Date.today() + timedelta(days=60)
+    )
+    signer_info = fields.Html(string="Signers", compute="_compute_signer_info")
     
     @api.onchange('document')
     def _onchange_document(self):
@@ -90,6 +96,21 @@ class SignRequest(models.Model):
             rec.start_sign = bool(rec.nb_closed)
             rec.progress = "{} / {}".format(rec.nb_closed, rec.nb_total)
             rec.completion_date = rec.request_item_ids.sorted(key="signing_date", reverse=True)[:1].signing_date if not rec.nb_wait else None
+
+    @api.depends('request_item_ids.partner_id.name', 'request_item_ids.state')
+    def _compute_signer_info(self):
+        for rec in self:
+            badges = []
+            for item in rec.request_item_ids:
+                color = '#94a3b8'
+                if item.state == 'completed':
+                    color = '#10b981'
+                elif item.state in ('sent', 'viewed'):
+                    color = '#fb923c'
+                badges.append(
+                    f'<span class="badge" style="background: rgba(255,255,255,0.05); color: {color}; border: 1px solid {color}33; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-bottom: 2px;">{item.partner_id.name}</span>'
+                )
+            rec.signer_info = Markup(' '.join(badges))
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -186,6 +207,10 @@ class SignRequest(models.Model):
         allowed_request_ids = self.filtered(lambda sr: sr.state == 'sent')
         for sign_request in allowed_request_ids:
             sign_request.request_item_ids.send_signature_accesses()
+
+    def action_resend(self):
+        for rec in self:
+            rec.send_signature_accesses()
 
     def _sign(self):
         self.ensure_one()
