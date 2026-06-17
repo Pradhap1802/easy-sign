@@ -480,31 +480,82 @@
                     padding: 14px 16px;
                     flex-shrink: 0;
                 }
+                .es-signers-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 10px;
+                }
+                .es-signers-count {
+                    font-size: 11px;
+                    background: rgba(99,102,241,0.18);
+                    color: #818cf8;
+                    border-radius: 20px;
+                    padding: 2px 8px;
+                    font-weight: 700;
+                    min-width: 22px;
+                    text-align: center;
+                }
+                .es-btn-add-signer {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                    padding: 5px 11px;
+                    border-radius: 7px;
+                    font-size: 11px;
+                    font-weight: 600;
+                    background: rgba(99,102,241,0.15);
+                    border: 1px solid rgba(99,102,241,0.3);
+                    color: #818cf8;
+                    cursor: pointer;
+                    transition: background 0.15s, border-color 0.15s;
+                }
+                .es-btn-add-signer:hover {
+                    background: rgba(99,102,241,0.25);
+                    border-color: rgba(99,102,241,0.5);
+                }
                 .es-signer-row {
                     display: flex;
                     flex-direction: column;
-                    gap: 5px;
+                    gap: 6px;
                     padding: 10px;
                     border-radius: 10px;
                     background: rgba(255,255,255,0.03);
                     border: 1px solid rgba(255,255,255,0.06);
                     margin-bottom: 6px;
                     transition: border-color 0.15s;
+                    position: relative;
                 }
                 .es-signer-row:focus-within {
                     border-color: rgba(99,102,241,0.4);
                     background: rgba(99,102,241,0.05);
                 }
-                .es-signer-role-label {
+                .es-signer-row-header {
                     display: flex;
                     align-items: center;
-                    gap: 7px;
-                    font-size: 11px;
+                    justify-content: space-between;
+                }
+                .es-signer-num {
+                    font-size: 10px;
                     font-weight: 700;
-                    letter-spacing: 0.04em;
+                    letter-spacing: 0.05em;
                     text-transform: uppercase;
                     color: #64748b;
                 }
+                .es-signer-remove {
+                    width: 20px; height: 20px;
+                    display: flex; align-items: center; justify-content: center;
+                    border-radius: 5px;
+                    border: none;
+                    background: rgba(239,68,68,0.1);
+                    color: #f87171;
+                    font-size: 13px;
+                    cursor: pointer;
+                    line-height: 1;
+                    transition: background 0.15s;
+                    padding: 0;
+                }
+                .es-signer-remove:hover { background: rgba(239,68,68,0.25); }
                 .es-signer-inputs {
                     display: flex;
                     flex-direction: column;
@@ -520,10 +571,25 @@
                     font-size: 12px;
                     outline: none;
                     transition: border-color 0.15s;
+                    box-sizing: border-box;
                 }
                 .es-signer-input:focus { border-color: #6366f1; }
                 .es-signer-input::placeholder { color: #475569; }
-                .es-no-roles-hint {
+                .es-signer-select {
+                    width: 100%;
+                    padding: 6px 9px;
+                    background: #141625;
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 7px;
+                    color: #94a3b8;
+                    font-size: 12px;
+                    outline: none;
+                    transition: border-color 0.15s;
+                    box-sizing: border-box;
+                    cursor: pointer;
+                }
+                .es-signer-select:focus { border-color: #6366f1; }
+                .es-no-signers-hint {
                     font-size: 11px;
                     color: #334155;
                     text-align: center;
@@ -659,10 +725,15 @@
                         </div>
                         <!-- Signers Section -->
                         <div class="es-signers-section" id="es-signers-section">
-                            <div class="es-sidebar-title" style="margin-bottom:10px;">Signers</div>
-                            <div id="es-signers-list">
-                                <div class="es-no-roles-hint" id="es-no-roles-hint">
-                                    No roles defined. Add roles to sign.item.role first.
+                            <div class="es-signers-header">
+                                <div class="es-sidebar-title" style="margin-bottom:0;">Signers <span class="es-signers-count" id="es-signers-count">0</span></div>
+                                <button class="es-btn-add-signer" onclick="addSignerRow()" title="Add another signer">
+                                    &#43; Add Signer
+                                </button>
+                            </div>
+                            <div id="es-signers-list" style="margin-top:10px;">
+                                <div class="es-no-signers-hint" id="es-no-signers-hint">
+                                    Click &quot;Add Signer&quot; to add recipients
                                 </div>
                             </div>
                         </div>
@@ -1513,46 +1584,89 @@ const refInput = document.getElementById('es-send-reference');
 if (refInput) refInput.value = TEMPLATE_NAME;
 
 /* ========================================================
-   SIGNERS PANEL
+   SIGNERS PANEL — dynamic multi-signer list
    ======================================================== */
-function buildSignersPanel() {
-    const list = document.getElementById('es-signers-list');
-    const hint = document.getElementById('es-no-roles-hint');
-    if (!SIGN_ROLES || SIGN_ROLES.length === 0) {
-        if (hint) hint.style.display = '';
-        return;
-    }
-    if (hint) hint.style.display = 'none';
-    list.innerHTML = '';
+let signerRowCount = 0;
 
-    const palette = [
-        '#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c',
-        '#3498db','#9b59b6','#e91e63','#795548','#607d8b',
-        '#00bcd4','#cddc39'
-    ];
-
+function buildRoleOptions(selectedRoleId) {
+    let html = '<option value="">— No role —</option>';
     SIGN_ROLES.forEach(function(role) {
-        const hex = palette[(role.color || 0) % palette.length];
-        const row = document.createElement('div');
-        row.className = 'es-signer-row';
-        row.dataset.roleId = role.id;
-        row.innerHTML =
-            '<div class="es-signer-role-label">' +
-                '<span class="es-role-dot" style="background:' + hex + ';"></span>' +
-                role.name +
-            '</div>' +
-            '<div class="es-signer-inputs">' +
-                '<input class="es-signer-input" type="text"' +
-                    ' id="signer-name-' + role.id + '"' +
-                    ' placeholder="Full name..."' +
-                    ' autocomplete="name"/>' +
-                '<input class="es-signer-input" type="email"' +
-                    ' id="signer-email-' + role.id + '"' +
-                    ' placeholder="Email address..."' +
-                    ' autocomplete="email"/>' +
-            '</div>';
-        list.appendChild(row);
+        const sel = (role.id === selectedRoleId) ? ' selected="selected"' : '';
+        html += '<option value="' + role.id + '"' + sel + '>' + role.name + '</option>';
     });
+    return html;
+}
+
+function buildSignersPanel() {
+    // Start with one empty signer row by default
+    addSignerRow();
+}
+
+function addSignerRow(data) {
+    signerRowCount++;
+    const hint = document.getElementById('es-no-signers-hint');
+    if (hint) hint.style.display = 'none';
+
+    const list = document.getElementById('es-signers-list');
+    const idx  = signerRowCount;
+    const row  = document.createElement('div');
+    row.className = 'es-signer-row';
+    row.id = 'signer-row-' + idx;
+
+    const nameVal  = (data && data.name)  ? data.name  : '';
+    const emailVal = (data && data.email) ? data.email : '';
+    const roleVal  = (data && data.role_id) ? data.role_id : '';
+
+    row.innerHTML =
+        '<div class="es-signer-row-header">' +
+            '<span class="es-signer-num">Signer ' + idx + '</span>' +
+            '<button class="es-signer-remove" title="Remove signer"' +
+                ' onclick="removeSignerRow(' + idx + ')">&#215;</button>' +
+        '</div>' +
+        '<div class="es-signer-inputs">' +
+            '<input class="es-signer-input" type="text"' +
+                ' id="signer-name-' + idx + '"' +
+                ' placeholder="Full name..."' +
+                ' value="' + nameVal.replace(/"/g, '&quot;') + '"' +
+                ' autocomplete="off"/>' +
+            '<input class="es-signer-input" type="email"' +
+                ' id="signer-email-' + idx + '"' +
+                ' placeholder="Email address..."' +
+                ' value="' + emailVal.replace(/"/g, '&quot;') + '"' +
+                ' autocomplete="off"/>' +
+            (SIGN_ROLES.length > 0
+                ? '<select class="es-signer-select" id="signer-role-' + idx + '">' +
+                      buildRoleOptions(roleVal ? parseInt(roleVal, 10) : null) +
+                  '</select>'
+                : '') +
+        '</div>';
+
+    list.appendChild(row);
+    updateSignerCount();
+    // Focus name input on new row
+    const nameInput = document.getElementById('signer-name-' + idx);
+    if (nameInput) nameInput.focus();
+}
+window.addSignerRow = addSignerRow;
+
+function removeSignerRow(idx) {
+    const row = document.getElementById('signer-row-' + idx);
+    if (row) row.remove();
+    updateSignerCount();
+    const list = document.getElementById('es-signers-list');
+    const remaining = list.querySelectorAll('.es-signer-row');
+    if (remaining.length === 0) {
+        const hint = document.getElementById('es-no-signers-hint');
+        if (hint) hint.style.display = '';
+    }
+}
+window.removeSignerRow = removeSignerRow;
+
+function updateSignerCount() {
+    const list  = document.getElementById('es-signers-list');
+    const count = list ? list.querySelectorAll('.es-signer-row').length : 0;
+    const badge = document.getElementById('es-signers-count');
+    if (badge) badge.textContent = count;
 }
 
 /* ========================================================
@@ -1560,13 +1674,19 @@ function buildSignersPanel() {
    ======================================================== */
 function collectSigners() {
     const signers = [];
-    SIGN_ROLES.forEach(function(role) {
-        const nameEl  = document.getElementById('signer-name-'  + role.id);
-        const emailEl = document.getElementById('signer-email-' + role.id);
-        const name    = (nameEl  ? nameEl.value.trim()  : '');
-        const email   = (emailEl ? emailEl.value.trim() : '');
+    const list = document.getElementById('es-signers-list');
+    if (!list) return signers;
+    const rows = list.querySelectorAll('.es-signer-row');
+    rows.forEach(function(row) {
+        const idx   = row.id.replace('signer-row-', '');
+        const nameEl  = document.getElementById('signer-name-'  + idx);
+        const emailEl = document.getElementById('signer-email-' + idx);
+        const roleEl  = document.getElementById('signer-role-'  + idx);
+        const name  = nameEl  ? nameEl.value.trim()  : '';
+        const email = emailEl ? emailEl.value.trim() : '';
+        const roleId = (roleEl && roleEl.value) ? parseInt(roleEl.value, 10) : null;
         if (email) {
-            signers.push({ role_id: role.id, name: name || email, email: email });
+            signers.push({ role_id: roleId, name: name || email, email: email });
         }
     });
     return signers;
