@@ -595,6 +595,38 @@
                     text-align: center;
                     padding: 10px 0;
                 }
+                /* Per-signer mini field cards */
+                .es-signer-fields {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 5px;
+                    margin-top: 8px;
+                    padding-top: 8px;
+                    border-top: 1px solid rgba(255,255,255,0.05);
+                }
+                .es-signer-field-card {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 2px;
+                    padding: 6px 8px;
+                    border-radius: 8px;
+                    border: 1.5px solid rgba(255,255,255,0.06);
+                    background: rgba(255,255,255,0.03);
+                    cursor: grab;
+                    transition: background 0.12s, border-color 0.12s, transform 0.1s;
+                    min-width: 50px;
+                    text-align: center;
+                    user-select: none;
+                }
+                .es-signer-field-card:hover {
+                    transform: translateY(-2px);
+                    background: rgba(255,255,255,0.07);
+                }
+                .es-signer-field-card:active { cursor: grabbing; transform: scale(0.95); }
+                .es-signer-field-card.dragging { opacity: 0.5; }
+                .es-sfc-icon { font-size: 16px; line-height: 1; }
+                .es-sfc-label { font-size: 9px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.8; }
                 .es-btn-send {
                     background: linear-gradient(135deg, #059669, #10b981);
                     color: white;
@@ -704,15 +736,6 @@
                 <div class="es-sidebar">
                     <!-- Field palette (shown when no field selected) -->
                     <div id="es-field-palette">
-                        <div class="es-sidebar-section">
-                            <div class="es-sidebar-title">Field Types</div>
-                            <div class="es-field-cards" id="es-field-cards">
-                                <!-- Cards injected by JS from sign_item_types -->
-                            </div>
-                            <div class="es-drag-hint" style="margin-top:10px;">
-                                <span>&#10021;</span> Drag onto the PDF to place
-                            </div>
-                        </div>
                         <div class="es-sidebar-section" style="flex:1;overflow-y:auto;">
                             <div class="es-sidebar-title" style="display:flex;align-items:center;gap:6px;">
                                 Placed Fields <span class="es-field-count" id="es-field-count-badge">0</span>
@@ -749,9 +772,9 @@
                         </div>
                         <div class="es-props-divider"></div>
                         <div class="es-form-group">
-                            <label class="es-label">Role / Responsible</label>
-                            <select class="es-select" id="es-prop-role">
-                                <option value="">— No role —</option>
+                            <label class="es-label">Signer</label>
+                            <select class="es-select" id="es-prop-signer">
+                                <option value="">— No signer —</option>
                                 <!-- filled by JS -->
                             </select>
                         </div>
@@ -886,57 +909,23 @@ function getOdooColorHex(colorIdx) {
     return palette[colorIdx % palette.length] || '#6366f1';
 }
 
-/* ========================================================
-   BUILD SIDEBAR
-   ======================================================== */
-function buildFieldCards() {
-    const container = document.getElementById('es-field-cards');
-    container.innerHTML = '';
-    SIGN_ITEM_TYPES.forEach(t => {
-        const meta = getTypeMeta(t.item_type);
-        const card = document.createElement('div');
-        card.className = 'es-field-card ' + meta.ftCls;
-        card.draggable = true;
-        card.dataset.typeId = t.id;
-        card.dataset.itemType = t.item_type;
-        card.dataset.typeName = t.name;
-        card.innerHTML = `
-            <div class="es-field-icon">${meta.icon}</div>
-            <div class="es-field-info">
-                <div class="es-field-name">${t.name}</div>
-                <div class="es-field-desc">${meta.desc}</div>
-            </div>
-        `;
-        card.addEventListener('dragstart', onSidebarDragStart);
-        card.addEventListener('dragend', () => card.classList.remove('dragging'));
-        container.appendChild(card);
-    });
-}
-
-/* ========================================================
-   BUILD ROLE SELECT
-   ======================================================== */
-function buildRoleSelect() {
-    const sel = document.getElementById('es-prop-role');
-    SIGN_ROLES.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.name;
-        sel.appendChild(opt);
-    });
-}
+// buildFieldCards and buildRoleSelect removed in favor of per-signer fields and dynamic signer selector in props panel.
 
 /* ========================================================
    SIDEBAR DRAG START
    ======================================================== */
-let dragPayload = null; // { typeId, itemType, typeName }
+let dragPayload = null; // { typeId, itemType, typeName, signerIdx, signerColor }
 
 function onSidebarDragStart(e) {
     const card = e.currentTarget;
+    const signerIdx   = card.dataset.signerIdx   ? parseInt(card.dataset.signerIdx, 10)   : null;
+    const signerColor = card.dataset.signerColor  || null;
     dragPayload = {
         typeId: parseInt(card.dataset.typeId),
         itemType: card.dataset.itemType,
         typeName: card.dataset.typeName,
+        signerIdx:   signerIdx,
+        signerColor: signerColor,
     };
     card.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'copy';
@@ -963,7 +952,7 @@ function attachPageDropHandlers(wrapper, pageNum) {
         wrapper.classList.remove('drag-over');
         if (!dragPayload) return;
 
-        const { typeId, itemType, typeName } = dragPayload;
+        const { typeId, itemType, typeName, signerIdx, signerColor } = dragPayload;
         dragPayload = null;
 
         const rect = wrapper.getBoundingClientRect();
@@ -977,6 +966,14 @@ function attachPageDropHandlers(wrapper, pageNum) {
         posX = Math.max(0, Math.min(1 - defW, posX));
         posY = Math.max(0, Math.min(1 - defH, posY));
 
+        let signerRoleId = false;
+        if (signerIdx) {
+            const roleEl = document.getElementById('signer-role-' + signerIdx);
+            if (roleEl && roleEl.value) {
+                signerRoleId = parseInt(roleEl.value, 10);
+            }
+        }
+
         const item = {
             _id: nextLocalId--,
             id: 0,
@@ -988,9 +985,11 @@ function attachPageDropHandlers(wrapper, pageNum) {
             width: defW,
             height: defH,
             required: true,
-            responsible_id: false,
+            responsible_id: signerRoleId,
             name: '',
             placeholder: '',
+            _signerIdx:   signerIdx   || null,
+            _signerColor: signerColor || null,
         };
         signItems.push(item);
         placeFieldOnPage(item);
@@ -1080,8 +1079,8 @@ function placeFieldOnPage(item) {
     el.style.width  = (item.width * 100) + '%';
     el.style.height = (item.height * 100) + '%';
 
-    // Apply role color if set
-    applyRoleColorToEl(el, item.responsible_id);
+    // Apply signer color (from drag) or role color (for existing items)
+    applyRoleColorToEl(el, item.responsible_id, item._signerColor || null);
 
     // Badge
     const badge = document.createElement('div');
@@ -1120,22 +1119,20 @@ function placeFieldOnPage(item) {
 }
 
 /* ========================================================
-   APPLY ROLE COLOR
+   APPLY SIGNER / ROLE COLOR
    ======================================================== */
-function applyRoleColorToEl(el, roleId) {
-    if (!roleId) return;
-    const roleIdNum = Array.isArray(roleId) ? roleId[0] : roleId;
-    const role = getRoleById(roleIdNum);
-    if (!role) return;
-    const hex = getOdooColorHex(role.color || 0);
+function applyRoleColorToEl(el, roleId, signerColor) {
+    const hex = signerColor || (function() {
+        if (!roleId) return null;
+        const roleIdNum = Array.isArray(roleId) ? roleId[0] : roleId;
+        const role = getRoleById(roleIdNum);
+        if (!role) return null;
+        return getOdooColorHex(role.color || 0);
+    }()) || '#6366f1';
+    
     el.style.borderColor = hex;
-    // Remove type class border and apply role color
-    el.classList.forEach(cls => {
-        if (cls.startsWith('sfi-')) {
-            el.style.background = hex + '22'; // translucent
-            el.style.color = hex;
-        }
-    });
+    el.style.background = hex + '22';
+    el.style.color = hex;
 }
 
 /* ========================================================
@@ -1284,6 +1281,40 @@ document.getElementById('es-viewer').addEventListener('mousedown', e => {
 /* ========================================================
    PROPERTIES PANEL
    ======================================================== */
+function updatePropSignerSelect(selectedSignerIdx) {
+    const sel = document.getElementById('es-prop-signer');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— No signer —</option>';
+    
+    const list = document.getElementById('es-signers-list');
+    if (!list) return;
+    const rows = list.querySelectorAll('.es-signer-row');
+    rows.forEach(row => {
+        const idx = parseInt(row.id.replace('signer-row-', ''), 10);
+        const nameEl = document.getElementById('signer-name-' + idx);
+        const emailEl = document.getElementById('signer-email-' + idx);
+        const roleEl = document.getElementById('signer-role-' + idx);
+        
+        let signerLabel = 'Signer ' + idx;
+        if (nameEl && nameEl.value.trim()) {
+            signerLabel += ' (' + nameEl.value.trim() + ')';
+        } else if (emailEl && emailEl.value.trim()) {
+            signerLabel += ' (' + emailEl.value.trim() + ')';
+        } else if (roleEl && roleEl.value) {
+            const role = getRoleById(parseInt(roleEl.value, 10));
+            if (role) signerLabel += ' (' + role.name + ')';
+        }
+        
+        const opt = document.createElement('option');
+        opt.value = idx;
+        opt.textContent = signerLabel;
+        if (idx === selectedSignerIdx) {
+            opt.selected = true;
+        }
+        sel.appendChild(opt);
+    });
+}
+
 function showPropsPanel(item) {
     const meta = getTypeMeta(item.type);
     document.getElementById('es-props-title').textContent = meta.label + ' Field';
@@ -1291,8 +1322,8 @@ function showPropsPanel(item) {
     document.getElementById('es-prop-placeholder').value = item.placeholder || '';
     document.getElementById('es-prop-required').checked = item.required !== false;
 
-    const roleId = Array.isArray(item.responsible_id) ? item.responsible_id[0] : (item.responsible_id || '');
-    document.getElementById('es-prop-role').value = roleId || '';
+    // Dynamically populate signer selection
+    updatePropSignerSelect(item._signerIdx);
 
     updatePosInfo(item);
 
@@ -1320,16 +1351,30 @@ function syncPropsToItem() {
     item.name = document.getElementById('es-prop-name').value;
     item.placeholder = document.getElementById('es-prop-placeholder').value;
     item.required = document.getElementById('es-prop-required').checked;
-    const roleVal = document.getElementById('es-prop-role').value;
-    item.responsible_id = roleVal ? parseInt(roleVal) : false;
+    
+    // Sync signer selection
+    const signerVal = document.getElementById('es-prop-signer').value;
+    if (signerVal) {
+        const signerIdx = parseInt(signerVal, 10);
+        item._signerIdx = signerIdx;
+        item._signerColor = getSignerColor(signerIdx);
+        
+        // Find the signer's role
+        const roleEl = document.getElementById('signer-role-' + signerIdx);
+        item.responsible_id = (roleEl && roleEl.value) ? parseInt(roleEl.value, 10) : false;
+    } else {
+        item._signerIdx = null;
+        item._signerColor = null;
+        item.responsible_id = false;
+    }
 
     // Update the overlay label
     const el = document.getElementById(`sfi-${selectedItemId}`);
     if (el) {
         const lbl = el.querySelector('.sign-field-label');
         if (lbl) lbl.textContent = item.name || getTypeMeta(item.type).icon;
-        // Update role color
-        applyRoleColorToEl(el, item.responsible_id);
+        // Update styling
+        applyRoleColorToEl(el, item.responsible_id, item._signerColor || null);
     }
     markDirty();
     updatePlacedList();
@@ -1338,7 +1383,7 @@ function syncPropsToItem() {
 document.getElementById('es-prop-name').addEventListener('input', syncPropsToItem);
 document.getElementById('es-prop-placeholder').addEventListener('input', syncPropsToItem);
 document.getElementById('es-prop-required').addEventListener('change', syncPropsToItem);
-document.getElementById('es-prop-role').addEventListener('change', syncPropsToItem);
+document.getElementById('es-prop-signer').addEventListener('change', syncPropsToItem);
 
 document.getElementById('es-props-close').addEventListener('click', deselectAll);
 
@@ -1588,6 +1633,16 @@ if (refInput) refInput.value = TEMPLATE_NAME;
    ======================================================== */
 let signerRowCount = 0;
 
+// Color palette for signers
+const SIGNER_COLORS = [
+    '#6366f1','#10b981','#f59e0b','#ef4444','#3b82f6',
+    '#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16'
+];
+
+function getSignerColor(idx) {
+    return SIGNER_COLORS[(idx - 1) % SIGNER_COLORS.length];
+}
+
 function buildRoleOptions(selectedRoleId) {
     let html = '<option value="">— No role —</option>';
     SIGN_ROLES.forEach(function(role) {
@@ -1597,9 +1652,80 @@ function buildRoleOptions(selectedRoleId) {
     return html;
 }
 
+function buildSignerFieldCards(signerIdx, color) {
+    let html = '<div class="es-signer-fields" id="signer-fields-' + signerIdx + '">';
+    SIGN_ITEM_TYPES.forEach(function(t) {
+        const meta = getTypeMeta(t.item_type);
+        html += '<div class="es-signer-field-card"' +
+            ' draggable="true"' +
+            ' data-type-id="' + t.id + '"' +
+            ' data-item-type="' + t.item_type + '"' +
+            ' data-type-name="' + t.name + '"' +
+            ' data-signer-idx="' + signerIdx + '"' +
+            ' data-signer-color="' + color + '"' +
+            ' style="border-color:' + color + '33;color:' + color + ';"' +
+            ' title="Drag to place ' + t.name + ' for Signer ' + signerIdx + '">' +
+            '<span class="es-sfc-icon">' + meta.icon + '</span>' +
+            '<span class="es-sfc-label">' + meta.label + '</span>' +
+        '</div>';
+    });
+    html += '</div>';
+    return html;
+}
+
+function getNextUnusedRoleId() {
+    const list = document.getElementById('es-signers-list');
+    if (!list) return '';
+    const usedRoleIds = [];
+    list.querySelectorAll('.es-signer-row').forEach(row => {
+        const idx = row.id.replace('signer-row-', '');
+        const roleEl = document.getElementById('signer-role-' + idx);
+        if (roleEl && roleEl.value) {
+            usedRoleIds.push(parseInt(roleEl.value, 10));
+        }
+    });
+    const unusedRole = SIGN_ROLES.find(r => !usedRoleIds.includes(r.id));
+    return unusedRole ? unusedRole.id : (SIGN_ROLES[0] ? SIGN_ROLES[0].id : '');
+}
+
 function buildSignersPanel() {
-    // Start with one empty signer row by default
-    addSignerRow();
+    // Group existing items by role_id to identify signers needed
+    const rolesUsed = [];
+    signItems.forEach(item => {
+        const roleId = Array.isArray(item.responsible_id) ? item.responsible_id[0] : item.responsible_id;
+        if (roleId && !rolesUsed.includes(roleId)) {
+            rolesUsed.push(roleId);
+        }
+    });
+
+    if (rolesUsed.length === 0) {
+        addSignerRow();
+    } else {
+        rolesUsed.forEach(roleId => {
+            addSignerRow({ role_id: roleId });
+        });
+        
+        // Associate items with signer rows
+        signItems.forEach(item => {
+            const roleId = Array.isArray(item.responsible_id) ? item.responsible_id[0] : item.responsible_id;
+            if (roleId) {
+                const list = document.getElementById('es-signers-list');
+                const rows = list ? list.querySelectorAll('.es-signer-row') : [];
+                let foundIdx = null;
+                rows.forEach(row => {
+                    const idx = parseInt(row.id.replace('signer-row-', ''), 10);
+                    const roleEl = document.getElementById('signer-role-' + idx);
+                    if (roleEl && parseInt(roleEl.value, 10) === roleId) {
+                        foundIdx = idx;
+                    }
+                });
+                if (foundIdx !== null) {
+                    item._signerIdx = foundIdx;
+                    item._signerColor = getSignerColor(foundIdx);
+                }
+            }
+        });
+    }
 }
 
 function addSignerRow(data) {
@@ -1608,18 +1734,23 @@ function addSignerRow(data) {
     if (hint) hint.style.display = 'none';
 
     const list = document.getElementById('es-signers-list');
-    const idx  = signerRowCount;
-    const row  = document.createElement('div');
+    const idx   = signerRowCount;
+    const color = getSignerColor(idx);
+    const row   = document.createElement('div');
     row.className = 'es-signer-row';
     row.id = 'signer-row-' + idx;
+    row.style.borderColor = color + '44';
 
     const nameVal  = (data && data.name)  ? data.name  : '';
     const emailVal = (data && data.email) ? data.email : '';
-    const roleVal  = (data && data.role_id) ? data.role_id : '';
+    const roleVal  = (data && data.role_id) ? data.role_id : getNextUnusedRoleId();
 
     row.innerHTML =
         '<div class="es-signer-row-header">' +
-            '<span class="es-signer-num">Signer ' + idx + '</span>' +
+            '<span class="es-signer-num" style="color:' + color + ';">' +
+                '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:5px;"></span>' +
+                'Signer ' + idx +
+            '</span>' +
             '<button class="es-signer-remove" title="Remove signer"' +
                 ' onclick="removeSignerRow(' + idx + ')">&#215;</button>' +
         '</div>' +
@@ -1639,26 +1770,92 @@ function addSignerRow(data) {
                       buildRoleOptions(roleVal ? parseInt(roleVal, 10) : null) +
                   '</select>'
                 : '') +
+        '</div>' +
+        buildSignerFieldCards(idx, color) +
+        '<div class="es-drag-hint" style="margin-top:4px;font-size:10px;">' +
+            '<span>&#10021;</span> Drag fields above onto the PDF' +
         '</div>';
 
     list.appendChild(row);
     updateSignerCount();
-    // Focus name input on new row
+
+    // Attach drag events to this signer's field cards
+    const fieldCards = row.querySelectorAll('.es-signer-field-card');
+    fieldCards.forEach(function(card) {
+        card.addEventListener('dragstart', onSidebarDragStart);
+        card.addEventListener('dragend', function() { card.classList.remove('dragging'); });
+    });
+
+    const nameEl = document.getElementById('signer-name-' + idx);
+    const emailEl = document.getElementById('signer-email-' + idx);
+    const roleEl = document.getElementById('signer-role-' + idx);
+    
+    const onSignerInfoChange = () => {
+        if (selectedItemId !== null) {
+            const selectedItem = signItems.find(it => it._id === selectedItemId);
+            if (selectedItem) {
+                updatePropSignerSelect(selectedItem._signerIdx);
+            }
+        }
+    };
+    
+    if (nameEl) nameEl.addEventListener('input', onSignerInfoChange);
+    if (emailEl) emailEl.addEventListener('input', onSignerInfoChange);
+    if (roleEl) {
+        roleEl.addEventListener('change', function() {
+            const newRoleId = roleEl.value ? parseInt(roleEl.value, 10) : false;
+            signItems.forEach(item => {
+                if (item._signerIdx === idx) {
+                    item.responsible_id = newRoleId;
+                    const el = document.getElementById(`sfi-${item._id}`);
+                    if (el) {
+                        applyRoleColorToEl(el, newRoleId, color);
+                    }
+                }
+            });
+            onSignerInfoChange();
+            markDirty();
+        });
+    }
+
     const nameInput = document.getElementById('signer-name-' + idx);
-    if (nameInput) nameInput.focus();
+    if (nameInput) setTimeout(function() { nameInput.focus(); }, 50);
 }
 window.addSignerRow = addSignerRow;
 
 function removeSignerRow(idx) {
     const row = document.getElementById('signer-row-' + idx);
     if (row) row.remove();
+
+    // Clear signer assignment for all fields assigned to this signer
+    signItems.forEach(item => {
+        if (item._signerIdx === idx) {
+            item._signerIdx = null;
+            item._signerColor = null;
+            item.responsible_id = false;
+            
+            const el = document.getElementById(`sfi-${item._id}`);
+            if (el) {
+                applyRoleColorToEl(el, false, null);
+            }
+        }
+    });
+    
+    if (selectedItemId !== null) {
+        const selectedItem = signItems.find(it => it._id === selectedItemId);
+        if (selectedItem) {
+            showPropsPanel(selectedItem);
+        }
+    }
+
     updateSignerCount();
     const list = document.getElementById('es-signers-list');
-    const remaining = list.querySelectorAll('.es-signer-row');
+    const remaining = list ? list.querySelectorAll('.es-signer-row') : [];
     if (remaining.length === 0) {
         const hint = document.getElementById('es-no-signers-hint');
         if (hint) hint.style.display = '';
     }
+    markDirty();
 }
 window.removeSignerRow = removeSignerRow;
 
@@ -1782,8 +1979,6 @@ async function confirmSend() {
 }
 window.confirmSend = confirmSend;
 
-buildFieldCards();
-buildRoleSelect();
 buildSignersPanel();
 renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf');
 
