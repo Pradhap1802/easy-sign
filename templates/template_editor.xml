@@ -3,77 +3,1343 @@
     <template id="template_editor">
         <t>
             <style>
+                /* ===== RESET &amp; BASE ===== */
+                *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
                 body {
-                    font-family: Arial, sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    background-color: #f0f0f0;
+                    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+                    background: #0f1117;
+                    color: #e2e8f0;
+                    height: 100vh;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
                 }
-                .container {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    background-color: white;
-                    padding: 20px;
+
+                /* ===== HEADER ===== */
+                .es-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 0 24px;
+                    height: 58px;
+                    background: rgba(15,17,23,0.95);
+                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                    flex-shrink: 0;
+                    backdrop-filter: blur(12px);
+                    z-index: 100;
+                }
+                .es-header-left { display: flex; align-items: center; gap: 14px; }
+                .es-logo {
+                    width: 32px; height: 32px;
+                    background: linear-gradient(135deg, #6366f1, #8b5cf6);
                     border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 16px; font-weight: 700; color: white;
+                    flex-shrink: 0;
                 }
-                h1 {
-                    color: #333;
+                .es-title {
+                    font-size: 15px; font-weight: 600;
+                    color: #f1f5f9;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    max-width: 320px;
+                }
+                .es-subtitle { font-size: 12px; color: #64748b; margin-top: 1px; }
+                .es-header-actions { display: flex; gap: 10px; align-items: center; }
+                .es-btn {
+                    padding: 8px 18px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    border: none;
+                    transition: all 0.18s ease;
+                    display: inline-flex; align-items: center; gap: 6px;
+                }
+                .es-btn-ghost {
+                    background: transparent;
+                    color: #94a3b8;
+                    border: 1px solid rgba(255,255,255,0.1);
+                }
+                .es-btn-ghost:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+                .es-btn-danger {
+                    background: rgba(239,68,68,0.12);
+                    color: #f87171;
+                    border: 1px solid rgba(239,68,68,0.2);
+                }
+                .es-btn-danger:hover { background: rgba(239,68,68,0.22); }
+                .es-btn-primary {
+                    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                    color: white;
+                    border: none;
+                    box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+                }
+                .es-btn-primary:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(99,102,241,0.45);
+                }
+                .es-btn-primary:active { transform: translateY(0); }
+                .es-btn-primary:disabled {
+                    opacity: 0.5; cursor: not-allowed; transform: none;
+                    box-shadow: none;
+                }
+                .es-save-status {
+                    font-size: 12px; color: #64748b;
+                    display: flex; align-items: center; gap: 5px;
+                }
+                .es-save-status.saved { color: #34d399; }
+                .es-save-status.saving { color: #fbbf24; }
+                .es-save-status.error { color: #f87171; }
+
+                /* ===== MAIN LAYOUT ===== */
+                .es-main {
+                    display: flex;
+                    flex: 1;
+                    overflow: hidden;
+                }
+
+                /* ===== SIDEBAR ===== */
+                .es-sidebar {
+                    width: 260px;
+                    flex-shrink: 0;
+                    background: rgba(17,20,29,0.98);
+                    border-right: 1px solid rgba(255,255,255,0.07);
+                    display: flex;
+                    flex-direction: column;
+                    overflow: hidden;
+                }
+                .es-sidebar-section {
+                    padding: 16px;
+                    border-bottom: 1px solid rgba(255,255,255,0.06);
+                }
+                .es-sidebar-title {
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 0.08em;
+                    text-transform: uppercase;
+                    color: #475569;
+                    margin-bottom: 12px;
+                }
+                .es-field-cards {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                }
+                .es-field-card {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    padding: 10px 12px;
+                    border-radius: 10px;
+                    border: 1px solid transparent;
+                    cursor: grab;
+                    transition: all 0.18s ease;
+                    background: rgba(255,255,255,0.03);
+                    user-select: none;
+                    -webkit-user-select: none;
+                }
+                .es-field-card:hover {
+                    background: rgba(255,255,255,0.07);
+                    border-color: rgba(255,255,255,0.1);
+                    transform: translateX(3px);
+                }
+                .es-field-card:active { cursor: grabbing; transform: scale(0.97); }
+                .es-field-card.dragging { opacity: 0.4; }
+                .es-field-icon {
+                    width: 34px; height: 34px;
+                    border-radius: 8px;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 16px;
+                    flex-shrink: 0;
+                }
+                .es-field-info { flex: 1; min-width: 0; }
+                .es-field-name { font-size: 13px; font-weight: 600; color: #e2e8f0; }
+                .es-field-desc { font-size: 11px; color: #64748b; margin-top: 1px; }
+                .es-drag-hint {
+                    font-size: 11px; color: #334155;
+                    text-align: center;
+                    padding: 8px 16px;
+                    display: flex; align-items: center; gap: 6px; justify-content: center;
+                }
+
+                /* Field type colors */
+                .ft-signature .es-field-icon { background: rgba(99,102,241,0.18); color: #818cf8; }
+                .ft-initial   .es-field-icon { background: rgba(139,92,246,0.18); color: #a78bfa; }
+                .ft-text      .es-field-icon { background: rgba(34,197,94,0.18);  color: #4ade80; }
+                .ft-textarea  .es-field-icon { background: rgba(20,184,166,0.18); color: #2dd4bf; }
+                .ft-checkbox  .es-field-icon { background: rgba(251,146,60,0.18); color: #fb923c; }
+
+                /* ===== PROPERTIES PANEL ===== */
+                .es-props-panel {
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 16px;
+                    display: none;
+                    flex-direction: column;
+                    gap: 14px;
+                }
+                .es-props-panel.visible { display: flex; }
+                .es-props-header {
+                    display: flex; align-items: center; justify-content: space-between;
+                    margin-bottom: 4px;
+                }
+                .es-props-title { font-size: 13px; font-weight: 700; color: #e2e8f0; }
+                .es-props-close {
+                    width: 24px; height: 24px;
+                    border-radius: 6px;
+                    border: none;
+                    background: rgba(255,255,255,0.07);
+                    color: #94a3b8;
+                    cursor: pointer;
+                    font-size: 14px;
+                    display: flex; align-items: center; justify-content: center;
+                    transition: all 0.15s;
+                }
+                .es-props-close:hover { background: rgba(239,68,68,0.2); color: #f87171; }
+                .es-form-group { display: flex; flex-direction: column; gap: 6px; }
+                .es-label {
+                    font-size: 11px; font-weight: 600;
+                    color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
+                }
+                .es-select, .es-input {
+                    width: 100%;
+                    padding: 8px 10px;
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 8px;
+                    color: #e2e8f0;
+                    font-size: 13px;
+                    outline: none;
+                    transition: border-color 0.18s;
+                    -webkit-appearance: none;
+                    appearance: none;
+                }
+                .es-select:focus, .es-input:focus { border-color: #6366f1; }
+                .es-select option { background: #1e2130; color: #e2e8f0; }
+                .es-checkbox-row {
+                    display: flex; align-items: center; gap: 8px;
+                    padding: 8px 10px;
+                    background: rgba(255,255,255,0.03);
+                    border-radius: 8px;
+                    cursor: pointer;
+                }
+                .es-checkbox-row input[type="checkbox"] { accent-color: #6366f1; width: 15px; height: 15px; }
+                .es-checkbox-label { font-size: 13px; color: #cbd5e1; }
+                .es-props-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0; }
+                .es-props-delete {
+                    width: 100%;
+                    padding: 9px;
+                    background: rgba(239,68,68,0.1);
+                    color: #f87171;
+                    border: 1px solid rgba(239,68,68,0.2);
+                    border-radius: 8px;
+                    font-size: 13px; font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.18s;
+                    display: flex; align-items: center; justify-content: center; gap: 6px;
+                }
+                .es-props-delete:hover { background: rgba(239,68,68,0.22); }
+                .es-pos-info {
+                    background: rgba(255,255,255,0.03);
+                    border-radius: 8px;
+                    padding: 8px 10px;
+                    font-size: 11px;
+                    color: #475569;
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 4px;
+                }
+                .es-pos-info span { color: #94a3b8; }
+
+                /* ===== PDF VIEWER ===== */
+                .es-viewer {
+                    flex: 1;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    background: #1a1d27;
+                    padding: 24px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 20px;
+                }
+                .es-page-wrapper {
+                    position: relative;
+                    display: inline-block;
+                    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+                    border-radius: 4px;
+                    border: 2px solid transparent;
+                    transition: border-color 0.18s;
+                    max-width: 900px;
+                    width: 100%;
+                }
+                .es-page-wrapper.drag-over {
+                    border-color: #6366f1 !important;
+                    box-shadow: 0 0 0 3px rgba(99,102,241,0.25), 0 8px 40px rgba(0,0,0,0.5);
+                }
+                .es-page-wrapper canvas {
+                    display: block;
+                    width: 100%;
+                    border-radius: 2px;
+                }
+                .es-page-label {
+                    text-align: center;
+                    font-size: 11px;
+                    color: #475569;
+                    margin-top: 6px;
+                    letter-spacing: 0.04em;
+                }
+
+                /* ===== LOADING ===== */
+                .es-loading {
+                    display: flex; flex-direction: column;
+                    align-items: center; justify-content: center;
+                    gap: 14px; height: 300px;
+                }
+                .es-spinner {
+                    width: 40px; height: 40px;
+                    border: 3px solid rgba(99,102,241,0.2);
+                    border-top-color: #6366f1;
+                    border-radius: 50%;
+                    animation: spin 0.8s linear infinite;
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .es-loading-text { color: #64748b; font-size: 14px; }
+
+                /* ===== PLACED FIELD ITEMS ===== */
+                .sign-field-item {
+                    position: absolute;
+                    cursor: move;
+                    z-index: 20;
+                    border-radius: 4px;
+                    border: 2px solid;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: box-shadow 0.15s;
+                    overflow: visible;
+                }
+                .sign-field-item:hover { z-index: 30; }
+                .sign-field-item.selected {
+                    z-index: 40;
+                    box-shadow: 0 0 0 3px rgba(99,102,241,0.5) !important;
+                }
+                .sign-field-label {
+                    font-size: 10px;
+                    font-weight: 700;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    padding: 0 4px;
+                    pointer-events: none;
+                    opacity: 0.85;
+                    max-width: 100%;
+                }
+                .sign-field-badge {
+                    position: absolute;
+                    top: -8px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    font-size: 9px;
+                    font-weight: 700;
+                    padding: 1px 5px;
+                    border-radius: 4px;
+                    white-space: nowrap;
+                    pointer-events: none;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                }
+                .sign-field-delete {
+                    position: absolute;
+                    top: -10px;
+                    right: -10px;
+                    width: 20px; height: 20px;
+                    border-radius: 50%;
+                    background: #ef4444;
+                    color: white;
+                    border: 2px solid #0f1117;
+                    font-size: 11px;
+                    display: flex; align-items: center; justify-content: center;
+                    cursor: pointer;
+                    z-index: 50;
+                    opacity: 0;
+                    transition: opacity 0.15s, transform 0.15s;
+                    line-height: 1;
+                    font-weight: 700;
+                }
+                .sign-field-item:hover .sign-field-delete,
+                .sign-field-item.selected .sign-field-delete {
+                    opacity: 1;
+                }
+                .sign-field-delete:hover { transform: scale(1.2); background: #dc2626; }
+                .sign-field-resize {
+                    position: absolute;
+                    bottom: -5px;
+                    right: -5px;
+                    width: 12px; height: 12px;
+                    background: white;
+                    border: 2px solid #6366f1;
+                    border-radius: 2px;
+                    cursor: se-resize;
+                    z-index: 50;
+                    opacity: 0;
+                    transition: opacity 0.15s;
+                }
+                .sign-field-item:hover .sign-field-resize,
+                .sign-field-item.selected .sign-field-resize {
+                    opacity: 1;
+                }
+
+                /* Field type specific colors */
+                .sfi-signature { border-color: #6366f1; background: rgba(99,102,241,0.12); color: #818cf8; }
+                .sfi-initial   { border-color: #8b5cf6; background: rgba(139,92,246,0.12); color: #a78bfa; }
+                .sfi-text      { border-color: #22c55e; background: rgba(34,197,94,0.12);  color: #4ade80; }
+                .sfi-textarea  { border-color: #14b8a6; background: rgba(20,184,166,0.12); color: #2dd4bf; }
+                .sfi-checkbox  { border-color: #f97316; background: rgba(249,115,22,0.12); color: #fb923c; }
+
+                .sfi-signature .sign-field-badge { background: rgba(99,102,241,0.3); color: #818cf8; }
+                .sfi-initial   .sign-field-badge { background: rgba(139,92,246,0.3); color: #a78bfa; }
+                .sfi-text      .sign-field-badge { background: rgba(34,197,94,0.3);  color: #4ade80; }
+                .sfi-textarea  .sign-field-badge { background: rgba(20,184,166,0.3); color: #2dd4bf; }
+                .sfi-checkbox  .sign-field-badge { background: rgba(249,115,22,0.3); color: #fb923c; }
+
+                /* ===== TOAST ===== */
+                .es-toast {
+                    position: fixed;
+                    bottom: 28px;
+                    left: 50%;
+                    transform: translateX(-50%) translateY(80px);
+                    padding: 12px 22px;
+                    border-radius: 10px;
+                    font-size: 13px; font-weight: 600;
+                    z-index: 9999;
+                    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+                    opacity: 0;
+                    pointer-events: none;
+                    display: flex; align-items: center; gap: 8px;
+                    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+                }
+                .es-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+                .es-toast.success { background: #064e3b; color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
+                .es-toast.error   { background: #450a0a; color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
+
+                /* ===== EMPTY STATE ===== */
+                .es-empty-hint {
+                    position: absolute;
+                    inset: 0;
+                    display: flex; align-items: center; justify-content: center;
+                    pointer-events: none;
+                    flex-direction: column; gap: 8px;
+                    opacity: 0.35;
+                }
+                .es-empty-hint-icon { font-size: 32px; }
+                .es-empty-hint-text { font-size: 13px; color: #94a3b8; text-align: center; }
+
+                /* ===== SCROLLBAR ===== */
+                .es-viewer::-webkit-scrollbar { width: 6px; }
+                .es-viewer::-webkit-scrollbar-track { background: transparent; }
+                .es-viewer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+                .es-sidebar::-webkit-scrollbar { width: 4px; }
+                .es-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+                .es-props-panel::-webkit-scrollbar { width: 4px; }
+                .es-props-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+                /* ===== FIELD COUNT BADGE ===== */
+                .es-field-count {
+                    display: inline-flex; align-items: center; justify-content: center;
+                    background: rgba(99,102,241,0.2);
+                    color: #818cf8;
+                    font-size: 10px; font-weight: 700;
+                    min-width: 18px; height: 18px;
+                    padding: 0 5px;
+                    border-radius: 9px;
+                    margin-left: auto;
+                }
+
+                .es-sidebar-scroll {
+                    overflow-y: auto;
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                }
+
+                /* Role color dot */
+                .es-role-dot {
+                    width: 8px; height: 8px;
+                    border-radius: 50%;
+                    flex-shrink: 0;
+                    display: inline-block;
                 }
             </style>
-            <div class="container">
-                <h1>Edit Template: <t t-esc="template.name"/></h1>
-                <div id="o_sign_root">
+
+            <!-- HEADER -->
+            <div class="es-header">
+                <div class="es-header-left">
+                    <div class="es-logo">&#9998;</div>
+                    <div>
+                        <div class="es-title" id="es-template-name">
+                            <t t-esc="template.name"/>
+                        </div>
+                        <div class="es-subtitle">Template Editor</div>
+                    </div>
+                </div>
+                <div class="es-header-actions">
+                    <div class="es-save-status" id="es-save-status">
+                        <span>&#9679;</span> <span id="es-save-text">Unsaved changes</span>
+                    </div>
+                    <button class="es-btn es-btn-ghost" id="es-btn-back" onclick="window.history.back()">
+                        &#8592; Back
+                    </button>
+                    <button class="es-btn es-btn-danger" id="es-btn-discard" onclick="discardChanges()">
+                        &#10005; Discard
+                    </button>
+                    <button class="es-btn es-btn-primary" id="es-btn-save" onclick="saveTemplate()">
+                        &#10003; Save Template
+                    </button>
                 </div>
             </div>
+
+            <!-- MAIN LAYOUT -->
+            <div class="es-main">
+                <!-- SIDEBAR -->
+                <div class="es-sidebar">
+                    <!-- Field palette (shown when no field selected) -->
+                    <div id="es-field-palette">
+                        <div class="es-sidebar-section">
+                            <div class="es-sidebar-title">Field Types</div>
+                            <div class="es-field-cards" id="es-field-cards">
+                                <!-- Cards injected by JS from sign_item_types -->
+                            </div>
+                            <div class="es-drag-hint" style="margin-top:10px;">
+                                <span>&#10021;</span> Drag onto the PDF to place
+                            </div>
+                        </div>
+                        <div class="es-sidebar-section" style="flex:1;">
+                            <div class="es-sidebar-title" style="display:flex;align-items:center;gap:6px;">
+                                Placed Fields <span class="es-field-count" id="es-field-count-badge">0</span>
+                            </div>
+                            <div id="es-placed-list" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
+                                <div style="font-size:12px;color:#334155;text-align:center;padding:12px 0;" id="es-placed-empty">
+                                    No fields placed yet
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Properties panel (shown when a field is selected) -->
+                    <div class="es-props-panel" id="es-props-panel">
+                        <div>
+                            <div class="es-props-header">
+                                <div class="es-props-title" id="es-props-title">Field Properties</div>
+                                <button class="es-props-close" id="es-props-close" title="Back to field list">&#8592;</button>
+                            </div>
+                        </div>
+                        <div class="es-props-divider"></div>
+                        <div class="es-form-group">
+                            <label class="es-label">Role / Responsible</label>
+                            <select class="es-select" id="es-prop-role">
+                                <option value="">— No role —</option>
+                                <!-- filled by JS -->
+                            </select>
+                        </div>
+                        <div class="es-form-group">
+                            <label class="es-label">Field Name</label>
+                            <input class="es-input" id="es-prop-name" type="text" placeholder="Optional label..."/>
+                        </div>
+                        <div class="es-form-group">
+                            <label class="es-label">Placeholder</label>
+                            <input class="es-input" id="es-prop-placeholder" type="text" placeholder="Hint text..."/>
+                        </div>
+                        <label class="es-checkbox-row">
+                            <input type="checkbox" id="es-prop-required" checked="checked"/>
+                            <span class="es-checkbox-label">Required field</span>
+                        </label>
+                        <div class="es-props-divider"></div>
+                        <div class="es-pos-info" id="es-pos-info">
+                            <div>X: <span id="pi-x">—</span></div>
+                            <div>Y: <span id="pi-y">—</span></div>
+                            <div>W: <span id="pi-w">—</span></div>
+                            <div>H: <span id="pi-h">—</span></div>
+                        </div>
+                        <button class="es-props-delete" id="es-props-delete">
+                            &#128465; Delete Field
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PDF VIEWER -->
+                <div class="es-viewer" id="es-viewer">
+                    <div class="es-loading" id="es-loading">
+                        <div class="es-spinner"></div>
+                        <div class="es-loading-text">Loading PDF…</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOAST -->
+            <div class="es-toast" id="es-toast"></div>
+
+            <!-- PDF.js -->
             <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
             <script>
 <![CDATA[
-            const TEMPLATE_ID = ]]><t t-esc="template.id"/><![CDATA[;
-            const SIGN_ITEMS = ]]><t t-raw="json.dumps([{
-                'id': item.id,
-                'type': item.type_id.item_type,
-                'page': item.page,
-                'posX': item.posX,
-                'posY': item.posY,
-                'width': item.width,
-                'height': item.height,
-                'required': item.required
-            } for item in template.sign_item_ids])"/><![CDATA[;
+(function() {
+'use strict';
 
-            const pdfjsLib = window['pdfjs-dist/build/pdf'];
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+/* ========================================================
+   DATA from server
+   ======================================================== */
+const TEMPLATE_ID = ]]><t t-esc="template.id"/><![CDATA[;
+const SIGN_ITEM_TYPES = ]]><t t-raw="json.dumps(sign_item_types)"/><![CDATA[;
+const SIGN_ROLES = ]]><t t-raw="json.dumps(sign_roles)"/><![CDATA[;
+const INITIAL_ITEMS = ]]><t t-raw="json.dumps(sign_items)"/><![CDATA[;
 
-            let pdfDoc = null;
-            let canvasList = [];
+/* ========================================================
+   STATE
+   ======================================================== */
+let signItems = [];   // { _id, id, type_id, type, page, posX, posY, width, height, required, responsible_id, name, placeholder, _dirty }
+let nextLocalId = -1; // negative IDs = newly created (not yet saved)
+let selectedItemId = null;
+let isDirty = false;
 
-            async function renderPDF(url, canvasContainer) {
-                const loadingTask = pdfjsLib.getDocument(url);
-                pdfDoc = await loadingTask.promise;
-                for (let i = 1; i <= pdfDoc.numPages; i++) {
-                    await renderPage(i, canvasContainer);
-                }
-            }
+// PDF state
+let pdfDoc = null;
+let pageWrappers = {}; // pageNum → { wrapper, canvas, viewport }
 
-            async function renderPage(num, canvasContainer) {
-                const page = await pdfDoc.getPage(num);
-                const scale = 1.5;
-                const viewport = page.getViewport({scale: scale});
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                canvas.style.width = '100%';
-                canvasContainer.appendChild(canvas);
-                canvasList.push({canvas, viewport, pageNum: num});
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                await page.render(renderContext).promise;
-            }
+/* ========================================================
+   INIT PDF.js
+   ======================================================== */
+const pdfjsLib = window['pdfjs-dist/build/pdf'];
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-            renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf', document.getElementById('o_sign_root'));
+/* ========================================================
+   TYPE/ROLE HELPERS
+   ======================================================== */
+const TYPE_META = {
+    signature: { label: 'Signature', icon: '✍', desc: 'Handwritten signature',    cls: 'sfi-signature', ftCls: 'ft-signature', defW: 0.2, defH: 0.07 },
+    initial:   { label: 'Initial',   icon: '📝', desc: 'Initials abbreviation',    cls: 'sfi-initial',   ftCls: 'ft-initial',   defW: 0.1, defH: 0.05 },
+    text:      { label: 'Text',      icon: '𝐓',  desc: 'Single-line text input',  cls: 'sfi-text',      ftCls: 'ft-text',      defW: 0.2, defH: 0.04 },
+    textarea:  { label: 'Text Area', icon: '≡',  desc: 'Multi-line text input',   cls: 'sfi-textarea',  ftCls: 'ft-textarea',  defW: 0.25, defH: 0.1 },
+    checkbox:  { label: 'Checkbox',  icon: '☑',  desc: 'Checkbox / tick field',   cls: 'sfi-checkbox',  ftCls: 'ft-checkbox',  defW: 0.05, defH: 0.05 },
+};
+
+function getTypeMeta(typeStr) {
+    return TYPE_META[typeStr] || TYPE_META['text'];
+}
+
+function getRoleById(id) {
+    return SIGN_ROLES.find(r => r.id === id) || null;
+}
+
+function getOdooColorHex(colorIdx) {
+    const palette = [
+        '#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c',
+        '#3498db','#9b59b6','#e91e63','#795548','#607d8b',
+        '#00bcd4','#cddc39'
+    ];
+    return palette[colorIdx % palette.length] || '#6366f1';
+}
+
+/* ========================================================
+   BUILD SIDEBAR
+   ======================================================== */
+function buildFieldCards() {
+    const container = document.getElementById('es-field-cards');
+    container.innerHTML = '';
+    SIGN_ITEM_TYPES.forEach(t => {
+        const meta = getTypeMeta(t.item_type);
+        const card = document.createElement('div');
+        card.className = 'es-field-card ' + meta.ftCls;
+        card.draggable = true;
+        card.dataset.typeId = t.id;
+        card.dataset.itemType = t.item_type;
+        card.dataset.typeName = t.name;
+        card.innerHTML = `
+            <div class="es-field-icon">${meta.icon}</div>
+            <div class="es-field-info">
+                <div class="es-field-name">${t.name}</div>
+                <div class="es-field-desc">${meta.desc}</div>
+            </div>
+        `;
+        card.addEventListener('dragstart', onSidebarDragStart);
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        container.appendChild(card);
+    });
+}
+
+/* ========================================================
+   BUILD ROLE SELECT
+   ======================================================== */
+function buildRoleSelect() {
+    const sel = document.getElementById('es-prop-role');
+    SIGN_ROLES.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name;
+        sel.appendChild(opt);
+    });
+}
+
+/* ========================================================
+   SIDEBAR DRAG START
+   ======================================================== */
+let dragPayload = null; // { typeId, itemType, typeName }
+
+function onSidebarDragStart(e) {
+    const card = e.currentTarget;
+    dragPayload = {
+        typeId: parseInt(card.dataset.typeId),
+        itemType: card.dataset.itemType,
+        typeName: card.dataset.typeName,
+    };
+    card.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('text/plain', 'es-field');
+}
+
+/* ========================================================
+   PAGE WRAPPER DROP HANDLERS
+   ======================================================== */
+function attachPageDropHandlers(wrapper, pageNum) {
+    wrapper.addEventListener('dragover', e => {
+        if (!dragPayload) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        wrapper.classList.add('drag-over');
+    });
+    wrapper.addEventListener('dragleave', e => {
+        if (!e.relatedTarget || !wrapper.contains(e.relatedTarget)) {
+            wrapper.classList.remove('drag-over');
+        }
+    });
+    wrapper.addEventListener('drop', e => {
+        e.preventDefault();
+        wrapper.classList.remove('drag-over');
+        if (!dragPayload) return;
+
+        const { typeId, itemType, typeName } = dragPayload;
+        dragPayload = null;
+
+        const rect = wrapper.getBoundingClientRect();
+        const meta = getTypeMeta(itemType);
+        const defW = meta.defW;
+        const defH = meta.defH;
+
+        // Centre the dropped item on the cursor
+        let posX = (e.clientX - rect.left) / rect.width  - defW / 2;
+        let posY = (e.clientY - rect.top)  / rect.height - defH / 2;
+        posX = Math.max(0, Math.min(1 - defW, posX));
+        posY = Math.max(0, Math.min(1 - defH, posY));
+
+        const item = {
+            _id: nextLocalId--,
+            id: 0,
+            type_id: [typeId, typeName],
+            type: itemType,
+            page: pageNum,
+            posX: +posX.toFixed(4),
+            posY: +posY.toFixed(4),
+            width: defW,
+            height: defH,
+            required: true,
+            responsible_id: false,
+            name: '',
+            placeholder: '',
+        };
+        signItems.push(item);
+        placeFieldOnPage(item);
+        selectItem(item._id);
+        markDirty();
+        updatePlacedList();
+    });
+}
+
+/* ========================================================
+   RENDER PDF & PLACE EXISTING ITEMS
+   ======================================================== */
+async function renderPDF(url) {
+    const loadingTask = pdfjsLib.getDocument(url);
+    pdfDoc = await loadingTask.promise;
+
+    const viewer = document.getElementById('es-viewer');
+    document.getElementById('es-loading').remove();
+
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i);
+        const scale = 1.8;
+        const viewport = page.getViewport({ scale });
+
+        // Page label
+        const labelEl = document.createElement('div');
+        labelEl.className = 'es-page-label';
+        labelEl.textContent = `Page ${i} of ${pdfDoc.numPages}`;
+
+        // Wrapper
+        const wrapper = document.createElement('div');
+        wrapper.className = 'es-page-wrapper';
+        wrapper.dataset.page = i;
+        wrapper.style.position = 'relative';
+        wrapper.style.maxWidth = '900px';
+        wrapper.style.width = '100%';
+
+        // Canvas
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width  = viewport.width;
+        canvas.style.display = 'block';
+        canvas.style.width = '100%';
+
+        wrapper.appendChild(canvas);
+        viewer.appendChild(wrapper);
+        viewer.appendChild(labelEl);
+
+        const renderCtx = { canvasContext: ctx, viewport };
+        await page.render(renderCtx).promise;
+
+        pageWrappers[i] = { wrapper, canvas, viewport };
+        attachPageDropHandlers(wrapper, i);
+
+        // Empty hint
+        const hint = document.createElement('div');
+        hint.className = 'es-empty-hint';
+        hint.id = `page-hint-${i}`;
+        hint.innerHTML = `<div class="es-empty-hint-icon">&#8681;</div><div class="es-empty-hint-text">Drag a field here</div>`;
+        wrapper.appendChild(hint);
+    }
+
+    // Place existing items
+    signItems.forEach(item => placeFieldOnPage(item));
+    updatePlacedList();
+}
+
+/* ========================================================
+   PLACE A FIELD OVERLAY ON ITS PAGE
+   ======================================================== */
+function placeFieldOnPage(item) {
+    const pw = pageWrappers[item.page];
+    if (!pw) return;
+
+    // Hide empty hint if fields exist on this page
+    const hint = document.getElementById(`page-hint-${item.page}`);
+    if (hint) hint.style.display = 'none';
+
+    const meta = getTypeMeta(item.type);
+
+    const el = document.createElement('div');
+    el.className = `sign-field-item ${meta.cls}`;
+    el.id = `sfi-${item._id}`;
+    el.style.left   = (item.posX * 100) + '%';
+    el.style.top    = (item.posY * 100) + '%';
+    el.style.width  = (item.width * 100) + '%';
+    el.style.height = (item.height * 100) + '%';
+
+    // Apply role color if set
+    applyRoleColorToEl(el, item.responsible_id);
+
+    // Badge
+    const badge = document.createElement('div');
+    badge.className = 'sign-field-badge';
+    badge.textContent = meta.label;
+    el.appendChild(badge);
+
+    // Label
+    const lbl = document.createElement('div');
+    lbl.className = 'sign-field-label';
+    lbl.textContent = item.name || meta.icon;
+    el.appendChild(lbl);
+
+    // Delete button
+    const delBtn = document.createElement('button');
+    delBtn.className = 'sign-field-delete';
+    delBtn.innerHTML = '&#10005;';
+    delBtn.title = 'Delete field';
+    delBtn.addEventListener('mousedown', e => { e.stopPropagation(); deleteItem(item._id); });
+    el.appendChild(delBtn);
+
+    // Resize handle
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'sign-field-resize';
+    resizeHandle.title = 'Resize';
+    resizeHandle.addEventListener('mousedown', e => onResizeStart(e, item._id));
+    el.appendChild(resizeHandle);
+
+    // Click → select
+    el.addEventListener('mousedown', e => {
+        if (e.target === delBtn || e.target === resizeHandle) return;
+        onFieldMouseDown(e, item._id);
+    });
+
+    pw.wrapper.appendChild(el);
+}
+
+/* ========================================================
+   APPLY ROLE COLOR
+   ======================================================== */
+function applyRoleColorToEl(el, roleId) {
+    if (!roleId) return;
+    const roleIdNum = Array.isArray(roleId) ? roleId[0] : roleId;
+    const role = getRoleById(roleIdNum);
+    if (!role) return;
+    const hex = getOdooColorHex(role.color || 0);
+    el.style.borderColor = hex;
+    // Remove type class border and apply role color
+    el.classList.forEach(cls => {
+        if (cls.startsWith('sfi-')) {
+            el.style.background = hex + '22'; // translucent
+            el.style.color = hex;
+        }
+    });
+}
+
+/* ========================================================
+   DRAG TO MOVE
+   ======================================================== */
+let movingItemId = null;
+let movingStartX, movingStartY;
+let movingItemOrigX, movingItemOrigY;
+let movingWrapper = null;
+
+function onFieldMouseDown(e, itemId) {
+    e.preventDefault();
+    selectItem(itemId);
+
+    movingItemId = itemId;
+    movingStartX = e.clientX;
+    movingStartY = e.clientY;
+    const item = signItems.find(it => it._id === itemId);
+    movingItemOrigX = item.posX;
+    movingItemOrigY = item.posY;
+    movingWrapper = pageWrappers[item.page].wrapper;
+}
+
+document.addEventListener('mousemove', e => {
+    if (movingItemId === null) return;
+    const rect = movingWrapper.getBoundingClientRect();
+    const item = signItems.find(it => it._id === movingItemId);
+    const dx = (e.clientX - movingStartX) / rect.width;
+    const dy = (e.clientY - movingStartY) / rect.height;
+    item.posX = Math.max(0, Math.min(1 - item.width,  movingItemOrigX + dx));
+    item.posY = Math.max(0, Math.min(1 - item.height, movingItemOrigY + dy));
+    item.posX = +item.posX.toFixed(4);
+    item.posY = +item.posY.toFixed(4);
+    const el = document.getElementById(`sfi-${movingItemId}`);
+    if (el) {
+        el.style.left = (item.posX * 100) + '%';
+        el.style.top  = (item.posY * 100) + '%';
+    }
+    updatePosInfo(item);
+    markDirty();
+});
+
+document.addEventListener('mouseup', () => {
+    if (movingItemId !== null) {
+        movingItemId = null;
+        movingWrapper = null;
+    }
+});
+
+/* ========================================================
+   RESIZE
+   ======================================================== */
+let resizingItemId = null;
+let resizingStartX, resizingStartY;
+let resizingOrigW, resizingOrigH;
+let resizingWrapper = null;
+
+function onResizeStart(e, itemId) {
+    e.preventDefault();
+    e.stopPropagation();
+    resizingItemId = itemId;
+    resizingStartX = e.clientX;
+    resizingStartY = e.clientY;
+    const item = signItems.find(it => it._id === itemId);
+    resizingOrigW = item.width;
+    resizingOrigH = item.height;
+    resizingWrapper = pageWrappers[item.page].wrapper;
+}
+
+document.addEventListener('mousemove', e => {
+    if (resizingItemId === null) return;
+    const rect = resizingWrapper.getBoundingClientRect();
+    const item = signItems.find(it => it._id === resizingItemId);
+    const dw = (e.clientX - resizingStartX) / rect.width;
+    const dh = (e.clientY - resizingStartY) / rect.height;
+    item.width  = Math.max(0.02, Math.min(1 - item.posX, resizingOrigW + dw));
+    item.height = Math.max(0.01, Math.min(1 - item.posY, resizingOrigH + dh));
+    item.width  = +item.width.toFixed(4);
+    item.height = +item.height.toFixed(4);
+    const el = document.getElementById(`sfi-${resizingItemId}`);
+    if (el) {
+        el.style.width  = (item.width  * 100) + '%';
+        el.style.height = (item.height * 100) + '%';
+    }
+    updatePosInfo(item);
+    markDirty();
+});
+
+document.addEventListener('mouseup', () => {
+    if (resizingItemId !== null) {
+        resizingItemId = null;
+        resizingWrapper = null;
+    }
+});
+
+/* ========================================================
+   KEYBOARD DELETE
+   ======================================================== */
+document.addEventListener('keydown', e => {
+    if ((e.key === 'Delete' || e.key === 'Backspace') &&
+        selectedItemId !== null &&
+        !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)) {
+        deleteItem(selectedItemId);
+    }
+    if (e.key === 'Escape') {
+        deselectAll();
+    }
+});
+
+/* ========================================================
+   SELECT / DESELECT
+   ======================================================== */
+function selectItem(itemId) {
+    // Deselect previous
+    if (selectedItemId !== null) {
+        const prev = document.getElementById(`sfi-${selectedItemId}`);
+        if (prev) prev.classList.remove('selected');
+    }
+    selectedItemId = itemId;
+    const el = document.getElementById(`sfi-${itemId}`);
+    if (el) el.classList.add('selected');
+
+    // Show properties panel
+    const item = signItems.find(it => it._id === itemId);
+    if (item) showPropsPanel(item);
+}
+
+function deselectAll() {
+    if (selectedItemId !== null) {
+        const prev = document.getElementById(`sfi-${selectedItemId}`);
+        if (prev) prev.classList.remove('selected');
+        selectedItemId = null;
+    }
+    hidePropsPanel();
+}
+
+// Click on viewer background → deselect
+document.getElementById('es-viewer').addEventListener('mousedown', e => {
+    if (e.target === document.getElementById('es-viewer') ||
+        e.target.classList.contains('es-page-wrapper') ||
+        e.target.tagName === 'CANVAS') {
+        deselectAll();
+    }
+});
+
+/* ========================================================
+   PROPERTIES PANEL
+   ======================================================== */
+function showPropsPanel(item) {
+    const meta = getTypeMeta(item.type);
+    document.getElementById('es-props-title').textContent = meta.label + ' Field';
+    document.getElementById('es-prop-name').value = item.name || '';
+    document.getElementById('es-prop-placeholder').value = item.placeholder || '';
+    document.getElementById('es-prop-required').checked = item.required !== false;
+
+    const roleId = Array.isArray(item.responsible_id) ? item.responsible_id[0] : (item.responsible_id || '');
+    document.getElementById('es-prop-role').value = roleId || '';
+
+    updatePosInfo(item);
+
+    document.getElementById('es-field-palette').style.display = 'none';
+    document.getElementById('es-props-panel').classList.add('visible');
+}
+
+function hidePropsPanel() {
+    document.getElementById('es-props-panel').classList.remove('visible');
+    document.getElementById('es-field-palette').style.display = '';
+}
+
+function updatePosInfo(item) {
+    document.getElementById('pi-x').textContent = (item.posX * 100).toFixed(1) + '%';
+    document.getElementById('pi-y').textContent = (item.posY * 100).toFixed(1) + '%';
+    document.getElementById('pi-w').textContent = (item.width  * 100).toFixed(1) + '%';
+    document.getElementById('pi-h').textContent = (item.height * 100).toFixed(1) + '%';
+}
+
+// Properties changes → update item
+function syncPropsToItem() {
+    if (selectedItemId === null) return;
+    const item = signItems.find(it => it._id === selectedItemId);
+    if (!item) return;
+    item.name = document.getElementById('es-prop-name').value;
+    item.placeholder = document.getElementById('es-prop-placeholder').value;
+    item.required = document.getElementById('es-prop-required').checked;
+    const roleVal = document.getElementById('es-prop-role').value;
+    item.responsible_id = roleVal ? parseInt(roleVal) : false;
+
+    // Update the overlay label
+    const el = document.getElementById(`sfi-${selectedItemId}`);
+    if (el) {
+        const lbl = el.querySelector('.sign-field-label');
+        if (lbl) lbl.textContent = item.name || getTypeMeta(item.type).icon;
+        // Update role color
+        applyRoleColorToEl(el, item.responsible_id);
+    }
+    markDirty();
+    updatePlacedList();
+}
+
+document.getElementById('es-prop-name').addEventListener('input', syncPropsToItem);
+document.getElementById('es-prop-placeholder').addEventListener('input', syncPropsToItem);
+document.getElementById('es-prop-required').addEventListener('change', syncPropsToItem);
+document.getElementById('es-prop-role').addEventListener('change', syncPropsToItem);
+
+document.getElementById('es-props-close').addEventListener('click', deselectAll);
+
+document.getElementById('es-props-delete').addEventListener('click', () => {
+    if (selectedItemId !== null) deleteItem(selectedItemId);
+});
+
+/* ========================================================
+   DELETE ITEM
+   ======================================================== */
+function deleteItem(itemId) {
+    // Remove DOM element
+    const el = document.getElementById(`sfi-${itemId}`);
+    if (el) el.remove();
+
+    // Remove from state
+    const idx = signItems.findIndex(it => it._id === itemId);
+    if (idx !== -1) signItems.splice(idx, 1);
+
+    if (selectedItemId === itemId) {
+        selectedItemId = null;
+        hidePropsPanel();
+    }
+
+    // Show empty hint if no more fields on that page
+    Object.keys(pageWrappers).forEach(pg => {
+        const pgNum = parseInt(pg);
+        const hasFields = signItems.some(it => it.page === pgNum);
+        const hint = document.getElementById(`page-hint-${pgNum}`);
+        if (hint) hint.style.display = hasFields ? 'none' : '';
+    });
+
+    markDirty();
+    updatePlacedList();
+}
+
+/* ========================================================
+   PLACED FIELDS LIST
+   ======================================================== */
+function updatePlacedList() {
+    const list = document.getElementById('es-placed-list');
+    const empty = document.getElementById('es-placed-empty');
+    const badge = document.getElementById('es-field-count-badge');
+
+    badge.textContent = signItems.length;
+
+    if (signItems.length === 0) {
+        empty.style.display = '';
+        // Remove all row items
+        list.querySelectorAll('.es-placed-row').forEach(r => r.remove());
+        return;
+    }
+    empty.style.display = 'none';
+    list.querySelectorAll('.es-placed-row').forEach(r => r.remove());
+
+    signItems.forEach(item => {
+        const meta = getTypeMeta(item.type);
+        const row = document.createElement('div');
+        row.className = 'es-placed-row';
+        row.style.cssText = `
+            display:flex; align-items:center; gap:8px; padding:7px 8px;
+            border-radius:8px; cursor:pointer;
+            background: rgba(255,255,255,0.03);
+            border:1px solid transparent;
+            transition:all 0.15s; margin-bottom:3px;
+        `;
+        row.innerHTML = `
+            <div style="width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;background:rgba(255,255,255,0.07);">${meta.icon}</div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:12px;font-weight:600;color:#cbd5e1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name || meta.label}</div>
+                <div style="font-size:10px;color:#475569;">Page ${item.page}</div>
+            </div>
+        `;
+        row.addEventListener('click', () => {
+            selectItem(item._id);
+            // Scroll to it
+            const el = document.getElementById(`sfi-${item._id}`);
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        list.appendChild(row);
+    });
+}
+
+/* ========================================================
+   DIRTY / STATUS
+   ======================================================== */
+function markDirty() {
+    isDirty = true;
+    const status = document.getElementById('es-save-status');
+    const txt = document.getElementById('es-save-text');
+    status.className = 'es-save-status';
+    txt.textContent = 'Unsaved changes';
+}
+
+function markSaved() {
+    isDirty = false;
+    const status = document.getElementById('es-save-status');
+    const txt = document.getElementById('es-save-text');
+    status.className = 'es-save-status saved';
+    txt.textContent = 'All changes saved';
+}
+
+/* ========================================================
+   SAVE
+   ======================================================== */
+async function saveTemplate() {
+    const btn = document.getElementById('es-btn-save');
+    btn.disabled = true;
+    btn.textContent = '⏳ Saving…';
+
+    const status = document.getElementById('es-save-status');
+    const txt = document.getElementById('es-save-text');
+    status.className = 'es-save-status saving';
+    txt.textContent = 'Saving…';
+
+    // Build payload
+    const payload = signItems.map(item => {
+        const typeId = Array.isArray(item.type_id) ? item.type_id[0] : item.type_id;
+        const roleId = Array.isArray(item.responsible_id) ? item.responsible_id[0] : (item.responsible_id || false);
+        return {
+            id: item.id > 0 ? item.id : 0,
+            type_id: typeId,
+            page: item.page,
+            posX: item.posX,
+            posY: item.posY,
+            width: item.width,
+            height: item.height,
+            required: item.required,
+            responsible_id: roleId || false,
+            name: item.name || '',
+            placeholder: item.placeholder || '',
+            alignment: 'center',
+        };
+    });
+
+    try {
+        const response = await fetch('/sign/template/' + TEMPLATE_ID + '/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { items: payload } }),
+        });
+        const result = await response.json();
+        if (result.result === true || result.result) {
+            markSaved();
+            showToast('✓ Template saved successfully!', 'success');
+            // Reload to get real IDs for newly created items
+            setTimeout(() => location.reload(), 1200);
+        } else {
+            throw new Error(result.error?.data?.message || 'Save failed');
+        }
+    } catch (err) {
+        status.className = 'es-save-status error';
+        txt.textContent = 'Save failed';
+        showToast('✗ ' + (err.message || 'Failed to save'), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '&#10003; Save Template';
+    }
+}
+
+window.saveTemplate = saveTemplate;
+
+/* ========================================================
+   DISCARD
+   ======================================================== */
+function discardChanges() {
+    if (isDirty) {
+        if (!confirm('Discard all unsaved changes?')) return;
+    }
+    location.reload();
+}
+window.discardChanges = discardChanges;
+
+/* ========================================================
+   TOAST
+   ======================================================== */
+function showToast(msg, type = 'success') {
+    const toast = document.getElementById('es-toast');
+    toast.textContent = msg;
+    toast.className = `es-toast ${type} show`;
+    setTimeout(() => { toast.classList.remove('show'); }, 3000);
+}
+
+/* ========================================================
+   BOOT
+   ======================================================== */
+// Populate sign items from server
+function parseSignItems(raw) {
+    return raw.map(it => ({
+        _id: it.id, // real DB id as _id for existing items
+        id: it.id,
+        type_id: it.type_id,
+        type: it.type_id ? it.type_id[1] : 'text', // [id, item_type] pair? Let's resolve below
+        page: it.page,
+        posX: it.posX,
+        posY: it.posY,
+        width: it.width,
+        height: it.height,
+        required: it.required,
+        responsible_id: it.responsible_id,
+        name: it.name || '',
+        placeholder: it.placeholder || '',
+    }));
+}
+
+// Resolve item_type string from type_id
+function resolveItemType(item) {
+    if (!item.type_id) return 'text';
+    const typeIdNum = Array.isArray(item.type_id) ? item.type_id[0] : item.type_id;
+    const found = SIGN_ITEM_TYPES.find(t => t.id === typeIdNum);
+    return found ? found.item_type : 'text';
+}
+
+// Initialize
+signItems = INITIAL_ITEMS.map(it => {
+    const obj = {
+        _id: it.id,
+        id: it.id,
+        type_id: it.type_id,
+        type: resolveItemType(it),
+        page: it.page,
+        posX: it.posX,
+        posY: it.posY,
+        width: it.width,
+        height: it.height,
+        required: it.required,
+        responsible_id: it.responsible_id,
+        name: it.name || '',
+        placeholder: it.placeholder || '',
+    };
+    return obj;
+});
+
+buildFieldCards();
+buildRoleSelect();
+renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf');
+
+// Mark as saved initially (no unsaved changes)
+const statusEl = document.getElementById('es-save-status');
+const statusTxt = document.getElementById('es-save-text');
+statusEl.className = 'es-save-status saved';
+statusTxt.textContent = 'No unsaved changes';
+
+})();
 ]]>
             </script>
         </t>
