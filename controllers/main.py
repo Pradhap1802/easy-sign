@@ -31,7 +31,47 @@ class SignController(http.Controller):
         template = request.env['sign.template'].sudo().browse(template_id)
         if not template:
             return request.not_found()
-        return request.render('easy_sign.template_editor', {'template': template})
+        sign_item_types = request.env['sign.item.type'].sudo().search_read([], ['id', 'name', 'item_type', 'default_width', 'default_height'])
+        sign_roles = request.env['sign.item.role'].sudo().search_read([], ['id', 'name', 'color'])
+        sign_items = template.sign_item_ids.read([
+            'id', 'type_id', 'required', 'responsible_id', 'name', 'page', 'posX', 'posY', 'width', 'height', 'alignment', 'placeholder'
+        ])
+        return request.render('easy_sign.template_editor', {
+            'template': template,
+            'sign_item_types': sign_item_types,
+            'sign_roles': sign_roles,
+            'sign_items': sign_items,
+        })
+
+    @http.route('/sign/template/<int:template_id>/items', type='json', auth='user')
+    def get_template_items(self, template_id, **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template:
+            return []
+        return template.sign_item_ids.read([
+            'id', 'type_id', 'required', 'responsible_id', 'name', 'page', 'posX', 'posY', 'width', 'height', 'alignment', 'placeholder'
+        ])
+
+    @http.route('/sign/template/<int:template_id>/save', type='json', auth='user')
+    def save_template_items(self, template_id, items, **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template:
+            return False
+        # Delete existing items not in the list
+        existing_ids = [item['id'] for item in items if item.get('id') and item['id'] > 0]
+        template.sign_item_ids.filtered(lambda x: x.id not in existing_ids).unlink()
+        # Update or create items
+        for item_data in items:
+            item_data['template_id'] = template.id
+            if item_data.get('id') and item_data['id'] > 0:
+                # Update existing item
+                item = request.env['sign.item'].sudo().browse(item_data['id'])
+                item.write(item_data)
+            else:
+                # Create new item
+                item_data.pop('id', None)
+                request.env['sign.item'].sudo().create(item_data)
+        return True
 
     @http.route('/sign/document/<int:request_id>/<access_token>', type='http', auth='public', website=True)
     def sign_document_public(self, request_id, access_token, **kwargs):

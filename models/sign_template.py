@@ -105,6 +105,7 @@ class SignItem(models.Model):
     width = fields.Float(digits=(4, 3), required=True)
     height = fields.Float(digits=(4, 3), required=True)
     alignment = fields.Char(default="center", required=True)
+    placeholder = fields.Char(string="Placeholder", translate=True)
 
 
 class SignItemType(models.Model):
