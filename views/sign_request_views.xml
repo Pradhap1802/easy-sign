@@ -31,20 +31,16 @@
                                 <field name="completion_date"/>
                             </group>
                         </group>
-                        <notebook>
-                            <page string="Signers" name="signers">
-                                <field name="request_item_ids">
-                                    <list editable="bottom">
-                                        <field name="partner_id"/>
-                                        <field name="role_id"/>
-                                        <field name="state" readonly="1"/>
-                                    </list>
-                                </field>
-                            </page>
-                            <page string="Logs" name="logs">
-                                <field name="sign_log_ids"/>
-                            </page>
-                        </notebook>
+                        <group string="Signers">
+                            <field name="request_item_ids" nolabel="1">
+                                <list>
+                                    <field name="partner_id" readonly="1"/>
+                                    <field name="role_id" readonly="1"/>
+                                    <field name="state" readonly="1"/>
+                                    <field name="signer_email" readonly="1"/>
+                                </list>
+                            </field>
+                        </group>
                     </sheet>
                 </form>
             </field>

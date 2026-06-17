@@ -473,6 +473,133 @@
                     flex-shrink: 0;
                     display: inline-block;
                 }
+
+                /* ===== SIGNERS SECTION ===== */
+                .es-signers-section {
+                    border-top: 1px solid rgba(255,255,255,0.06);
+                    padding: 14px 16px;
+                    flex-shrink: 0;
+                }
+                .es-signer-row {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 5px;
+                    padding: 10px;
+                    border-radius: 10px;
+                    background: rgba(255,255,255,0.03);
+                    border: 1px solid rgba(255,255,255,0.06);
+                    margin-bottom: 6px;
+                    transition: border-color 0.15s;
+                }
+                .es-signer-row:focus-within {
+                    border-color: rgba(99,102,241,0.4);
+                    background: rgba(99,102,241,0.05);
+                }
+                .es-signer-role-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 7px;
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.04em;
+                    text-transform: uppercase;
+                    color: #64748b;
+                }
+                .es-signer-inputs {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+                .es-signer-input {
+                    width: 100%;
+                    padding: 6px 9px;
+                    background: rgba(255,255,255,0.05);
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 7px;
+                    color: #e2e8f0;
+                    font-size: 12px;
+                    outline: none;
+                    transition: border-color 0.15s;
+                }
+                .es-signer-input:focus { border-color: #6366f1; }
+                .es-signer-input::placeholder { color: #475569; }
+                .es-no-roles-hint {
+                    font-size: 11px;
+                    color: #334155;
+                    text-align: center;
+                    padding: 10px 0;
+                }
+                .es-btn-send {
+                    background: linear-gradient(135deg, #059669, #10b981);
+                    color: white;
+                    border: none;
+                    box-shadow: 0 4px 14px rgba(16,185,129,0.3);
+                }
+                .es-btn-send:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 20px rgba(16,185,129,0.4);
+                }
+                .es-btn-send:active { transform: translateY(0); }
+                .es-btn-send:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
+
+                /* ===== SEND MODAL ===== */
+                .es-modal-overlay {
+                    position: fixed; inset: 0;
+                    background: rgba(0,0,0,0.65);
+                    backdrop-filter: blur(4px);
+                    z-index: 500;
+                    display: flex; align-items: center; justify-content: center;
+                    opacity: 0; pointer-events: none;
+                    transition: opacity 0.22s;
+                }
+                .es-modal-overlay.open {
+                    opacity: 1; pointer-events: all;
+                }
+                .es-modal {
+                    background: #1a1d2e;
+                    border: 1px solid rgba(255,255,255,0.1);
+                    border-radius: 16px;
+                    padding: 28px;
+                    width: 420px;
+                    max-width: 90vw;
+                    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+                    transform: scale(0.96) translateY(10px);
+                    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+                }
+                .es-modal-overlay.open .es-modal {
+                    transform: scale(1) translateY(0);
+                }
+                .es-modal-title {
+                    font-size: 17px; font-weight: 700; color: #f1f5f9;
+                    margin-bottom: 20px;
+                    display: flex; align-items: center; gap: 10px;
+                }
+                .es-modal-icon {
+                    width: 36px; height: 36px;
+                    background: linear-gradient(135deg, #059669, #10b981);
+                    border-radius: 10px;
+                    display: flex; align-items: center; justify-content: center;
+                    font-size: 18px; flex-shrink: 0;
+                }
+                .es-modal-body { display: flex; flex-direction: column; gap: 14px; }
+                .es-modal-footer {
+                    display: flex; gap: 10px; justify-content: flex-end;
+                    margin-top: 22px;
+                }
+                .es-modal-preview-signers {
+                    background: rgba(255,255,255,0.04);
+                    border-radius: 10px;
+                    padding: 10px 12px;
+                    display: flex; flex-direction: column; gap: 6px;
+                    max-height: 150px;
+                    overflow-y: auto;
+                    border: 1px solid rgba(255,255,255,0.07);
+                }
+                .es-modal-signer-item {
+                    display: flex; align-items: center; gap: 8px;
+                    font-size: 12px; color: #94a3b8;
+                }
+                .es-modal-signer-item strong { color: #e2e8f0; }
             </style>
 
             <!-- HEADER -->
@@ -499,6 +626,9 @@
                     <button class="es-btn es-btn-primary" id="es-btn-save" onclick="saveTemplate()">
                         &#10003; Save Template
                     </button>
+                    <button class="es-btn es-btn-send" id="es-btn-send" onclick="openSendModal()">
+                        &#9993; Send for Signing
+                    </button>
                 </div>
             </div>
 
@@ -517,13 +647,22 @@
                                 <span>&#10021;</span> Drag onto the PDF to place
                             </div>
                         </div>
-                        <div class="es-sidebar-section" style="flex:1;">
+                        <div class="es-sidebar-section" style="flex:1;overflow-y:auto;">
                             <div class="es-sidebar-title" style="display:flex;align-items:center;gap:6px;">
                                 Placed Fields <span class="es-field-count" id="es-field-count-badge">0</span>
                             </div>
                             <div id="es-placed-list" style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
                                 <div style="font-size:12px;color:#334155;text-align:center;padding:12px 0;" id="es-placed-empty">
                                     No fields placed yet
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Signers Section -->
+                        <div class="es-signers-section" id="es-signers-section">
+                            <div class="es-sidebar-title" style="margin-bottom:10px;">Signers</div>
+                            <div id="es-signers-list">
+                                <div class="es-no-roles-hint" id="es-no-roles-hint">
+                                    No roles defined. Add roles to sign.item.role first.
                                 </div>
                             </div>
                         </div>
@@ -582,6 +721,38 @@
             <!-- TOAST -->
             <div class="es-toast" id="es-toast"></div>
 
+            <!-- SEND MODAL -->
+            <div class="es-modal-overlay" id="es-send-modal">
+                <div class="es-modal">
+                    <div class="es-modal-title">
+                        <div class="es-modal-icon">&#9993;</div>
+                        Send for Signing
+                    </div>
+                    <div class="es-modal-body">
+                        <div class="es-form-group">
+                            <label class="es-label">Document Name</label>
+                            <input class="es-input" id="es-send-reference" type="text" placeholder="New Signature Request"/>
+                        </div>
+                        <div class="es-form-group">
+                            <label class="es-label">Email Subject</label>
+                            <input class="es-input" id="es-send-subject" type="text" placeholder="Please sign this document"/>
+                        </div>
+                        <div class="es-form-group">
+                            <label class="es-label">Signers to be notified</label>
+                            <div class="es-modal-preview-signers" id="es-modal-signer-preview">
+                                <div style="font-size:12px;color:#475569;">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="es-modal-footer">
+                        <button class="es-btn es-btn-ghost" onclick="closeSendModal()">Cancel</button>
+                        <button class="es-btn es-btn-send" id="es-send-confirm-btn" onclick="confirmSend()">
+                            &#9993; Send Now
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- PDF.js -->
             <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
             <script>
@@ -593,9 +764,10 @@
    DATA from server
    ======================================================== */
 const TEMPLATE_ID = ]]><t t-esc="template.id"/><![CDATA[;
-const SIGN_ITEM_TYPES = ]]><t t-raw="json.dumps(sign_item_types)"/><![CDATA[;
-const SIGN_ROLES = ]]><t t-raw="json.dumps(sign_roles)"/><![CDATA[;
-const INITIAL_ITEMS = ]]><t t-raw="json.dumps(sign_items)"/><![CDATA[;
+const SIGN_ITEM_TYPES = ]]><t t-out="sign_item_types_json"/><![CDATA[;
+const SIGN_ROLES = ]]><t t-out="sign_roles_json"/><![CDATA[;
+const INITIAL_ITEMS = ]]><t t-out="sign_items_json"/><![CDATA[;
+const TEMPLATE_NAME = ]]><t t-out="template_name_json"/><![CDATA[;
 
 /* ========================================================
    STATE
@@ -1329,15 +1501,171 @@ signItems = INITIAL_ITEMS.map(it => {
     return obj;
 });
 
-buildFieldCards();
-buildRoleSelect();
-renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf');
 
 // Mark as saved initially (no unsaved changes)
 const statusEl = document.getElementById('es-save-status');
 const statusTxt = document.getElementById('es-save-text');
 statusEl.className = 'es-save-status saved';
 statusTxt.textContent = 'No unsaved changes';
+
+// Pre-fill send reference
+const refInput = document.getElementById('es-send-reference');
+if (refInput) refInput.value = TEMPLATE_NAME;
+
+/* ========================================================
+   SIGNERS PANEL
+   ======================================================== */
+function buildSignersPanel() {
+    const list = document.getElementById('es-signers-list');
+    const hint = document.getElementById('es-no-roles-hint');
+    if (!SIGN_ROLES || SIGN_ROLES.length === 0) {
+        if (hint) hint.style.display = '';
+        return;
+    }
+    if (hint) hint.style.display = 'none';
+    list.innerHTML = '';
+
+    const palette = [
+        '#e74c3c','#e67e22','#f1c40f','#2ecc71','#1abc9c',
+        '#3498db','#9b59b6','#e91e63','#795548','#607d8b',
+        '#00bcd4','#cddc39'
+    ];
+
+    SIGN_ROLES.forEach(function(role) {
+        const hex = palette[(role.color || 0) % palette.length];
+        const row = document.createElement('div');
+        row.className = 'es-signer-row';
+        row.dataset.roleId = role.id;
+        row.innerHTML =
+            '<div class="es-signer-role-label">' +
+                '<span class="es-role-dot" style="background:' + hex + ';"></span>' +
+                role.name +
+            '</div>' +
+            '<div class="es-signer-inputs">' +
+                '<input class="es-signer-input" type="text"' +
+                    ' id="signer-name-' + role.id + '"' +
+                    ' placeholder="Full name..."' +
+                    ' autocomplete="name"/>' +
+                '<input class="es-signer-input" type="email"' +
+                    ' id="signer-email-' + role.id + '"' +
+                    ' placeholder="Email address..."' +
+                    ' autocomplete="email"/>' +
+            '</div>';
+        list.appendChild(row);
+    });
+}
+
+/* ========================================================
+   COLLECT SIGNERS FROM PANEL
+   ======================================================== */
+function collectSigners() {
+    const signers = [];
+    SIGN_ROLES.forEach(function(role) {
+        const nameEl  = document.getElementById('signer-name-'  + role.id);
+        const emailEl = document.getElementById('signer-email-' + role.id);
+        const name    = (nameEl  ? nameEl.value.trim()  : '');
+        const email   = (emailEl ? emailEl.value.trim() : '');
+        if (email) {
+            signers.push({ role_id: role.id, name: name || email, email: email });
+        }
+    });
+    return signers;
+}
+
+/* ========================================================
+   OPEN / CLOSE SEND MODAL
+   ======================================================== */
+function openSendModal() {
+    const signers = collectSigners();
+    const preview = document.getElementById('es-modal-signer-preview');
+    if (preview) {
+        if (signers.length === 0) {
+            preview.innerHTML =
+                '<div style="font-size:12px;color:#f87171;">' +
+                    '&#9888; No signer emails entered. Fill in emails in the Signers section.' +
+                '</div>';
+        } else {
+            preview.innerHTML = signers.map(function(s) {
+                return '<div class="es-modal-signer-item">' +
+                    '<span>&#9993;</span>' +
+                    '<strong>' + (s.name || s.email) + '</strong>' +
+                    '<span style="color:#475569;">&lt;' + s.email + '&gt;</span>' +
+                '</div>';
+            }).join('');
+        }
+    }
+    const modal = document.getElementById('es-send-modal');
+    if (modal) modal.classList.add('open');
+}
+window.openSendModal = openSendModal;
+
+function closeSendModal() {
+    const modal = document.getElementById('es-send-modal');
+    if (modal) modal.classList.remove('open');
+}
+window.closeSendModal = closeSendModal;
+
+// Close modal on backdrop click
+document.getElementById('es-send-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeSendModal();
+});
+
+/* ========================================================
+   CONFIRM SEND
+   ======================================================== */
+async function confirmSend() {
+    const signers   = collectSigners();
+    const reference = (document.getElementById('es-send-reference').value || '').trim();
+    const subject   = (document.getElementById('es-send-subject').value   || '').trim();
+
+    if (signers.length === 0) {
+        showToast('Please enter at least one signer email in the Signers section.', 'error');
+        closeSendModal();
+        return;
+    }
+
+    const btn = document.getElementById('es-send-confirm-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending\u2026';
+
+    try {
+        const resp = await fetch(
+            '/sign/template/' + TEMPLATE_ID + '/send',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    jsonrpc: '2.0', method: 'call',
+                    params: { signers: signers, reference: reference, subject: subject }
+                })
+            }
+        );
+        const data = await resp.json();
+        const result = data.result;
+
+        if (result && result.success) {
+            showToast('Signature request sent!', 'success');
+            closeSendModal();
+            setTimeout(function() {
+                window.location.href = '/odoo/sign-requests/' + result.request_id;
+            }, 1200);
+        } else {
+            const msg = (result && result.error) || 'Failed to send request';
+            showToast(msg, 'error');
+        }
+    } catch (err) {
+        showToast('Network error: ' + (err.message || 'Unknown'), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '&#9993; Send Now';
+    }
+}
+window.confirmSend = confirmSend;
+
+buildFieldCards();
+buildRoleSelect();
+buildSignersPanel();
+renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf');
 
 })();
 ]]>

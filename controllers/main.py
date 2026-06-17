@@ -7,6 +7,7 @@ from odoo import http, _
 from odoo.http import request
 from odoo.exceptions import AccessError, ValidationError, UserError
 from odoo.http import content_disposition
+from markupsafe import Markup
 
 _logger = logging.getLogger(__name__)
 
@@ -41,6 +42,10 @@ class SignController(http.Controller):
             'sign_item_types': sign_item_types,
             'sign_roles': sign_roles,
             'sign_items': sign_items,
+            'sign_item_types_json': Markup(json.dumps(sign_item_types)),
+            'sign_roles_json':      Markup(json.dumps(sign_roles)),
+            'sign_items_json':      Markup(json.dumps(sign_items)),
+            'template_name_json':   Markup(json.dumps(template.name or '')),
         })
 
     @http.route('/sign/template/<int:template_id>/items', type='json', auth='user')
@@ -72,6 +77,52 @@ class SignController(http.Controller):
                 item_data.pop('id', None)
                 request.env['sign.item'].sudo().create(item_data)
         return True
+
+    @http.route('/sign/template/<int:template_id>/send', type='json', auth='user')
+    def send_template_for_signing(self, template_id, signers, reference='', subject='', **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template:
+            return {'error': 'Template not found'}
+        if not template.sign_item_ids:
+            return {'error': 'Please save at least one field on the template before sending.'}
+
+        request_items = []
+        for signer in signers:
+            email = (signer.get('email') or '').strip()
+            name  = (signer.get('name')  or '').strip() or email
+            role_id = signer.get('role_id') or False
+            if not email:
+                continue
+            partner = request.env['res.partner'].sudo().search(
+                [('email', '=ilike', email)], limit=1
+            )
+            if not partner:
+                partner = request.env['res.partner'].sudo().create({
+                    'name': name or email,
+                    'email': email,
+                })
+            request_items.append({
+                'partner_id': partner.id,
+                'role_id': role_id,
+            })
+
+        if not request_items:
+            return {'error': 'Please add at least one signer with a valid email.'}
+
+        sign_request = request.env['sign.request'].sudo().with_context(no_sign_mail=True).create({
+            'template_id': template.id,
+            'reference': reference or template.name,
+            'subject': subject or ('Signature Request: %s' % template.name),
+            'request_item_ids': [(0, 0, item) for item in request_items],
+        })
+        sign_request.send_signature_accesses()
+
+        base_url = request.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        return {
+            'success': True,
+            'request_id': sign_request.id,
+            'url': '/odoo/sign-requests/%d' % sign_request.id,
+        }
 
     @http.route('/sign/document/<int:request_id>/<access_token>', type='http', auth='public', website=True)
     def sign_document_public(self, request_id, access_token, **kwargs):
