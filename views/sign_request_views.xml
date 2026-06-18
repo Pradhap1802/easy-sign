@@ -8,7 +8,7 @@
                 <form string="Sign Request">
                     <header>
                         <button name="go_to_edit_template" string="Edit Template" type="object" class="oe_highlight"/>
-                        <button name="send_signature_accesses" string="Send" type="object" invisible="state != 'sent'" class="oe_highlight"/>
+                        <button name="action_open_send_wizard" string="Send" type="object" invisible="state != 'sent'" class="oe_highlight"/>
                         <button name="cancel" string="Cancel" type="object" invisible="state != 'sent'" class="btn-danger"/>
                         <button name="go_to_signable_document" string="Sign Document" type="object" invisible="state != 'sent'" class="oe_highlight"/>
                         <button name="get_completed_document" string="Download Signed Document" type="object" invisible="state != 'signed'"/>
@@ -31,16 +31,6 @@
                                 <field name="completion_date"/>
                             </group>
                         </group>
-                        <group string="Signers">
-                            <field name="request_item_ids" nolabel="1">
-                                <list>
-                                    <field name="partner_id" readonly="1"/>
-                                    <field name="role_id" readonly="1"/>
-                                    <field name="state" readonly="1"/>
-                                    <field name="signer_email" readonly="1"/>
-                                </list>
-                            </field>
-                        </group>
                     </sheet>
                 </form>
             </field>
@@ -54,10 +44,8 @@
                     <field name="create_date" string="Date"/>
                     <field name="reference" string="Name"/>
                     <field name="create_uid" string="Sent by"/>
-                    <field name="signer_info" string="Signers" widget="html"/>
                     <field name="state" string="Status" widget="badge" decoration-success="state == 'signed'" decoration-info="state == 'sent'" decoration-danger="state == 'canceled'"/>
                     <field name="validity_date" string="Valid Until"/>
-                    <button name="action_resend" string="Resend" type="object" icon="fa-refresh" class="btn-link" invisible="state != 'sent'"/>
                     <button name="go_to_signable_document" string="Sign" type="object" icon="fa-pencil" class="btn-link" invisible="state != 'sent'"/>
                     <button name="get_completed_document" string="Download" type="object" icon="fa-download" class="btn-link" invisible="state != 'signed'"/>
                 </list>

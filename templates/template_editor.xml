@@ -964,18 +964,8 @@
             </div>
 
             <!-- PDF.js -->
-            <script>
-                // Bypass AMD loader for PDF.js
-                window._temp_define = window.define;
-                window.define = undefined;
-            </script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"> </script>
-            <script>
-                // Restore AMD loader
-                window.define = window._temp_define;
-                delete window._temp_define;
-            </script>
-            <script>
+            <script type="module" src="/web/static/lib/pdfjs/build/pdf.js"></script>
+            <script type="module">
 <![CDATA[
 (function() {
 'use strict';
@@ -1104,7 +1094,12 @@ let pageWrappers = {}; // pageNum → { wrapper, canvas, viewport }
    INIT PDF.js
    ======================================================== */
 const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+try {
+    const worker = new Worker('/web/static/lib/pdfjs/build/pdf.worker.js', { type: 'module' });
+    pdfjsLib.GlobalWorkerOptions.workerPort = worker;
+} catch (e) {
+    console.warn("Could not start module worker, falling back to fake worker:", e);
+}
 
 /* ========================================================
    TYPE/ROLE HELPERS

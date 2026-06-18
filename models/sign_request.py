@@ -45,7 +45,6 @@ class SignRequest(models.Model):
     subject = fields.Char(string="Email Subject")
     reference = fields.Char(required=True, string="Document Name", help="This is how the document will be named in the mail", default="New Signature Request")
     access_token = fields.Char('Security Token', required=True, default=_default_access_token, readonly=True, copy=False)
-    request_item_ids = fields.One2many('sign.request.item', 'sign_request_id', string="Signers", copy=True)
     state = fields.Selection([
         ("sent", "To Sign"),
         ("signed", "Fully Signed"),
@@ -57,7 +56,6 @@ class SignRequest(models.Model):
         string="Valid Until",
         default=lambda self: fields.Date.today() + timedelta(days=60)
     )
-    signer_info = fields.Html(string="Signers", compute="_compute_signer_info")
     
     @api.onchange('document')
     def _onchange_document(self):
@@ -83,34 +81,19 @@ class SignRequest(models.Model):
     completion_date = fields.Date(string="Completion Date", compute="_compute_progress", compute_sudo=True)
     sign_log_ids = fields.One2many('sign.log', 'sign_request_id', string="Logs", help="Activity logs linked to this request")
 
-    @api.depends('request_item_ids.state')
+    @api.depends('state')
     def _compute_stats(self):
         for rec in self:
-            rec.nb_total = len(rec.request_item_ids)
-            rec.nb_wait = len(rec.request_item_ids.filtered(lambda sri: sri.state == 'sent'))
-            rec.nb_closed = rec.nb_total - rec.nb_wait
+            rec.nb_total = 1
+            rec.nb_wait = 1 if rec.state == 'sent' else 0
+            rec.nb_closed = 1 if rec.state == 'signed' else 0
 
-    @api.depends('request_item_ids.state')
+    @api.depends('state')
     def _compute_progress(self):
         for rec in self:
-            rec.start_sign = bool(rec.nb_closed)
-            rec.progress = "{} / {}".format(rec.nb_closed, rec.nb_total)
-            rec.completion_date = rec.request_item_ids.sorted(key="signing_date", reverse=True)[:1].signing_date if not rec.nb_wait else None
-
-    @api.depends('request_item_ids.partner_id.name', 'request_item_ids.state')
-    def _compute_signer_info(self):
-        for rec in self:
-            badges = []
-            for item in rec.request_item_ids:
-                color = '#94a3b8'
-                if item.state == 'completed':
-                    color = '#10b981'
-                elif item.state in ('sent', 'viewed'):
-                    color = '#fb923c'
-                badges.append(
-                    f'<span class="badge" style="background: rgba(255,255,255,0.05); color: {color}; border: 1px solid {color}33; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 4px; display: inline-block; margin-bottom: 2px;">{item.partner_id.name}</span>'
-                )
-            rec.signer_info = Markup(' '.join(badges))
+            rec.start_sign = (rec.state == 'signed')
+            rec.progress = "1 / 1" if rec.state == 'signed' else "0 / 1"
+            rec.completion_date = fields.Date.today() if rec.state == 'signed' else None
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -131,11 +114,7 @@ class SignRequest(models.Model):
                 vals['template_id'] = template.id
         sign_requests = super().create(vals_list)
         for sign_request in sign_requests:
-            if not sign_request.request_item_ids:
-                raise ValidationError(_("A valid sign request needs at least one sign request item"))
             self.env['sign.log'].sudo().create({'sign_request_id': sign_request.id, 'action': 'create'})
-        if not self._context.get('no_sign_mail'):
-            sign_requests.send_signature_accesses()
         return sign_requests
 
     def copy_data(self, default=None):
@@ -154,21 +133,13 @@ class SignRequest(models.Model):
             },
         }
 
-    def go_to_signable_document(self, request_items=None):
+    def go_to_signable_document(self):
         self.ensure_one()
-        if not request_items:
-            request_items = self.request_item_ids.filtered(lambda r: not r.partner_id or (r.state == 'sent' and r.partner_id.id == self.env.user.partner_id.id))
-        if not request_items:
-            return
         return {
             'name': self.reference,
-            'type': 'ir.actions.client',
-            'tag': 'sign.SignableDocument',
-            'context': {
-                'id': self.id,
-                'token': request_items[:1].sudo().access_token,
-                'state': self.state,
-            },
+            'type': 'ir.actions.act_url',
+            'url': '/sign/document/%d/%s' % (self.id, self.access_token),
+            'target': 'self',
         }
 
     def get_completed_document(self):
@@ -200,63 +171,58 @@ class SignRequest(models.Model):
     def cancel(self):
         for sign_request in self:
             sign_request.write({'access_token': self._default_access_token(), 'state': 'canceled'})
-        self.request_item_ids._cancel()
         self.env['sign.log'].sudo().create([{'sign_request_id': sign_request.id, 'action': 'cancel'} for sign_request in self])
 
-    def send_signature_accesses(self):
-        allowed_request_ids = self.filtered(lambda sr: sr.state == 'sent')
-        for sign_request in allowed_request_ids:
-            sign_request.request_item_ids.send_signature_accesses()
-
-    def action_resend(self):
-        for rec in self:
-            rec.send_signature_accesses()
-
-    def _sign(self):
+    def action_open_send_wizard(self):
         self.ensure_one()
-        if self.state != 'sent' or any(sri.state != 'completed' for sri in self.request_item_ids):
-            raise UserError(_("This sign request cannot be signed"))
+        return {
+            'name': _('Send Signature Request'),
+            'type': 'ir.actions.act_window',
+            'res_model': 'sign.request.send.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_request_id': self.id,
+                'default_subject': _('Signature Request: %s') % self.reference,
+            }
+        }
+
+
+
+    def _sign(self, signature_values):
+        self.ensure_one()
+        if self.state != 'sent':
+            raise UserError(_("This signature request has already been processed or cancelled"))
+        
+        # Save signature values
+        SignRequestItemValue = self.env['sign.request.item.value']
+        for sign_item_id, value in signature_values.items():
+            if isinstance(value, dict):
+                frame_value = value.get('frame')
+                value = value.get('value')
+            else:
+                frame_value = None
+            SignRequestItemValue.sudo().create({
+                'sign_request_id': self.id,
+                'sign_item_id': int(sign_item_id),
+                'value': value,
+                'frame_value': frame_value,
+            })
+            
+        # Log signature action
+        self.env['sign.log'].sudo().create({
+            'sign_request_id': self.id,
+            'partner_id': self.env.user.partner_id.id,
+            'action': 'sign',
+        })
+        
         self.write({'state': 'signed'})
-        self._send_completed_document()
-
-    def _send_completed_document(self):
-        self.ensure_one()
-        if self.state != 'signed':
-            raise UserError(_('The sign request has not been fully signed'))
-        if not self.completed_document:
-            self._generate_completed_document()
-        for sign_request_item in self.request_item_ids:
-            self._send_completed_document_mail(sign_request_item.partner_id, access_token=sign_request_item.sudo().access_token, force_send=True)
-
-    def _send_completed_document_mail(self, partner, access_token=None, force_send=False):
-        self.ensure_one()
-        if access_token is None:
-            access_token = self.access_token
-        partner_lang = get_lang(self.env, lang_code=partner.lang).code if partner else 'en_US'
-        base_url = self.get_base_url()
-        subject = '%s signed' % self.reference
-        body = self.env['ir.qweb']._render('easy_sign.sign_template_mail_completed', {
-            'record': self,
-            'link': '%s/sign/document/%s/%s' % (base_url, self.id, access_token),
-            'subject': subject,
-            'recipient_name': partner.name if partner else '',
-        }, lang=partner_lang, minimal_qcontext=True)
-        notification_template = 'mail.mail_notification_light'
-        self._message_send_mail(
-            body, notification_template,
-            {'record_name': self.reference},
-            {'model_description': _('Signature')},
-            {'email_to': partner.email if partner else ''},
-            force_send=force_send,
-            lang=partner_lang,
-        )
 
     def _refuse(self, refuser, refusal_reason):
         self.ensure_one()
         if self.state != 'sent':
             raise UserError(_("This sign request cannot be refused"))
         self.write({'state': 'canceled'})
-        self.request_item_ids._cancel()
 
     def _message_send_mail(self, body, template_xmlid, record_name, model_description, email_values, **kwargs):
         self.ensure_one()

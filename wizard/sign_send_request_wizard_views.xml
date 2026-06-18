@@ -9,7 +9,6 @@
                     <group>
                         <field name="template_id"/>
                         <field name="reference"/>
-                        <field name="partner_ids" widget="many2many_tags"/>
                         <field name="subject"/>
                     </group>
                     <footer>
@@ -23,6 +22,31 @@
         <record id="action_sign_send_request" model="ir.actions.act_window">
             <field name="name">Send Signature Request</field>
             <field name="res_model">sign.send.request.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <record id="view_sign_request_send_wizard" model="ir.ui.view">
+            <field name="name">sign.request.send.wizard.form</field>
+            <field name="model">sign.request.send.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Send Signature Request">
+                    <group>
+                        <field name="request_id" invisible="1"/>
+                        <field name="partner_id"/>
+                        <field name="subject"/>
+                    </group>
+                    <footer>
+                        <button name="send_mail" string="Send Email" type="object" class="oe_highlight"/>
+                        <button string="Cancel" class="oe_link" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_sign_request_send_wizard" model="ir.actions.act_window">
+            <field name="name">Send Signature Request</field>
+            <field name="res_model">sign.request.send.wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
         </record>

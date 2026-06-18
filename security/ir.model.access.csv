@@ -4,6 +4,5 @@ easy_sign.access_sign_item,access.sign.item,easy_sign.model_sign_item,base.group
 easy_sign.access_sign_item_type,access.sign.item.type,easy_sign.model_sign_item_type,base.group_user,1,1,1,1
 easy_sign.access_sign_item_role,access.sign.item.role,easy_sign.model_sign_item_role,base.group_user,1,1,1,1
 easy_sign.access_sign_request,access.sign.request,easy_sign.model_sign_request,base.group_user,1,1,1,1
-easy_sign.access_sign_request_item,access.sign.request.item,easy_sign.model_sign_request_item,base.group_user,1,1,1,1
 easy_sign.access_sign_log,access.sign.log,easy_sign.model_sign_log,base.group_user,1,1,1,1
 easy_sign.access_sign_request_item_value,access.sign.request.item.value,easy_sign.model_sign_request_item_value,base.group_user,1,1,1,1

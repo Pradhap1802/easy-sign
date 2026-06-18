@@ -79,45 +79,19 @@ class SignController(http.Controller):
         return True
 
     @http.route('/sign/template/<int:template_id>/send', type='json', auth='user')
-    def send_template_for_signing(self, template_id, signers, reference='', subject='', **kwargs):
+    def send_template_for_signing(self, template_id, signers=None, reference='', subject='', **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
         if not template:
             return {'error': 'Template not found'}
         if not template.sign_item_ids:
             return {'error': 'Please save at least one field on the template before sending.'}
 
-        request_items = []
-        for signer in signers:
-            email = (signer.get('email') or '').strip()
-            name  = (signer.get('name')  or '').strip() or email
-            role_id = signer.get('role_id') or False
-            if not email:
-                continue
-            partner = request.env['res.partner'].sudo().search(
-                [('email', '=ilike', email)], limit=1
-            )
-            if not partner:
-                partner = request.env['res.partner'].sudo().create({
-                    'name': name or email,
-                    'email': email,
-                })
-            request_items.append({
-                'partner_id': partner.id,
-                'role_id': role_id,
-            })
-
-        if not request_items:
-            return {'error': 'Please add at least one signer with a valid email.'}
-
-        sign_request = request.env['sign.request'].sudo().with_context(no_sign_mail=True).create({
+        sign_request = request.env['sign.request'].sudo().create({
             'template_id': template.id,
             'reference': reference or template.name,
             'subject': subject or ('Signature Request: %s' % template.name),
-            'request_item_ids': [(0, 0, item) for item in request_items],
         })
-        sign_request.send_signature_accesses()
 
-        base_url = request.env['ir.config_parameter'].sudo().get_param('web.base.url')
         return {
             'success': True,
             'request_id': sign_request.id,
@@ -126,39 +100,40 @@ class SignController(http.Controller):
 
     @http.route('/sign/document/<int:request_id>/<access_token>', type='http', auth='public', website=True)
     def sign_document_public(self, request_id, access_token, **kwargs):
-        SignRequestItem = request.env['sign.request.item'].sudo()
-        item = SignRequestItem.search([('access_token', '=', access_token), ('sign_request_id', '=', request_id)], limit=1)
-        if not item:
+        sign_request = request.env['sign.request'].sudo().search([
+            ('access_token', '=', access_token),
+            ('id', '=', request_id)
+        ], limit=1)
+        if not sign_request:
             return request.not_found()
-        if item.state not in ['sent', 'viewed']:
+        if sign_request.state != 'sent':
             return request.render('easy_sign.sign_already_signed', {})
-        if item.state == 'sent':
-            item.write({'state': 'viewed'})
-            request.env['sign.log'].sudo().create({
-                'sign_request_id': item.sign_request_id.id,
-                'sign_request_item_id': item.id,
-                'action': 'view',
-                'ip_address': request.httprequest.environ.get('REMOTE_ADDR'),
-            })
+        
+        request.env['sign.log'].sudo().create({
+            'sign_request_id': sign_request.id,
+            'action': 'view',
+            'ip_address': request.httprequest.environ.get('REMOTE_ADDR'),
+        })
         values = {
-            'sign_request': item.sign_request_id,
+            'sign_request': sign_request,
             'access_token': access_token,
-            'request_item': item,
         }
         return request.render('easy_sign.sign_page', values)
 
     @http.route('/sign/submit/<int:request_id>/<access_token>', type='http', auth='public', csrf=False, methods=['POST'])
     def sign_submit(self, request_id, access_token, **kwargs):
-        SignRequestItem = request.env['sign.request.item'].sudo()
-        item = SignRequestItem.search([('access_token', '=', access_token), ('sign_request_id', '=', request_id)], limit=1)
-        if not item or item.state not in ['sent', 'viewed']:
+        sign_request = request.env['sign.request'].sudo().search([
+            ('access_token', '=', access_token),
+            ('id', '=', request_id)
+        ], limit=1)
+        if not sign_request or sign_request.state != 'sent':
             return json.dumps({'success': False})
         try:
             signature_values = {}
             data = json.loads(kwargs.get('data', '{}'))
             for k, v in data.items():
                 signature_values[k] = v
-            item._sign(signature_values)
+            sign_request._sign(signature_values)
             return json.dumps({'success': True})
         except Exception as e:
             _logger.error(e)

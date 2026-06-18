@@ -7,7 +7,6 @@
             <field name="arch" type="xml">
                 <list string="Sign Logs">
                     <field name="sign_request_id"/>
-                    <field name="sign_request_item_id"/>
                     <field name="partner_id"/>
                     <field name="action"/>
                     <field name="timestamp"/>
@@ -24,7 +23,6 @@
                     <sheet>
                         <group>
                             <field name="sign_request_id"/>
-                            <field name="sign_request_item_id"/>
                             <field name="partner_id"/>
                             <field name="action"/>
                             <field name="timestamp"/>
