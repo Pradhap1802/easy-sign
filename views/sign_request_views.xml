@@ -40,7 +40,7 @@
             <field name="name">sign.request.list</field>
             <field name="model">sign.request</field>
             <field name="arch" type="xml">
-                <list string="Sign Requests">
+                <list string="Sign Requests" js_class="sign_request_list">
                     <field name="create_date" string="Date"/>
                     <field name="reference" string="Name"/>
                     <field name="create_uid" string="Sent by"/>
@@ -56,7 +56,7 @@
             <field name="name">sign.request.kanban</field>
             <field name="model">sign.request</field>
             <field name="arch" type="xml">
-                <kanban string="Sign Requests" class="o_kanban_mobile">
+                <kanban string="Sign Requests" class="o_kanban_mobile" js_class="sign_request_kanban">
                     <field name="state"/>
                     <templates>
                         <t t-name="kanban-box">

@@ -114,9 +114,47 @@ class SignController(http.Controller):
             'action': 'view',
             'ip_address': request.httprequest.environ.get('REMOTE_ADDR'),
         })
+
+        # Dynamically fetch recipient signer details for auto-fill
+        partner = None
+        if not request.env.user._is_public():
+            partner = request.env.user.partner_id
+        else:
+            last_log = request.env['sign.log'].sudo().search([
+                ('sign_request_id', '=', sign_request.id),
+                ('action', '=', 'send')
+            ], order='id desc', limit=1)
+            if last_log and last_log.partner_id:
+                partner = last_log.partner_id
+
+        signer_vals = {
+            'name': '',
+            'email': '',
+            'phone': '',
+            'company': '',
+            'title': '',
+            'city': '',
+            'zip': '',
+            'country': '',
+            'state': '',
+        }
+        if partner:
+            signer_vals = {
+                'name': partner.name or '',
+                'email': partner.email or '',
+                'phone': partner.phone or partner.mobile or '',
+                'company': partner.commercial_company_name or (partner.parent_id.name if partner.parent_id else '') or (partner.company_id.name if partner.company_id else ''),
+                'title': partner.function or '',
+                'city': partner.city or '',
+                'zip': partner.zip or '',
+                'country': partner.country_id.name if partner.country_id else '',
+                'state': partner.state_id.name if partner.state_id else '',
+            }
+
         values = {
             'sign_request': sign_request,
             'access_token': access_token,
+            'signer_info_json': json.dumps(signer_vals),
         }
         return request.render('easy_sign.sign_page', values)
 

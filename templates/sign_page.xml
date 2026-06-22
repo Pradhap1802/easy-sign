@@ -79,13 +79,70 @@
                     cursor: pointer;
                     margin-right: 10px;
                 }
+
+                /* Navigator and Navline styles */
+                .o_sign_sign_item_navigator {
+                    position: fixed;
+                    left: 0;
+                    top: 25%;
+                    height: 40px;
+                    padding: 0 15px 0 12px;
+                    background: linear-gradient(135deg, #714b67 0%, #52314a 100%);
+                    color: white;
+                    font-family: Arial, sans-serif;
+                    font-size: 12px;
+                    font-weight: bold;
+                    letter-spacing: 0.05em;
+                    text-transform: uppercase;
+                    display: flex;
+                    align-items: center;
+                    border-radius: 0 4px 4px 0;
+                    box-shadow: 2px 2px 8px rgba(0,0,0,0.25);
+                    cursor: pointer;
+                    z-index: 1050;
+                    transition: top 0.3s ease-out, opacity 0.3s ease;
+                    user-select: none;
+                }
+                .o_sign_sign_item_navigator::after {
+                    content: "";
+                    position: absolute;
+                    right: -14px;
+                    top: 0;
+                    width: 0;
+                    height: 0;
+                    border-top: 20px solid transparent;
+                    border-bottom: 20px solid transparent;
+                    border-left: 14px solid #52314a;
+                }
+                .o_sign_sign_item_navigator:hover {
+                    background: linear-gradient(135deg, #52314a 0%, #3a2234 100%);
+                    box-shadow: 2px 2px 12px rgba(0,0,0,0.35);
+                }
+                .o_sign_sign_item_navigator:hover::after {
+                    border-left-color: #3a2234;
+                }
+                .o_sign_sign_item_navline {
+                    position: fixed;
+                    left: 0;
+                    width: 100%;
+                    height: 1px;
+                    border-bottom: 1px dashed rgba(113, 75, 103, 0.4);
+                    pointer-events: none;
+                    z-index: 1040;
+                    transition: top 0.3s ease-out, opacity 0.3s ease;
+                }
+                .sign-item.ui-selected {
+                    box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.4) !important;
+                    border-color: #714b67 !important;
+                    background-color: rgba(113, 75, 103, 0.05);
+                }
             </style>
             <div class="container">
                 <h1>Sign Document</h1>
                 <h2><t t-esc="sign_request.reference"/></h2>
                 <div id="o_sign_root">
                 </div>
-                <button id="o_sign_submit" class="btn-primary">Sign Document</button>
+                <button id="o_sign_submit" class="btn-primary" style="display: none;">Sign Document</button>
             </div>
             <script type="module" src="/web/static/lib/pdfjs/build/pdf.js"></script>
             <script type="module">
@@ -93,9 +150,12 @@
             const TEMPLATE_ID = ]]><t t-esc="sign_request.template_id.id"/><![CDATA[;
             const REQUEST_ID = ]]><t t-esc="sign_request.id"/><![CDATA[;
             const ACCESS_TOKEN = ']]><t t-esc="access_token"/><![CDATA[';
+            const SIGNER_INFO = ]]><t t-raw="signer_info_json"/><![CDATA[;
             const SIGN_ITEMS = ]]><t t-raw="json.dumps([{
                 'id': item.id,
                 'type': item.type_id.item_type,
+                'name': item.name or '',
+                'placeholder': item.placeholder or '',
                 'page': item.page,
                 'posX': item.posX,
                 'posY': item.posY,
@@ -118,6 +178,7 @@
             let pageNumPending = null;
             let canvasList = [];
             let signItemInputs = {};
+            const signatureData = {};
 
             async function renderPDF(url, canvasContainer) {
                 try {
@@ -127,6 +188,7 @@
                         await renderPage(i, canvasContainer);
                     }
                     renderSignItems();
+                    initNavigator();
                 } catch (err) {
                     console.error("Error loading PDF:", err);
                     canvasContainer.innerHTML = `<div style="color:#ef4444; padding:20px; text-align:center; font-weight:bold;">Error loading PDF: ${err.message}</div>`;
@@ -151,6 +213,27 @@
                 await page.render(renderContext).promise;
             }
 
+            let activeItem = null;
+            let navigatorStarted = false;
+            let navigatorEl = null;
+            let navlineEl = null;
+
+            function selectItem(container) {
+                if (activeItem) {
+                    activeItem.classList.remove('ui-selected');
+                }
+                activeItem = container;
+                activeItem.classList.add('ui-selected');
+                navigatorStarted = true;
+                if (navigatorEl && navlineEl) {
+                    const rect = activeItem.getBoundingClientRect();
+                    const centerViewportY = rect.top + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+                    updateRibbonText();
+                }
+            }
+
             function renderSignItems() {
                 SIGN_ITEMS.forEach(item => {
                     const pageCanvasData = canvasList.find(c => c.pageNum === item.page);
@@ -165,13 +248,41 @@
                     container.style.border = '1px dashed #000';
                     container.style.zIndex = 10;
                     container.style.boxSizing = 'border-box';
+                    
                     if (['signature', 'initial'].includes(item.type)) {
-                        container.addEventListener('click', () => openSignaturePad(item.id));
-                        container.innerHTML = '<span style="color: #888; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%;">Click to sign</span>';
+                        container.addEventListener('click', () => {
+                            selectItem(container);
+                            openSignaturePad(item.id);
+                        });
+                        container.innerHTML = '<span style="color: #888; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 11px;">Click to sign</span>';
                     } else if (item.type === 'checkbox') {
                         container.innerHTML = '<input type="checkbox" style="margin: auto; display: block; transform: scale(2);">';
+                        const inputEl = container.querySelector('input');
+                        inputEl.addEventListener('click', () => {
+                            selectItem(container);
+                            updateRibbonText();
+                            setTimeout(goToNextSignItem, 300);
+                        });
+                        inputEl.addEventListener('change', () => {
+                            updateRibbonText();
+                        });
                     } else {
                         container.innerHTML = '<input type="text" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px;">';
+                        const inputEl = container.querySelector('input');
+                        inputEl.addEventListener('focus', () => {
+                            selectItem(container);
+                        });
+                        inputEl.addEventListener('input', () => {
+                            updateRibbonText();
+                        });
+                        inputEl.addEventListener('change', () => {
+                            updateRibbonText();
+                        });
+                        inputEl.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                goToNextSignItem();
+                            }
+                        });
                     }
                     const canvas = pageCanvasData.canvas;
                     canvas.style.position = 'relative';
@@ -181,11 +292,7 @@
                 });
             }
 
-            let currentSignItemId = null;
-            let signatureData = {};
-
             function openSignaturePad(itemId) {
-                currentSignItemId = itemId;
                 const modal = document.createElement('div');
                 modal.id = 'signature-modal';
                 modal.className = 'modal';
@@ -203,7 +310,7 @@
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn-secondary" onclick="closeSignaturePad()">Cancel</button>
-                                <button type="button" class="btn-primary" onclick="saveSignature()">Save</button>
+                                <button type="button" class="btn-primary" onclick="saveSignature(${itemId})">Save</button>
                             </div>
                         </div>
                     </div>
@@ -214,56 +321,38 @@
                 let isDrawing = false;
                 let lastX = 0;
                 let lastY = 0;
-                canvas.addEventListener('mousedown', e => {
-                    isDrawing = true;
-                    [lastX, lastY] = getMousePos(canvas, e);
-                });
+                canvas.addEventListener('mousedown', e => { isDrawing = true; [lastX, lastY] = getMousePos(canvas, e); });
                 canvas.addEventListener('mouseup', () => isDrawing = false);
-                canvas.addEventListener('mouseout', () => isDrawing = false);
                 canvas.addEventListener('mousemove', e => {
                     if (isDrawing) {
                         const [x, y] = getMousePos(canvas, e);
-                        drawLine(ctx, lastX, lastY, x, y);
+                        ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.lineWidth = 2; ctx.stroke();
                         [lastX, lastY] = [x, y];
                     }
                 });
             }
 
-            window.openSignaturePad = openSignaturePad;
-
             function getMousePos(canvas, evt) {
                 const rect = canvas.getBoundingClientRect();
-                return [
-                    evt.clientX - rect.left,
-                    evt.clientY - rect.top
-                ];
+                return [evt.clientX - rect.left, evt.clientY - rect.top];
             }
 
-            function drawLine(ctx, x1, y1, x2, y2) {
-                ctx.beginPath();
-                ctx.moveTo(x1, y1);
-                ctx.lineTo(x2, y2);
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#000';
-                ctx.stroke();
-            }
-
-            function saveSignature() {
-                if (!currentSignItemId) return;
+            function saveSignature(itemId) {
                 const modal = document.getElementById('signature-modal');
                 const canvas = modal.querySelector('#signature-pad');
-                const dataURL = canvas.toDataURL('image/png');
-                signatureData[currentSignItemId] = dataURL;
-                const signItem = signItemInputs[currentSignItemId];
+                signatureData[itemId] = canvas.toDataURL('image/png');
+                const signItem = signItemInputs[itemId];
                 if (signItem) {
                     const img = document.createElement('img');
-                    img.src = dataURL;
+                    img.src = signatureData[itemId];
                     img.style.width = '100%';
                     img.style.height = '100%';
                     signItem.el.innerHTML = '';
                     signItem.el.appendChild(img);
                 }
                 closeSignaturePad();
+                updateRibbonText();
+                setTimeout(goToNextSignItem, 400);
             }
 
             window.saveSignature = saveSignature;
@@ -274,6 +363,261 @@
             }
 
             window.closeSignaturePad = closeSignaturePad;
+
+            function getUncompletedItems() {
+                return SIGN_ITEMS.filter(item => {
+                    const inputInfo = signItemInputs[item.id];
+                    if (!inputInfo) return false;
+                    if (['signature', 'initial'].includes(item.type)) {
+                        return !signatureData[item.id];
+                    } else if (item.type === 'checkbox') {
+                        const inputEl = inputInfo.el.querySelector('input');
+                        return item.required ? (inputEl ? !inputEl.checked : true) : false;
+                    } else {
+                        const inputEl = inputInfo.el.querySelector('input');
+                        return item.required ? (inputEl ? !inputEl.value.trim() : true) : false;
+                    }
+                }).sort((a, b) => {
+                    if (a.page !== b.page) return a.page - b.page;
+                    if (Math.abs(a.posY - b.posY) > 0.005) return a.posY - b.posY;
+                    return a.posX - b.posX;
+                });
+            }
+
+            function getActiveItemMeta() {
+                if (!activeItem) return null;
+                const itemId = Object.keys(signItemInputs).find(key => signItemInputs[key].el === activeItem);
+                if (!itemId) return null;
+                return SIGN_ITEMS.find(item => item.id == itemId);
+            }
+
+            function isFieldFilled(container) {
+                const itemId = Object.keys(signItemInputs).find(key => signItemInputs[key].el === container);
+                if (!itemId) return false;
+                const meta = SIGN_ITEMS.find(item => item.id == itemId);
+                if (!meta) return false;
+
+                if (['signature', 'initial'].includes(meta.type)) {
+                    return !!signatureData[meta.id];
+                } else if (meta.type === 'checkbox') {
+                    const inputEl = container.querySelector('input');
+                    return inputEl ? inputEl.checked : false;
+                } else {
+                    const inputEl = container.querySelector('input, textarea');
+                    return inputEl ? !!inputEl.value.trim() : false;
+                }
+            }
+
+            function autoFillActiveField() {
+                if (!activeItem) return;
+                const meta = getActiveItemMeta();
+                if (!meta) return;
+
+                const inputEl = activeItem.querySelector('input, textarea');
+                if (['signature', 'initial'].includes(meta.type)) {
+                    openSignaturePad(meta.id);
+                } else if (meta.type === 'checkbox') {
+                    if (inputEl) {
+                        inputEl.checked = true;
+                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                } else {
+                    if (inputEl) {
+                        const nameLower = (meta.name || '').toLowerCase();
+                        const placeholderLower = (meta.placeholder || '').toLowerCase();
+                        
+                        // Check if the field is a generic text field or multiline textarea,
+                        // and exclude them from auto-fill to match user requirements.
+                        if (meta.type === 'textarea' || nameLower === 'text' || placeholderLower === 'text' || nameLower === 'multiline' || placeholderLower === 'multiline') {
+                            inputEl.focus();
+                            return;
+                        }
+
+                        if (nameLower.includes('date') || placeholderLower.includes('date')) {
+                            const today = new Date();
+                            const dd = String(today.getDate()).padStart(2, '0');
+                            const mm = String(today.getMonth() + 1).padStart(2, '0');
+                            const yyyy = today.getFullYear();
+                            inputEl.value = `${dd}/${mm}/${yyyy}`;
+                        } else if (nameLower.includes('name') || placeholderLower.includes('name')) {
+                            inputEl.value = SIGNER_INFO.name || '';
+                        } else if (nameLower.includes('email') || placeholderLower.includes('email')) {
+                            inputEl.value = SIGNER_INFO.email || '';
+                        } else if (nameLower.includes('phone') || placeholderLower.includes('phone')) {
+                            inputEl.value = SIGNER_INFO.phone || '';
+                        } else if (nameLower.includes('company') || placeholderLower.includes('company')) {
+                            inputEl.value = SIGNER_INFO.company || '';
+                        } else if (nameLower.includes('title') || placeholderLower.includes('title') || nameLower.includes('job') || placeholderLower.includes('job')) {
+                            inputEl.value = SIGNER_INFO.title || '';
+                        } else if (nameLower.includes('city') || placeholderLower.includes('city')) {
+                            inputEl.value = SIGNER_INFO.city || '';
+                        } else if (nameLower.includes('zip') || placeholderLower.includes('zip')) {
+                            inputEl.value = SIGNER_INFO.zip || '';
+                        } else if (nameLower.includes('country') || placeholderLower.includes('country')) {
+                            inputEl.value = SIGNER_INFO.country || '';
+                        } else if (nameLower.includes('state') || placeholderLower.includes('state')) {
+                            inputEl.value = SIGNER_INFO.state || '';
+                        } else {
+                            inputEl.value = meta.placeholder || meta.name || '';
+                        }
+                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+                        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+            }
+
+            function updateRibbonText() {
+                if (!navigatorEl) return;
+                
+                const uncompleted = getUncompletedItems();
+                const submitBtn = document.getElementById('o_sign_submit');
+                if (submitBtn) {
+                    submitBtn.style.display = uncompleted.length === 0 ? 'block' : 'none';
+                }
+
+                if (!activeItem) {
+                    navigatorEl.innerText = 'Click to start';
+                    return;
+                }
+                
+                if (activeItem.id === 'o_sign_submit') {
+                    navigatorEl.innerText = 'Submit';
+                    return;
+                }
+
+                if (isFieldFilled(activeItem)) {
+                    navigatorEl.innerText = 'Next';
+                } else {
+                    navigatorEl.innerText = 'Fill in';
+                }
+            }
+
+            function goToNextSignItem() {
+                if (activeItem) {
+                    activeItem.classList.remove('ui-selected');
+                }
+
+                const uncompleted = getUncompletedItems();
+                if (uncompleted.length > 0) {
+                    navigatorStarted = true;
+                    const nextItem = uncompleted[0];
+                    const inputInfo = signItemInputs[nextItem.id];
+                    activeItem = inputInfo.el;
+                    activeItem.classList.add('ui-selected');
+
+                    const rect = activeItem.getBoundingClientRect();
+                    const absoluteTop = rect.top + window.scrollY;
+                    const scrollToY = absoluteTop - (window.innerHeight * 0.25);
+                    window.scrollTo({ top: scrollToY, behavior: 'smooth' });
+
+                    navigatorEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                    navlineEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                    const centerViewportY = window.innerHeight * 0.25 + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+
+                    updateRibbonText();
+
+                    const inputEl = activeItem.querySelector('input, textarea');
+                    if (inputEl && nextItem.type !== 'checkbox') {
+                        inputEl.focus();
+                    }
+                } else {
+                    activeItem = document.getElementById('o_sign_submit');
+                    activeItem.classList.add('ui-selected');
+
+                    const rect = activeItem.getBoundingClientRect();
+                    const absoluteTop = rect.top + window.scrollY;
+                    const scrollToY = absoluteTop - (window.innerHeight * 0.5);
+                    window.scrollTo({ top: scrollToY, behavior: 'smooth' });
+
+                    navigatorEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                    navlineEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                    const centerViewportY = window.innerHeight * 0.5 + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+
+                    updateRibbonText();
+                }
+            }
+
+            function initNavigator() {
+                navigatorEl = document.createElement('div');
+                navigatorEl.className = 'o_sign_sign_item_navigator';
+                navigatorEl.innerText = 'Click to start';
+                navigatorEl.style.display = 'none';
+                document.body.appendChild(navigatorEl);
+
+                navlineEl = document.createElement('div');
+                navlineEl.className = 'o_sign_sign_item_navline';
+                navlineEl.style.display = 'none';
+                document.body.appendChild(navlineEl);
+
+                navigatorEl.addEventListener('click', () => {
+                    const txt = navigatorEl.innerText;
+                    if (txt === 'Click to start') {
+                        goToNextSignItem();
+                    } else if (txt === 'Fill in') {
+                        autoFillActiveField();
+                    } else if (txt === 'Next') {
+                        goToNextSignItem();
+                    } else if (txt === 'Submit') {
+                        document.getElementById('o_sign_submit').click();
+                    }
+                });
+
+                const uncompleted = getUncompletedItems();
+                if (uncompleted.length > 0) {
+                    navigatorEl.style.display = 'flex';
+                    navlineEl.style.display = 'block';
+
+                    const firstItem = uncompleted[0];
+                    const inputInfo = signItemInputs[firstItem.id];
+                    activeItem = inputInfo.el;
+
+                    const rect = activeItem.getBoundingClientRect();
+                    const centerViewportY = rect.top + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+                } else if (SIGN_ITEMS.length > 0) {
+                    navigatorEl.style.display = 'flex';
+                    navlineEl.style.display = 'block';
+                    navigatorEl.innerText = 'Submit';
+                    
+                    activeItem = document.getElementById('o_sign_submit');
+                    const rect = activeItem.getBoundingClientRect();
+                    const centerViewportY = rect.top + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+                }
+
+                window.addEventListener('scroll', () => {
+                    if (activeItem) {
+                        const rect = activeItem.getBoundingClientRect();
+                        const centerViewportY = rect.top + rect.height / 2;
+                        navigatorEl.style.transition = 'none';
+                        navlineEl.style.transition = 'none';
+                        navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                        navlineEl.style.top = centerViewportY + 'px';
+                        setTimeout(() => {
+                            navigatorEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                            navlineEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                        }, 50);
+                    }
+                });
+
+                window.addEventListener('resize', () => {
+                    if (activeItem) {
+                        const rect = activeItem.getBoundingClientRect();
+                        const centerViewportY = rect.top + rect.height / 2;
+                        navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                        navlineEl.style.top = centerViewportY + 'px';
+                    }
+                });
+
+                updateRibbonText();
+            }
 
             document.getElementById('o_sign_submit').addEventListener('click', async () => {
                 const values = {};

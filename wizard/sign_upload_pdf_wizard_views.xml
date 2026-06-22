@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_sign_upload_pdf_wizard_form" model="ir.ui.view">
+            <field name="name">sign.upload.pdf.wizard.form</field>
+            <field name="model">sign.upload.pdf.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Upload PDF">
+                    <group>
+                        <field name="name" invisible="1"/>
+                        <field name="file" filename="name" widget="binary"/>
+                    </group>
+                    <footer>
+                        <button name="action_upload_pdf" string="Upload &amp; Edit" type="object" class="btn-primary" data-hotkey="q"/>
+                        <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_sign_upload_pdf_wizard" model="ir.actions.act_window">
+            <field name="name">Upload PDF</field>
+            <field name="res_model">sign.upload.pdf.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+    </data>
+</odoo>

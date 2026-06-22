@@ -17,6 +17,7 @@ Let your customers follow the signature process easily.
         'data/sign_data.xml',
         'data/mail_templates.xml',
         'wizard/sign_send_request_wizard_views.xml',
+        'wizard/sign_upload_pdf_wizard_views.xml',
         'views/sign_template_views.xml',
         'views/sign_request_views.xml',
         'views/sign_log_views.xml',
@@ -31,6 +32,9 @@ Let your customers follow the signature process easily.
         'web.assets_backend': [
             'easy_sign/static/src/scss/sign_common.scss',
             'easy_sign/static/src/scss/sign_backend.scss',
+            'easy_sign/static/src/js/sign_request_list.js',
+            'easy_sign/static/src/js/sign_request_kanban.js',
+            'easy_sign/static/src/xml/sign_request_buttons.xml',
         ],
         'web.assets_frontend': [
             'easy_sign/static/src/scss/sign_common.scss',
