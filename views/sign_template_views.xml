@@ -33,7 +33,7 @@
             <field name="name">sign.template.list</field>
             <field name="model">sign.template</field>
             <field name="arch" type="xml">
-                <list string="Sign Templates">
+                <list string="Sign Templates" js_class="sign_request_list">
                     <field name="name"/>
                     <field name="user_id"/>
                     <field name="num_pages"/>
@@ -46,7 +46,7 @@
             <field name="name">sign.template.kanban</field>
             <field name="model">sign.template</field>
             <field name="arch" type="xml">
-                <kanban string="Sign Templates" class="o_kanban_mobile">
+                <kanban string="Sign Templates" class="o_kanban_mobile" js_class="sign_request_kanban">
                     <templates>
                         <t t-name="kanban-box">
                             <div t-attf-class="oe_kanban_global_click">
