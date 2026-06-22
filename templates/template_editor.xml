@@ -1196,6 +1196,12 @@ function attachPageDropHandlers(wrapper, pageNum) {
             }
         }
 
+        let isReq = true;
+        const typeDef = SIGN_ITEM_TYPES.find(t => t.id === typeId);
+        if (typeDef) {
+            isReq = typeDef.is_mandatory ? true : false;
+        }
+
         const item = {
             _id: nextLocalId--,
             id: 0,
@@ -1206,7 +1212,7 @@ function attachPageDropHandlers(wrapper, pageNum) {
             posY: +posY.toFixed(4),
             width: defW,
             height: defH,
-            required: true,
+            required: isReq,
             responsible_id: signerRoleId,
             name: defName || '',
             placeholder: defPlaceholder || '',

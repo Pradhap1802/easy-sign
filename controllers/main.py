@@ -32,7 +32,7 @@ class SignController(http.Controller):
         template = request.env['sign.template'].sudo().browse(template_id)
         if not template:
             return request.not_found()
-        sign_item_types = request.env['sign.item.type'].sudo().search_read([], ['id', 'name', 'item_type', 'default_width', 'default_height'])
+        sign_item_types = request.env['sign.item.type'].sudo().search_read([], ['id', 'name', 'item_type', 'default_width', 'default_height', 'is_mandatory'])
         sign_roles = request.env['sign.item.role'].sudo().search_read([], ['id', 'name', 'color'])
         sign_items = template.sign_item_ids.read([
             'id', 'type_id', 'required', 'responsible_id', 'name', 'page', 'posX', 'posY', 'width', 'height', 'alignment', 'placeholder'

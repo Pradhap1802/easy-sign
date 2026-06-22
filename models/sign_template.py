@@ -120,7 +120,12 @@ class SignItemType(models.Model):
         ('text', "Text"),
         ('textarea', "Multiline Text"),
         ('checkbox', "Checkbox"),
+        ('radio', "Radio"),
     ], required=True, string='Type', default='text')
+    opt_model_id = fields.Many2one('ir.model', string="Linked to", ondelete='cascade')
+    opt_field_id = fields.Many2one('ir.model.fields', string="Linked field", ondelete='cascade', domain="[('model_id', '=', opt_model_id)]")
+    auto_update = fields.Boolean(string="Update Field", default=False)
+    is_mandatory = fields.Boolean(string="Mandatory", default=False)
     tip = fields.Char(required=True, default="fill in", help="Hint displayed in the signing hint", translate=True)
     placeholder = fields.Char(translate=True)
     default_width = fields.Float(string="Default Width", digits=(4, 3), required=True, default=0.150)

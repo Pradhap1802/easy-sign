@@ -21,6 +21,7 @@ Let your customers follow the signature process easily.
         'views/sign_template_views.xml',
         'views/sign_request_views.xml',
         'views/sign_log_views.xml',
+        'views/sign_item_type_views.xml',
         'views/menus.xml',
         'templates/sign_page.xml',
         'templates/template_editor.xml',

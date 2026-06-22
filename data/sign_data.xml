@@ -15,6 +15,40 @@
             <field name="default_width">0.10</field>
             <field name="default_height">0.04</field>
         </record>
+        <record id="sign_item_type_name" model="sign.item.type">
+            <field name="name">Name</field>
+            <field name="item_type">text</field>
+            <field name="tip">Name</field>
+            <field name="opt_model_id" ref="base.model_res_partner"/>
+            <field name="opt_field_id" search="[('model', '=', 'res.partner'), ('name', '=', 'name')]"/>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_email" model="sign.item.type">
+            <field name="name">Email</field>
+            <field name="item_type">text</field>
+            <field name="tip">Email</field>
+            <field name="opt_model_id" ref="base.model_res_partner"/>
+            <field name="opt_field_id" search="[('model', '=', 'res.partner'), ('name', '=', 'email')]"/>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_phone" model="sign.item.type">
+            <field name="name">Phone</field>
+            <field name="item_type">text</field>
+            <field name="tip">Phone</field>
+            <field name="opt_model_id" ref="base.model_res_partner"/>
+            <field name="opt_field_id" search="[('model', '=', 'res.partner'), ('name', '=', 'phone')]"/>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_company" model="sign.item.type">
+            <field name="name">Company</field>
+            <field name="item_type">text</field>
+            <field name="tip">Company</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
         <record id="sign_item_type_text" model="sign.item.type">
             <field name="name">Text</field>
             <field name="item_type">text</field>
@@ -33,6 +67,13 @@
             <field name="name">Checkbox</field>
             <field name="item_type">checkbox</field>
             <field name="tip">Checkbox</field>
+            <field name="default_width">0.02</field>
+            <field name="default_height">0.02</field>
+        </record>
+        <record id="sign_item_type_radio" model="sign.item.type">
+            <field name="name">Radio</field>
+            <field name="item_type">radio</field>
+            <field name="tip">Radio</field>
             <field name="default_width">0.02</field>
             <field name="default_height">0.02</field>
         </record>
