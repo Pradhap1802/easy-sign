@@ -4,24 +4,90 @@
         <t>
             <style>
                 body {
-                    font-family: Arial, sans-serif;
+                    font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
                     margin: 0;
-                    padding: 20px;
-                    background-color: #f0f0f0;
+                    padding: 0;
+                    background-color: #525659;
+                    color: white;
+                }
+                .es-top-toolbar {
+                    background-color: #2c323f;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 20px;
+                    border-bottom: 1px solid #1e222b;
+                    font-size: 13px;
+                }
+                .es-toolbar-left {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+                .es-breadcrumb {
+                    color: #00a09d;
+                    text-decoration: none;
+                    font-size: 12px;
+                }
+                .es-doc-title {
+                    color: white;
+                    font-size: 15px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .es-toolbar-center {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    color: #adb5bd;
+                    background: #1e222b;
+                    padding: 4px 12px;
+                    border-radius: 4px;
+                    user-select: none;
+                }
+                .es-toolbar-center select {
+                    background: transparent;
+                    color: white;
+                    border: none;
+                    outline: none;
+                    appearance: none;
+                    cursor: pointer;
+                }
+                .es-toolbar-right {
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
+                }
+                .es-signer-status {
+                    display: flex;
+                    flex-direction: column;
+                    font-size: 12px;
+                }
+                .es-signer-status.active {
+                    color: #00a09d;
+                }
+                .es-signer-status.waiting {
+                    color: #adb5bd;
+                }
+                .es-signer-status span:last-child {
+                    font-style: italic;
+                    opacity: 0.8;
                 }
                 .container {
-                    max-width: 1200px;
-                    margin: 0 auto;
-                    background-color: white;
-                    padding: 20px;
-                    border-radius: 8px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    max-width: 900px;
+                    margin: 20px auto;
+                    position: relative;
+                }
+                .container canvas {
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    margin-bottom: 16px;
                 }
                 h1, h2 {
-                    color: #333;
+                    display: none;
                 }
                 .btn-primary {
-                    background-color: #007bff;
+                    background-color: #00a09d;
                     color: white;
                     border: none;
                     padding: 10px 20px;
@@ -31,7 +97,7 @@
                     margin-top: 20px;
                 }
                 .btn-primary:hover {
-                    background-color: #0056b3;
+                    background-color: #008784;
                 }
                 .modal {
                     position: fixed;
@@ -50,6 +116,7 @@
                     border-radius: 8px;
                     width: 80%;
                     max-width: 600px;
+                    color: #333;
                 }
                 .modal-header, .modal-body, .modal-footer {
                     padding: 15px;
@@ -137,12 +204,42 @@
                     background-color: rgba(113, 75, 103, 0.05);
                 }
             </style>
+            <div class="es-top-toolbar">
+                <div class="es-toolbar-left">
+                    <a href="#" class="es-breadcrumb">... / <t t-esc="sign_request.reference"/></a>
+                    <div class="es-doc-title">
+                        <t t-esc="sign_request.reference"/>
+                        <span style="cursor:pointer; font-size: 16px;" title="Options">&#9881;</span>
+                    </div>
+                </div>
+                <div class="es-toolbar-center">
+                    <span style="cursor:pointer;" title="Previous Page">&#708;</span>
+                    <span>1 of <span id="es-total-pages">1</span></span>
+                    <span style="cursor:pointer;" title="Next Page">&#709;</span>
+                    <span style="color:#495057;">|</span>
+                    <span style="cursor:pointer;" title="Zoom Out">&#8722;</span>
+                    <select>
+                        <option>Automatic Zoom</option>
+                        <option>100%</option>
+                        <option>Fit Page</option>
+                    </select>
+                    <span style="cursor:pointer;" title="Zoom In">&#43;</span>
+                    <span style="color:#495057;">|</span>
+                    <span style="cursor:pointer;" title="Search">&#128269;</span>
+                </div>
+                <div class="es-toolbar-right">
+                    <div class="es-signer-status active">
+                        <span id="es-current-signer-name">Signer</span>
+                        <span>Is Signing</span>
+                    </div>
+                </div>
+            </div>
             <div class="container">
-                <h1>Sign Document</h1>
-                <h2><t t-esc="sign_request.reference"/></h2>
                 <div id="o_sign_root">
                 </div>
-                <button id="o_sign_submit" class="btn-primary" style="display: none;">Sign Document</button>
+                <div style="text-align: center; margin-bottom: 40px; margin-top: 20px;">
+                    <button id="o_sign_submit" class="btn-primary" style="display: none; width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: #00a09d; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">Sign Document</button>
+                </div>
             </div>
             <script type="module" src="/web/static/lib/pdfjs/build/pdf.js"></script>
             <script type="module">
@@ -184,6 +281,15 @@
                 try {
                     const loadingTask = pdfjsLib.getDocument(url);
                     pdfDoc = await loadingTask.promise;
+                    
+                    const totalPagesEl = document.getElementById('es-total-pages');
+                    if (totalPagesEl) totalPagesEl.innerText = pdfDoc.numPages;
+
+                    const signerNameEl = document.getElementById('es-current-signer-name');
+                    if (signerNameEl && SIGNER_INFO) {
+                        signerNameEl.innerText = SIGNER_INFO.name || SIGNER_INFO.email || 'Signer';
+                    }
+
                     for (let i = 1; i <= pdfDoc.numPages; i++) {
                         await renderPage(i, canvasContainer);
                     }
