@@ -2,6 +2,14 @@
 <odoo>
     <template id="template_editor">
         <t>
+            &lt;!DOCTYPE html&gt;
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Template Editor</title>
+                </head>
+                <body>
             <style>
                 /* ===== RESET &amp; BASE ===== */
                 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -836,7 +844,7 @@
                             </span>
                             <button class="es-template-gear-btn" title="Template Settings">&#9881;</button>
                             <span class="es-cloud-save-status" id="es-save-status" title="Saved to cloud">
-                                &#9729;&#65039;&#10003;
+                                <span id="es-save-text">Saved</span>
                             </span>
                         </div>
                     </div>
@@ -919,12 +927,13 @@
                     </div>
                 </div>
 
-                <!-- PDF VIEWER -->
-                <div class="es-viewer" id="es-viewer">
-                    <div class="es-loading" id="es-loading">
+                <!-- PDF VIEWER — direct canvas rendering via PDF.js API -->
+                <div class="es-viewer" id="es-viewer" style="position:relative; padding:24px; overflow-y:auto;">
+                    <div class="es-loading" id="es-loading" style="position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;background:#1a1d27;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
                         <div class="es-spinner"></div>
-                        <div class="es-loading-text">Loading PDF…</div>
+                        <div class="es-loading-text" id="es-loading-text">Loading PDF…</div>
                     </div>
+                    <div id="es-pdf-pages" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;"></div>
                 </div>
             </div>
 
@@ -963,9 +972,7 @@
                 </div>
             </div>
 
-            <!-- PDF.js -->
-            <script type="module" src="/web/static/lib/pdfjs/build/pdf.js"></script>
-            <script type="module">
+            <script>
 <![CDATA[
 (function() {
 'use strict';
@@ -978,6 +985,12 @@ const SIGN_ITEM_TYPES = ]]><t t-out="sign_item_types_json"/><![CDATA[;
 const SIGN_ROLES = ]]><t t-out="sign_roles_json"/><![CDATA[;
 const INITIAL_ITEMS = ]]><t t-out="sign_items_json"/><![CDATA[;
 const TEMPLATE_NAME = ]]><t t-out="template_name_json"/><![CDATA[;
+const PDF_B64 = ]]><t t-out="pdf_b64_json"/><![CDATA[;
+
+/* ========================================================
+   PDF.js direct canvas rendering
+   Uses pdfjsLib API directly — no iframe viewer sandbox.
+   ======================================================== */
 
 /* ========================================================
    STATE
@@ -987,6 +1000,8 @@ let nextLocalId = -1; // negative IDs = newly created (not yet saved)
 let selectedItemId = null;
 let isDirty = false;
 let isEditMode = false;
+// pageWrappers — pageNum → { wrapper: canvas-container div }
+let pageWrappers = {}; // pageNum → { wrapper }
 
 function setEditMode(mode) {
     isEditMode = mode;
@@ -1060,45 +1075,7 @@ function updateEditModeUI() {
         });
     }
     
-    const fieldOverlays = document.querySelectorAll('.sign-field-item');
-    fieldOverlays.forEach(el => {
-        if (isEditMode) {
-            el.style.pointerEvents = 'auto';
-            el.style.cursor = 'move';
-            
-            const resizeHandle = el.querySelector('.sign-field-resize');
-            if (resizeHandle) resizeHandle.style.display = '';
-            
-            const deleteBtn = el.querySelector('.sign-field-delete');
-            if (deleteBtn) deleteBtn.style.display = '';
-        } else {
-            el.style.pointerEvents = 'none';
-            el.style.cursor = 'default';
-            
-            const resizeHandle = el.querySelector('.sign-field-resize');
-            if (resizeHandle) resizeHandle.style.display = 'none';
-            
-            const deleteBtn = el.querySelector('.sign-field-delete');
-            if (deleteBtn) deleteBtn.style.display = 'none';
-        }
-    });
-
     deselectAll();
-}
-
-// PDF state
-let pdfDoc = null;
-let pageWrappers = {}; // pageNum → { wrapper, canvas, viewport }
-
-/* ========================================================
-   INIT PDF.js
-   ======================================================== */
-const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
-try {
-    const worker = new Worker('/web/static/lib/pdfjs/build/pdf.worker.js', { type: 'module' });
-    pdfjsLib.GlobalWorkerOptions.workerPort = worker;
-} catch (e) {
-    console.warn("Could not start module worker, falling back to fake worker:", e);
 }
 
 /* ========================================================
@@ -1228,76 +1205,174 @@ function attachPageDropHandlers(wrapper, pageNum) {
 }
 
 /* ========================================================
-   RENDER PDF & PLACE EXISTING ITEMS
+   INIT PDF — direct canvas rendering via pdfjsLib API
    ======================================================== */
-async function renderPDF(url) {
-    try {
-        const loadingTask = pdfjsLib.getDocument(url);
-        pdfDoc = await loadingTask.promise;
+async function initPDFIframe(pdfUrl) {
+    const loadingEl  = document.getElementById('es-loading');
+    const loadingTxt = document.getElementById('es-loading-text');
+    const pagesEl    = document.getElementById('es-pdf-pages');
 
-        const viewer = document.getElementById('es-viewer');
-        const loadingEl = document.getElementById('es-loading');
-        if (loadingEl) loadingEl.remove();
+    function showError(msg) {
+        if (loadingTxt) { loadingTxt.style.color = '#ef4444'; loadingTxt.textContent = msg; }
+        console.error('[easy_sign PDF]', msg);
+    }
 
-        for (let i = 1; i <= pdfDoc.numPages; i++) {
-            const page = await pdfDoc.getPage(i);
-            const scale = 1.8;
-            const viewport = page.getViewport({ scale });
+    // ── 1. Load PDF.js (Odoo 18 uses ES module build — use import()) ─────────
+    let pdfjsLib = globalThis.pdfjsLib;
 
-            // Page label
-            const labelEl = document.createElement('div');
-            labelEl.className = 'es-page-label';
-            labelEl.textContent = `Page ${i} of ${pdfDoc.numPages}`;
-
-            // Wrapper
-            const wrapper = document.createElement('div');
-            wrapper.className = 'es-page-wrapper';
-            wrapper.dataset.page = i;
-            wrapper.style.position = 'relative';
-            wrapper.style.maxWidth = '900px';
-            wrapper.style.width = '100%';
-
-            // Canvas
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width  = viewport.width;
-            canvas.style.display = 'block';
-            canvas.style.width = '100%';
-
-            wrapper.appendChild(canvas);
-            viewer.appendChild(wrapper);
-            viewer.appendChild(labelEl);
-
-            const renderCtx = { canvasContext: ctx, viewport };
-            await page.render(renderCtx).promise;
-
-            pageWrappers[i] = { wrapper, canvas, viewport };
-            attachPageDropHandlers(wrapper, i);
-
-            // Empty hint
-            const hint = document.createElement('div');
-            hint.className = 'es-empty-hint';
-            hint.id = `page-hint-${i}`;
-            hint.innerHTML = `<div class="es-empty-hint-icon">&#8681;</div><div class="es-empty-hint-text">Drag a field here</div>`;
-            wrapper.appendChild(hint);
-        }
-
-        // Place existing items
-        signItems.forEach(item => placeFieldOnPage(item));
-    } catch (err) {
-        console.error("Error loading PDF:", err);
-        const loadingText = document.querySelector('.es-loading-text');
-        if (loadingText) {
-            loadingText.style.color = '#ef4444';
-            loadingText.textContent = 'Error loading PDF: ' + err.message;
-        }
-        const spinner = document.querySelector('.es-spinner');
-        if (spinner) {
-            spinner.style.borderTopColor = '#ef4444';
-            spinner.style.animationPlayState = 'paused';
+    if (!pdfjsLib) {
+        try {
+            // pdf.js in Odoo 18 is an ES module (has `export` syntax).
+            // Dynamic import() handles ES modules correctly; <script> tags do not.
+            await import('/web/static/lib/pdfjs/build/pdf.js');
+            pdfjsLib = globalThis.pdfjsLib;
+        } catch (e) {
+            showError('Failed to load PDF.js: ' + e.message);
+            return;
         }
     }
+
+    if (!pdfjsLib) { showError('PDF.js library not found.'); return; }
+
+    // Use an ES-module Worker for pdf.worker.js (also an ES module in Odoo 18)
+    try {
+        const worker = new Worker(
+            '/web/static/lib/pdfjs/build/pdf.worker.js',
+            { type: 'module' }
+        );
+        pdfjsLib.GlobalWorkerOptions.workerPort = worker;
+    } catch (e) {
+        // Fallback: set as string src (PDF.js will try to load it)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = '/web/static/lib/pdfjs/build/pdf.worker.js';
+    }
+
+    // ── 2. Get PDF bytes ─────────────────────────────────────────────
+    //    PDF_B64 is a base64-encoded string injected by QWeb.
+    //    Convert it to an ArrayBuffer without any HTTP fetch.
+    let pdfData;
+    if (pdfUrl && pdfUrl.startsWith('data:')) {
+        // data URI path (fallback)
+        const b64 = pdfUrl.split(',')[1];
+        const binary = atob(b64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        pdfData = bytes.buffer;
+    } else if (typeof PDF_B64 !== 'undefined' && PDF_B64) {
+        // Server-injected base64 (preferred — no HTTP needed)
+        try {
+            const binary = atob(PDF_B64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            pdfData = bytes.buffer;
+        } catch (e) {
+            showError('Failed to decode embedded PDF: ' + e.message);
+            return;
+        }
+    } else {
+        // Fallback: fetch from server
+        try {
+            const resp = await fetch(pdfUrl, { credentials: 'same-origin' });
+            if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+            pdfData = await resp.arrayBuffer();
+        } catch (e) {
+            showError('Could not load PDF: ' + e.message);
+            return;
+        }
+    }
+
+    // ── 3. Parse PDF ─────────────────────────────────────────────────────────
+    let pdfDoc;
+    try {
+        pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+    } catch (e) {
+        showError('Could not parse PDF: ' + e.message);
+        return;
+    }
+
+    const numPages = pdfDoc.numPages;
+    if (loadingTxt) loadingTxt.textContent = 'Rendering ' + numPages + ' page(s)…';
+
+    // ── 4. Render each page onto a canvas ────────────────────────────────────
+    const viewerEl = document.getElementById('es-viewer');
+    const availWidth = (viewerEl ? viewerEl.clientWidth : 900) - 48; // 24px padding each side
+
+    for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+        const page = await pdfDoc.getPage(pageNum);
+        const nativeViewport = page.getViewport({ scale: 1 });
+        const scale = Math.min(availWidth / nativeViewport.width, 2.0); // cap at 2×
+        const viewport = page.getViewport({ scale });
+
+        // Wrapper div — used as drop target and field overlay container
+        const wrapper = document.createElement('div');
+        wrapper.className = 'es-page-wrapper';
+        wrapper.id = 'pdf-page-wrapper-' + pageNum;
+        wrapper.style.cssText = [
+            'position:relative',
+            'width:' + Math.round(viewport.width) + 'px',
+            'height:' + Math.round(viewport.height) + 'px',
+            'box-shadow:0 8px 40px rgba(0,0,0,0.5)',
+            'border-radius:4px',
+            'flex-shrink:0',
+            'background:#fff',
+        ].join(';');
+
+        // Canvas
+        const canvas = document.createElement('canvas');
+        canvas.width  = Math.round(viewport.width);
+        canvas.height = Math.round(viewport.height);
+        canvas.style.cssText = 'display:block;width:100%;height:100%;border-radius:4px;';
+        wrapper.appendChild(canvas);
+
+        // Page label
+        const label = document.createElement('div');
+        label.className = 'es-page-label';
+        label.textContent = 'Page ' + pageNum + ' / ' + numPages;
+
+        const pageContainer = document.createElement('div');
+        pageContainer.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;';
+        pageContainer.appendChild(wrapper);
+        pageContainer.appendChild(label);
+        pagesEl.appendChild(pageContainer);
+
+        // Render page
+        const ctx = canvas.getContext('2d');
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        // Empty-hint overlay
+        const hint = document.createElement('div');
+        hint.id = 'page-hint-' + pageNum;
+        hint.style.cssText = [
+            'position:absolute', 'top:50%', 'left:50%',
+            'transform:translate(-50%,-50%)',
+            'display:flex', 'flex-direction:column', 'align-items:center', 'gap:8px',
+            'color:rgba(100,116,139,0.55)', 'pointer-events:none', 'z-index:2'
+        ].join(';');
+        hint.innerHTML = '<div style="font-size:28px">⇩</div><div style="font-size:12px">Drag a field here</div>';
+        wrapper.appendChild(hint);
+
+        // Register as drop target
+        pageWrappers[pageNum] = { wrapper };
+        attachPageDropHandlers(wrapper, pageNum);
+    }
+
+    // ── 5. Hide loading overlay ───────────────────────────────────────────────
+    if (loadingEl) loadingEl.style.display = 'none';
+
+    // ── 6. Place pre-existing sign items ────────────────────────────────────
+    signItems.forEach(item => placeFieldOnPage(item));
+}
+
+/**
+ * Re-inject sign-field overlays that may have been removed.
+ * (No-op for canvas approach — overlays are stable DOM elements.)
+ */
+function refreshSignFieldOverlays() {
+    signItems.forEach(item => {
+        const existing = document.getElementById(`sfi-${item._id}`);
+        if (!existing) {
+            placeFieldOnPage(item);
+        }
+    });
 }
 
 /* ========================================================
@@ -1306,6 +1381,10 @@ async function renderPDF(url) {
 function placeFieldOnPage(item) {
     const pw = pageWrappers[item.page];
     if (!pw) return;
+
+    // Avoid duplicate
+    const existing = document.getElementById(`sfi-${item._id}`);
+    if (existing) return;
 
     // Hide empty hint if fields exist on this page
     const hint = document.getElementById(`page-hint-${item.page}`);
@@ -1316,37 +1395,57 @@ function placeFieldOnPage(item) {
     const el = document.createElement('div');
     el.className = `sign-field-item ${meta.cls}`;
     el.id = `sfi-${item._id}`;
-    el.style.left   = (item.posX * 100) + '%';
-    el.style.top    = (item.posY * 100) + '%';
-    el.style.width  = (item.width * 100) + '%';
-    el.style.height = (item.height * 100) + '%';
+    el.style.cssText = `
+        position:absolute;
+        left:${(item.posX * 100)}%;
+        top:${(item.posY * 100)}%;
+        width:${(item.width * 100)}%;
+        height:${(item.height * 100)}%;
+        z-index:10;
+        border:2px solid;
+        border-radius:4px;
+        box-sizing:border-box;
+        cursor:move;
+        user-select:none;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:11px;
+        font-weight:600;
+        overflow:hidden;
+    `;
 
     // Apply signer color (from drag) or role color (for existing items)
     applyRoleColorToEl(el, item.responsible_id, item._signerColor || null);
 
-    // Badge
-    const badge = document.createElement('div');
-    badge.className = 'sign-field-badge';
-    badge.textContent = meta.label;
-    el.appendChild(badge);
-
     // Label
     const lbl = document.createElement('div');
-    lbl.className = 'sign-field-label';
-    lbl.textContent = item.name || meta.icon;
+    lbl.style.cssText = 'pointer-events:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 4px;';
+    lbl.textContent = item.name || meta.label;
     el.appendChild(lbl);
 
     // Delete button
     const delBtn = document.createElement('button');
-    delBtn.className = 'sign-field-delete';
-    delBtn.innerHTML = '&#10005;';
+    delBtn.style.cssText = `
+        position:absolute; top:1px; right:2px;
+        background:transparent; border:none;
+        color:inherit; cursor:pointer;
+        font-size:10px; padding:0; line-height:1;
+    `;
+    delBtn.textContent = '✕';
     delBtn.title = 'Delete field';
     delBtn.addEventListener('mousedown', e => { e.stopPropagation(); deleteItem(item._id); });
     el.appendChild(delBtn);
 
     // Resize handle
     const resizeHandle = document.createElement('div');
-    resizeHandle.className = 'sign-field-resize';
+    resizeHandle.style.cssText = `
+        position:absolute; bottom:1px; right:1px;
+        width:8px; height:8px;
+        background:currentColor; opacity:0.6;
+        cursor:se-resize;
+        border-radius:1px;
+    `;
     resizeHandle.title = 'Resize';
     resizeHandle.addEventListener('mousedown', e => onResizeStart(e, item._id));
     el.appendChild(resizeHandle);
@@ -1401,31 +1500,50 @@ function onFieldMouseDown(e, itemId) {
     movingWrapper = pageWrappers[item.page].wrapper;
 }
 
-document.addEventListener('mousemove', e => {
-    if (movingItemId === null) return;
-    const rect = movingWrapper.getBoundingClientRect();
-    const item = signItems.find(it => it._id === movingItemId);
-    const dx = (e.clientX - movingStartX) / rect.width;
-    const dy = (e.clientY - movingStartY) / rect.height;
-    item.posX = Math.max(0, Math.min(1 - item.width,  movingItemOrigX + dx));
-    item.posY = Math.max(0, Math.min(1 - item.height, movingItemOrigY + dy));
-    item.posX = +item.posX.toFixed(4);
-    item.posY = +item.posY.toFixed(4);
-    const el = document.getElementById(`sfi-${movingItemId}`);
-    if (el) {
-        el.style.left = (item.posX * 100) + '%';
-        el.style.top  = (item.posY * 100) + '%';
-    }
-    updatePosInfo(item);
-    markDirty();
-});
+// Attach mousemove/mouseup to BOTH parent doc and iframe doc to track dragging
+function attachMoveListeners(targetDoc) {
+    targetDoc.addEventListener('mousemove', e => {
+        if (movingItemId === null) return;
+        const rect = movingWrapper.getBoundingClientRect();
+        const item = signItems.find(it => it._id === movingItemId);
+        
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+        if (targetDoc === document) {
+            // Mouse is over parent doc, translate to iframe coords
+            const iframe = document.getElementById('es-pdf-iframe');
+            if (iframe) {
+                const iframeRect = iframe.getBoundingClientRect();
+                clientX = e.clientX - iframeRect.left;
+                clientY = e.clientY - iframeRect.top;
+            }
+        }
 
-document.addEventListener('mouseup', () => {
-    if (movingItemId !== null) {
-        movingItemId = null;
-        movingWrapper = null;
-    }
-});
+        const dx = (clientX - movingStartX) / rect.width;
+        const dy = (clientY - movingStartY) / rect.height;
+        item.posX = Math.max(0, Math.min(1 - item.width,  movingItemOrigX + dx));
+        item.posY = Math.max(0, Math.min(1 - item.height, movingItemOrigY + dy));
+        item.posX = +item.posX.toFixed(4);
+        item.posY = +item.posY.toFixed(4);
+        const el = iframeDoc ? iframeDoc.getElementById(`sfi-${movingItemId}`) : document.getElementById(`sfi-${movingItemId}`);
+        if (el) {
+            el.style.left = (item.posX * 100) + '%';
+            el.style.top  = (item.posY * 100) + '%';
+        }
+        updatePosInfo(item);
+        markDirty();
+    });
+
+    targetDoc.addEventListener('mouseup', () => {
+        if (movingItemId !== null) {
+            movingItemId = null;
+            movingWrapper = null;
+        }
+    });
+}
+
+// Attach to parent document immediately; also called for iframeDoc after PDF loads
+attachMoveListeners(document);
 
 /* ========================================================
    RESIZE
@@ -1447,31 +1565,48 @@ function onResizeStart(e, itemId) {
     resizingWrapper = pageWrappers[item.page].wrapper;
 }
 
-document.addEventListener('mousemove', e => {
-    if (resizingItemId === null) return;
-    const rect = resizingWrapper.getBoundingClientRect();
-    const item = signItems.find(it => it._id === resizingItemId);
-    const dw = (e.clientX - resizingStartX) / rect.width;
-    const dh = (e.clientY - resizingStartY) / rect.height;
-    item.width  = Math.max(0.02, Math.min(1 - item.posX, resizingOrigW + dw));
-    item.height = Math.max(0.01, Math.min(1 - item.posY, resizingOrigH + dh));
-    item.width  = +item.width.toFixed(4);
-    item.height = +item.height.toFixed(4);
-    const el = document.getElementById(`sfi-${resizingItemId}`);
-    if (el) {
-        el.style.width  = (item.width  * 100) + '%';
-        el.style.height = (item.height * 100) + '%';
-    }
-    updatePosInfo(item);
-    markDirty();
-});
+function attachResizeListeners(targetDoc) {
+    targetDoc.addEventListener('mousemove', e => {
+        if (resizingItemId === null) return;
+        const rect = resizingWrapper.getBoundingClientRect();
+        const item = signItems.find(it => it._id === resizingItemId);
+        
+        let clientX = e.clientX;
+        let clientY = e.clientY;
+        if (targetDoc === document) {
+            // Mouse is over parent doc, translate to iframe coords
+            const iframe = document.getElementById('es-pdf-iframe');
+            if (iframe) {
+                const iframeRect = iframe.getBoundingClientRect();
+                clientX = e.clientX - iframeRect.left;
+                clientY = e.clientY - iframeRect.top;
+            }
+        }
 
-document.addEventListener('mouseup', () => {
-    if (resizingItemId !== null) {
-        resizingItemId = null;
-        resizingWrapper = null;
-    }
-});
+        const dw = (clientX - resizingStartX) / rect.width;
+        const dh = (clientY - resizingStartY) / rect.height;
+        item.width  = Math.max(0.02, Math.min(1 - item.posX, resizingOrigW + dw));
+        item.height = Math.max(0.01, Math.min(1 - item.posY, resizingOrigH + dh));
+        item.width  = +item.width.toFixed(4);
+        item.height = +item.height.toFixed(4);
+        const el = iframeDoc ? iframeDoc.getElementById(`sfi-${resizingItemId}`) : document.getElementById(`sfi-${resizingItemId}`);
+        if (el) {
+            el.style.width  = (item.width  * 100) + '%';
+            el.style.height = (item.height * 100) + '%';
+        }
+        updatePosInfo(item);
+        markDirty();
+    });
+
+    targetDoc.addEventListener('mouseup', () => {
+        if (resizingItemId !== null) {
+            resizingItemId = null;
+            resizingWrapper = null;
+        }
+    });
+}
+
+attachResizeListeners(document);
 
 /* ========================================================
    KEYBOARD DELETE
@@ -1658,7 +1793,7 @@ function deleteItem(itemId) {
         const pgNum = parseInt(pg);
         const hasFields = signItems.some(it => it.page === pgNum);
         const hint = document.getElementById(`page-hint-${pgNum}`);
-        if (hint) hint.style.display = hasFields ? 'none' : '';
+        if (hint) hint.style.display = hasFields ? 'none' : 'flex';
     });
 
     markDirty();
@@ -1699,13 +1834,12 @@ function markSaved() {
    ======================================================== */
 async function saveTemplate() {
     const btn = document.getElementById('es-btn-save');
-    btn.disabled = true;
-    btn.textContent = '⏳ Saving…';
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Saving…'; }
 
     const status = document.getElementById('es-save-status');
     const txt = document.getElementById('es-save-text');
-    status.className = 'es-save-status saving';
-    txt.textContent = 'Saving…';
+    if (status) status.className = 'es-save-status saving';
+    if (txt) txt.textContent = 'Saving…';
 
     // Build payload
     const payload = signItems.map(item => {
@@ -1743,12 +1877,11 @@ async function saveTemplate() {
             throw new Error(result.error?.data?.message || 'Save failed');
         }
     } catch (err) {
-        status.className = 'es-save-status error';
-        txt.textContent = 'Save failed';
+        if (status) status.className = 'es-save-status error';
+        if (txt) txt.textContent = 'Save failed';
         showToast('✗ ' + (err.message || 'Failed to save'), 'error');
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = '&#10003; Save Template';
+        if (btn) { btn.disabled = false; btn.innerHTML = '&#10003; Save Template'; }
     }
 }
 
@@ -1829,8 +1962,8 @@ signItems = INITIAL_ITEMS.map(it => {
 // Mark as saved initially (no unsaved changes)
 const statusEl = document.getElementById('es-save-status');
 const statusTxt = document.getElementById('es-save-text');
-statusEl.className = 'es-save-status saved';
-statusTxt.textContent = 'No unsaved changes';
+if (statusEl) statusEl.className = 'es-save-status saved';
+if (statusTxt) statusTxt.textContent = 'No unsaved changes';
 
 // Pre-fill send reference
 const refInput = document.getElementById('es-send-reference');
@@ -2224,11 +2357,13 @@ window.confirmSend = confirmSend;
 
 isEditMode = (signItems.length === 0);
 buildSignersPanel();
-renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf');
+initPDFIframe('/sign/template/' + TEMPLATE_ID + '/pdf');
 
 })();
 ]]>
             </script>
+                </body>
+            </html>
         </t>
     </template>
 </odoo>

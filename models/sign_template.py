@@ -14,10 +14,9 @@ class SignTemplate(models.Model):
     def _get_default_favorited_ids(self):
         return [(4, self.env.user.id)]
 
-    attachment_id = fields.Many2one('ir.attachment', string="Attachment", required=True, ondelete='cascade')
-    name = fields.Char(related='attachment_id.name', readonly=False, store=True)
+    name = fields.Char(string="Template Name", required=True)
     num_pages = fields.Integer('Number of pages', compute="_compute_num_pages", readonly=True, store=True)
-    datas = fields.Binary(related='attachment_id.datas')
+    datas = fields.Binary(string="PDF Document", required=True, attachment=True)
     sign_item_ids = fields.One2many('sign.item', 'template_id', string="Signature Items", copy=True)
     sign_request_ids = fields.One2many('sign.request', 'template_id', string="Sign Requests")
     active = fields.Boolean(default=True, string="Active")
@@ -27,11 +26,11 @@ class SignTemplate(models.Model):
     # Temporary field for form view
     datas_fname = fields.Char(string="File Name")
 
-    @api.depends('attachment_id.datas')
+    @api.depends('datas')
     def _compute_num_pages(self):
         for record in self:
             try:
-                record.num_pages = self._get_pdf_number_of_pages(base64.b64decode(record.attachment_id.datas))
+                record.num_pages = self._get_pdf_number_of_pages(base64.b64decode(record.datas))
             except Exception:
                 record.num_pages = 0
 
@@ -42,36 +41,20 @@ class SignTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        attachment_vals = [{'name': val['name'], 'datas': val.pop('datas')} for val in vals_list if not val.get('attachment_id') and val.get('datas')]
-        attachments_iter = iter(self.env['ir.attachment'].create(attachment_vals))
-        for val in vals_list:
-            if not val.get('attachment_id') and val.get('datas'):
-                val['attachment_id'] = next(attachments_iter).id
-        attachments = self.env['ir.attachment'].browse([vals.get('attachment_id') for vals in vals_list if vals.get('attachment_id')])
-        for attachment in attachments:
-            self._check_pdf_data_validity(attachment.datas)
-        for vals, attachment in zip(vals_list, attachments):
-            if attachment.res_model or attachment.res_id:
-                vals['attachment_id'] = attachment.copy().id
-        templates = super().create(vals_list)
-        for template, attachment in zip(templates, templates.attachment_id):
-            attachment.write({
-                'res_model': self._name,
-                'res_id': template.id,
-            })
-        templates.attachment_id.check('read')
-        return templates
+        for vals in vals_list:
+            if 'datas' in vals:
+                self._check_pdf_data_validity(vals['datas'])
+        return super().create(vals_list)
 
     def write(self, vals):
-        res = super().write(vals)
-        if 'attachment_id' in vals:
-            self.attachment_id.check('read')
-        return res
+        if 'datas' in vals:
+            self._check_pdf_data_validity(vals['datas'])
+        return super().write(vals)
 
     def go_to_custom_template(self):
         self.ensure_one()
         return {
-            'name': "Template \"%(name)s\"" % {'name': self.attachment_id.name},
+            'name': "Template \"%(name)s\"" % {'name': self.name},
             'type': 'ir.actions.act_url',
             'url': '/sign/template/%d/edit' % self.id,
             'target': 'self',

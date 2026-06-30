@@ -2,6 +2,14 @@
 <odoo>
     <template id="sign_page" name="Sign Page">
         <t>
+            &lt;!DOCTYPE html&gt;
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Sign Document</title>
+                </head>
+                <body>
             <style>
                 body {
                     font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
@@ -235,88 +243,157 @@
                 </div>
             </div>
             <div class="container">
-                <div id="o_sign_root">
+                <div id="o_sign_root" style="padding:24px; position:relative; min-height: 800px; display:flex; flex-direction:column; align-items:center;">
+                    <div id="es-loading" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:10;background:#525659;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+                        <div id="es-loading-text" style="color:white;font-size:18px;">Loading PDF…</div>
+                    </div>
+                    <div id="es-pdf-pages" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;"></div>
                 </div>
                 <div style="text-align: center; margin-bottom: 40px; margin-top: 20px;">
                     <button id="o_sign_submit" class="btn-primary" style="display: none; width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: #00a09d; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">Sign Document</button>
                 </div>
             </div>
-            <script type="module" src="/web/static/lib/pdfjs/build/pdf.js"></script>
-            <script type="module">
+            <script>
 <![CDATA[
             const TEMPLATE_ID = ]]><t t-esc="sign_request.template_id.id"/><![CDATA[;
             const REQUEST_ID = ]]><t t-esc="sign_request.id"/><![CDATA[;
             const ACCESS_TOKEN = ']]><t t-esc="access_token"/><![CDATA[';
             const SIGNER_INFO = ]]><t t-raw="signer_info_json"/><![CDATA[;
-            const SIGN_ITEMS = ]]><t t-raw="json.dumps([{
-                'id': item.id,
-                'type': item.type_id.item_type,
-                'name': item.name or '',
-                'placeholder': item.placeholder or '',
-                'page': item.page,
-                'posX': item.posX,
-                'posY': item.posY,
-                'width': item.width,
-                'height': item.height,
-                'required': item.required
-            } for item in sign_request.template_id.sign_item_ids])"/><![CDATA[;
+            const SIGN_ITEMS = ]]><t t-out="sign_items_json"/><![CDATA[;
+            const PDF_B64 = ]]><t t-out="pdf_b64_json"/><![CDATA[;
 
-            const pdfjsLib = window.pdfjsLib || window['pdfjs-dist/build/pdf'];
-            try {
-                const worker = new Worker('/web/static/lib/pdfjs/build/pdf.worker.js', { type: 'module' });
-                pdfjsLib.GlobalWorkerOptions.workerPort = worker;
-            } catch (e) {
-                console.warn("Could not start module worker, falling back to fake worker:", e);
+            function buildPDFViewerURL(pdfUrl) {
+                // Legacy helper — no longer used
+                return pdfUrl;
             }
 
-            let pdfDoc = null;
-            let pageNum = 1;
-            let pageRendering = false;
-            let pageNumPending = null;
-            let canvasList = [];
+            let pageWrappers = {};
             let signItemInputs = {};
             const signatureData = {};
 
-            async function renderPDF(url, canvasContainer) {
-                try {
-                    const loadingTask = pdfjsLib.getDocument(url);
-                    pdfDoc = await loadingTask.promise;
-                    
-                    const totalPagesEl = document.getElementById('es-total-pages');
-                    if (totalPagesEl) totalPagesEl.innerText = pdfDoc.numPages;
+            async function initPDFIframe(pdfUrl) {
+                const loadingEl  = document.getElementById('es-loading');
+                const loadingTxt = document.getElementById('es-loading-text');
+                const pagesEl    = document.getElementById('es-pdf-pages');
 
-                    const signerNameEl = document.getElementById('es-current-signer-name');
-                    if (signerNameEl && SIGNER_INFO) {
-                        signerNameEl.innerText = SIGNER_INFO.name || SIGNER_INFO.email || 'Signer';
-                    }
-
-                    for (let i = 1; i <= pdfDoc.numPages; i++) {
-                        await renderPage(i, canvasContainer);
-                    }
-                    renderSignItems();
-                    initNavigator();
-                } catch (err) {
-                    console.error("Error loading PDF:", err);
-                    canvasContainer.innerHTML = `<div style="color:#ef4444; padding:20px; text-align:center; font-weight:bold;">Error loading PDF: ${err.message}</div>`;
+                function showError(msg) {
+                    if (loadingTxt) { loadingTxt.style.color = '#ef4444'; loadingTxt.textContent = msg; }
+                    console.error('[easy_sign sign_page]', msg);
                 }
-            }
 
-            async function renderPage(num, canvasContainer) {
-                const page = await pdfDoc.getPage(num);
-                const scale = 1.5;
-                const viewport = page.getViewport({scale: scale});
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                canvas.style.width = '100%';
-                canvasContainer.appendChild(canvas);
-                canvasList.push({canvas, viewport, pageNum: num});
-                const renderContext = {
-                    canvasContext: ctx,
-                    viewport: viewport
-                };
-                await page.render(renderContext).promise;
+                // ── 1. Load PDF.js (Odoo 18 uses ES module build — use import()) ─────────
+                let pdfjsLib = globalThis.pdfjsLib;
+
+                if (!pdfjsLib) {
+                    try {
+                        // pdf.js in Odoo 18 is an ES module (has `export` syntax).
+                        // Dynamic import() handles ES modules correctly; <script> tags do not.
+                        await import('/web/static/lib/pdfjs/build/pdf.js');
+                        pdfjsLib = globalThis.pdfjsLib;
+                    } catch (e) {
+                        showError('Failed to load PDF.js: ' + e.message);
+                        return;
+                    }
+                }
+
+                if (!pdfjsLib) { showError('PDF.js library not found.'); return; }
+
+                // Use an ES-module Worker for pdf.worker.js (also an ES module in Odoo 18)
+                try {
+                    const worker = new Worker(
+                        '/web/static/lib/pdfjs/build/pdf.worker.js',
+                        { type: 'module' }
+                    );
+                    pdfjsLib.GlobalWorkerOptions.workerPort = worker;
+                } catch (e) {
+                    // Fallback: set as string src (PDF.js will try to load it)
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = '/web/static/lib/pdfjs/build/pdf.worker.js';
+                }
+
+                // ── 2. Get PDF bytes from server-injected base64 ────────────
+                let pdfData;
+                if (typeof PDF_B64 !== 'undefined' && PDF_B64) {
+                    try {
+                        const binary = atob(PDF_B64);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                        pdfData = bytes.buffer;
+                    } catch (e) {
+                        showError('Failed to decode embedded PDF: ' + e.message);
+                        return;
+                    }
+                } else {
+                    // Fallback: fetch
+                    try {
+                        const resp = await fetch(pdfUrl, { credentials: 'same-origin' });
+                        if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+                        pdfData = await resp.arrayBuffer();
+                    } catch (e) {
+                        showError('Could not load PDF: ' + e.message);
+                        return;
+                    }
+                }
+
+                // ── 3. Parse PDF ─────────────────────────────────────────
+                let pdfDoc;
+                try {
+                    pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                } catch (e) {
+                    showError('Could not parse PDF: ' + e.message);
+                    return;
+                }
+
+                const numPages = pdfDoc.numPages;
+                if (loadingTxt) loadingTxt.textContent = 'Rendering ' + numPages + ' page(s)…';
+
+                const totalPagesEl = document.getElementById('es-total-pages');
+                if (totalPagesEl) totalPagesEl.innerText = numPages;
+
+                const signerNameEl = document.getElementById('es-current-signer-name');
+                if (signerNameEl && SIGNER_INFO) {
+                    signerNameEl.innerText = SIGNER_INFO.name || SIGNER_INFO.email || 'Signer';
+                }
+
+                // ── 4. Render each page onto a canvas ─────────────────────────
+                const availWidth = Math.min(900, window.innerWidth) - 48;
+
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    const page = await pdfDoc.getPage(pageNum);
+                    const nativeViewport = page.getViewport({ scale: 1 });
+                    const scale = Math.min(availWidth / nativeViewport.width, 2.0);
+                    const viewport = page.getViewport({ scale });
+
+                    const wrapper = document.createElement('div');
+                    wrapper.id = 'pdf-page-wrapper-' + pageNum;
+                    wrapper.style.cssText = [
+                        'position:relative',
+                        'width:' + Math.round(viewport.width) + 'px',
+                        'height:' + Math.round(viewport.height) + 'px',
+                        'box-shadow:0 4px 12px rgba(0,0,0,0.3)',
+                        'background:#fff',
+                        'flex-shrink:0',
+                    ].join(';');
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width  = Math.round(viewport.width);
+                    canvas.height = Math.round(viewport.height);
+                    canvas.style.cssText = 'display:block;width:100%;height:100%;';
+                    wrapper.appendChild(canvas);
+
+                    pagesEl.appendChild(wrapper);
+
+                    const ctx = canvas.getContext('2d');
+                    await page.render({ canvasContext: ctx, viewport }).promise;
+
+                    pageWrappers[pageNum] = { wrapper };
+                }
+
+                // ── 5. Hide loading overlay ────────────────────────────────
+                if (loadingEl) loadingEl.style.display = 'none';
+
+                // ── 6. Render sign-item overlays ────────────────────────────
+                renderSignItems();
+                initNavigator();
             }
 
             let activeItem = null;
@@ -342,60 +419,65 @@
 
             function renderSignItems() {
                 SIGN_ITEMS.forEach(item => {
-                    const pageCanvasData = canvasList.find(c => c.pageNum === item.page);
-                    if (!pageCanvasData) return;
-                    const container = document.createElement('div');
-                    container.className = 'sign-item';
-                    container.style.position = 'absolute';
-                    container.style.left = (item.posX * 100) + '%';
-                    container.style.top = (item.posY * 100) + '%';
-                    container.style.width = (item.width * 100) + '%';
-                    container.style.height = (item.height * 100) + '%';
-                    container.style.border = '1px dashed #000';
-                    container.style.zIndex = 10;
-                    container.style.boxSizing = 'border-box';
-                    
-                    if (['signature', 'initial'].includes(item.type)) {
-                        container.addEventListener('click', () => {
-                            selectItem(container);
-                            openSignaturePad(item.id);
-                        });
-                        container.innerHTML = '<span style="color: #888; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 11px;">Click to sign</span>';
-                    } else if (item.type === 'checkbox') {
-                        container.innerHTML = '<input type="checkbox" style="margin: auto; display: block; transform: scale(2);">';
-                        const inputEl = container.querySelector('input');
-                        inputEl.addEventListener('click', () => {
-                            selectItem(container);
-                            updateRibbonText();
-                            setTimeout(goToNextSignItem, 300);
-                        });
-                        inputEl.addEventListener('change', () => {
-                            updateRibbonText();
-                        });
-                    } else {
-                        container.innerHTML = '<input type="text" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px;">';
-                        const inputEl = container.querySelector('input');
-                        inputEl.addEventListener('focus', () => {
-                            selectItem(container);
-                        });
-                        inputEl.addEventListener('input', () => {
-                            updateRibbonText();
-                        });
-                        inputEl.addEventListener('change', () => {
-                            updateRibbonText();
-                        });
-                        inputEl.addEventListener('keypress', (e) => {
-                            if (e.key === 'Enter') {
-                                goToNextSignItem();
-                            }
-                        });
-                    }
-                    const canvas = pageCanvasData.canvas;
-                    canvas.style.position = 'relative';
-                    canvas.parentNode.style.position = 'relative';
-                    canvas.parentNode.insertBefore(container, canvas.nextSibling);
-                    signItemInputs[item.id] = { type: item.type, el: container };
+                    renderSignItem(item);
                 });
+            }
+
+            function renderSignItem(item) {
+                const pageData = pageWrappers[item.page];
+                if (!pageData) return;
+                
+                const container = document.createElement('div');
+                container.id = `sign-item-${item.id}`;
+                container.className = 'sign-item';
+                container.style.position = 'absolute';
+                container.style.left = (item.posX * 100) + '%';
+                container.style.top = (item.posY * 100) + '%';
+                container.style.width = (item.width * 100) + '%';
+                container.style.height = (item.height * 100) + '%';
+                container.style.border = '1px dashed #000';
+                container.style.zIndex = 10;
+                container.style.boxSizing = 'border-box';
+                container.style.background = 'rgba(255, 255, 255, 0.5)';
+                
+                if (['signature', 'initial'].includes(item.type)) {
+                    container.addEventListener('click', () => {
+                        selectItem(container);
+                        openSignaturePad(item.id);
+                    });
+                    container.innerHTML = '<span style="color: #888; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 11px;">Click to sign</span>';
+                } else if (item.type === 'checkbox') {
+                    container.innerHTML = '<input type="checkbox" style="margin: auto; display: block; transform: scale(2);">';
+                    const inputEl = container.querySelector('input');
+                    inputEl.addEventListener('click', () => {
+                        selectItem(container);
+                        updateRibbonText();
+                        setTimeout(goToNextSignItem, 300);
+                    });
+                    inputEl.addEventListener('change', () => {
+                        updateRibbonText();
+                    });
+                } else {
+                    container.innerHTML = '<input type="text" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px;">';
+                    const inputEl = container.querySelector('input');
+                    inputEl.addEventListener('focus', () => {
+                        selectItem(container);
+                    });
+                    inputEl.addEventListener('input', () => {
+                        updateRibbonText();
+                    });
+                    inputEl.addEventListener('change', () => {
+                        updateRibbonText();
+                    });
+                    inputEl.addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') {
+                            goToNextSignItem();
+                        }
+                    });
+                }
+                
+                pageData.wrapper.appendChild(container);
+                signItemInputs[item.id] = { type: item.type, el: container };
             }
 
             function openSignaturePad(itemId) {
@@ -749,9 +831,11 @@
                 }
             });
 
-            renderPDF('/sign/template/' + TEMPLATE_ID + '/pdf', document.getElementById('o_sign_root'));
+            initPDFIframe('/sign/template/' + TEMPLATE_ID + '/pdf');
 ]]>
             </script>
+                </body>
+            </html>
         </t>
     </template>
 

@@ -65,11 +65,7 @@ class SignRequest(models.Model):
                 self.reference = self.document_filename or "New Signature Request"
             template = self.env['sign.template'].create({
                 'name': self.reference,
-                'attachment_id': self.env['ir.attachment'].create({
-                    'name': self.document_filename or "Document",
-                    'datas': self.document,
-                    'type': 'binary',
-                }).id,
+                'datas': self.document,
             })
             self.template_id = template
     nb_wait = fields.Integer(string="Sent Requests", compute="_compute_stats", store=True)
@@ -102,14 +98,9 @@ class SignRequest(models.Model):
                 raise ValidationError(_("Please either select a template or upload a document"))
             if vals.get('document') and not vals.get('template_id'):
                 # Create a new template from the uploaded document
-                attachment = self.env['ir.attachment'].create({
-                    'name': vals.get('document_filename') or vals.get('reference') or "Document",
-                    'datas': vals.get('document'),
-                    'type': 'binary',
-                })
                 template = self.env['sign.template'].create({
                     'name': vals.get('reference') or "New Template",
-                    'attachment_id': attachment.id,
+                    'datas': vals.get('document'),
                 })
                 vals['template_id'] = template.id
         sign_requests = super().create(vals_list)
@@ -256,10 +247,10 @@ class SignRequest(models.Model):
         if self.state != 'signed':
             raise UserError(_("The completed document cannot be created because the sign request is not fully signed"))
         if not self.template_id.sign_item_ids:
-            self.completed_document = self.template_id.attachment_id.datas
+            self.completed_document = self.template_id.datas
         else:
             try:
-                old_pdf = PdfFileReader(io.BytesIO(base64.b64decode(self.template_id.attachment_id.datas)), strict=False, overwriteWarnings=False)
+                old_pdf = PdfFileReader(io.BytesIO(base64.b64decode(self.template_id.datas)), strict=False, overwriteWarnings=False)
             except Exception:
                 raise ValidationError(_("ERROR: Invalid PDF file!"))
             packet = io.BytesIO()

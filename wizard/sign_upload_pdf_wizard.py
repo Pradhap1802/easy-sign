@@ -16,18 +16,10 @@ class SignUploadPdfWizard(models.TransientModel):
         self.ensure_one()
         if not self.file:
             raise UserError(_("Please upload a PDF file."))
-        
-        # Create ir.attachment manually
-        attachment = self.env['ir.attachment'].create({
-            'name': self.name or 'Uploaded Document',
-            'datas': self.file,
-            'mimetype': 'application/pdf',
-        })
-
         # Create a new sign.template
         template = self.env['sign.template'].create({
             'name': self.name or 'Uploaded Document',
-            'attachment_id': attachment.id,
+            'datas': self.file,
         })
         
         # Call the existing method to go to the template editor

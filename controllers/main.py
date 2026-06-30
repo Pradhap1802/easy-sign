@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo.http import content_disposition
 import base64
 import io
 import json
@@ -6,24 +7,28 @@ import logging
 from odoo import http, _
 from odoo.http import request
 from odoo.exceptions import AccessError, ValidationError, UserError
-from odoo.http import content_disposition
 from markupsafe import Markup
 
 _logger = logging.getLogger(__name__)
 
 
 class SignController(http.Controller):
-    @http.route('/sign/template/<int:template_id>/pdf', type='http', auth='public')
+    @http.route('/sign/template/<int:template_id>/pdf', type='http', auth='user', website=False)
     def sign_template_pdf(self, template_id, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template or not template.attachment_id:
+        if not template or not template.datas:
             return request.not_found()
+        datas = template.sudo().datas
+        if not datas:
+            return request.not_found()
+        pdf_bytes = base64.b64decode(datas)
         return request.make_response(
-            base64.b64decode(template.attachment_id.datas),
+            pdf_bytes,
             headers=[
                 ('Content-Type', 'application/pdf'),
-                ('Content-Disposition', content_disposition('%s' % template.attachment_id.name)),
+                ('Content-Disposition', 'inline; filename="%s"' % (template.name or 'document.pdf')),
                 ('X-Frame-Options', 'SAMEORIGIN'),
+                ('Cache-Control', 'no-cache, no-store, must-revalidate'),
             ]
         )
 
@@ -37,6 +42,13 @@ class SignController(http.Controller):
         sign_items = template.sign_item_ids.read([
             'id', 'type_id', 'required', 'responsible_id', 'name', 'page', 'posX', 'posY', 'width', 'height', 'alignment', 'placeholder'
         ])
+        # Pass PDF data as base64 string directly — avoids any HTTP fetch/auth issues in the browser
+        # Odoo Binary field returns bytes (base64-encoded). Decode to str for JSON.
+        raw_datas = template.sudo().datas
+        if raw_datas:
+            pdf_b64_str = raw_datas.decode('utf-8') if isinstance(raw_datas, bytes) else str(raw_datas)
+        else:
+            pdf_b64_str = ''
         return request.render('easy_sign.template_editor', {
             'template': template,
             'sign_item_types': sign_item_types,
@@ -46,6 +58,7 @@ class SignController(http.Controller):
             'sign_roles_json':      Markup(json.dumps(sign_roles)),
             'sign_items_json':      Markup(json.dumps(sign_items)),
             'template_name_json':   Markup(json.dumps(template.name or '')),
+            'pdf_b64_json':         Markup(json.dumps(pdf_b64_str)),
         })
 
     @http.route('/sign/template/<int:template_id>/items', type='json', auth='user')
@@ -151,10 +164,33 @@ class SignController(http.Controller):
                 'state': partner.state_id.name if partner.state_id else '',
             }
 
+        # Pass PDF data as base64 directly — no HTTP fetch needed in browser
+        pdf_b64 = sign_request.template_id.sudo().datas or ''
+        if isinstance(pdf_b64, bytes):
+            pdf_b64 = pdf_b64.decode('utf-8')
+
+        # Build sign items list for the template
+        sign_items_data = []
+        for item in sign_request.template_id.sign_item_ids:
+            sign_items_data.append({
+                'id': item.id,
+                'type': item.type_id.item_type,
+                'name': item.name or '',
+                'placeholder': item.placeholder or '',
+                'page': item.page,
+                'posX': item.posX,
+                'posY': item.posY,
+                'width': item.width,
+                'height': item.height,
+                'required': item.required,
+            })
+
         values = {
             'sign_request': sign_request,
             'access_token': access_token,
             'signer_info_json': json.dumps(signer_vals),
+            'pdf_b64_json': Markup(json.dumps(pdf_b64)),
+            'sign_items_json': Markup(json.dumps(sign_items_data)),
         }
         return request.render('easy_sign.sign_page', values)
 
