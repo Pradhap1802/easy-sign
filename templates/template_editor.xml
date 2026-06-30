@@ -1500,24 +1500,15 @@ function onFieldMouseDown(e, itemId) {
     movingWrapper = pageWrappers[item.page].wrapper;
 }
 
-// Attach mousemove/mouseup to BOTH parent doc and iframe doc to track dragging
-function attachMoveListeners(targetDoc) {
-    targetDoc.addEventListener('mousemove', e => {
+// Attach mousemove/mouseup to parent doc to track dragging
+function attachMoveListeners() {
+    document.addEventListener('mousemove', e => {
         if (movingItemId === null) return;
         const rect = movingWrapper.getBoundingClientRect();
         const item = signItems.find(it => it._id === movingItemId);
         
-        let clientX = e.clientX;
-        let clientY = e.clientY;
-        if (targetDoc === document) {
-            // Mouse is over parent doc, translate to iframe coords
-            const iframe = document.getElementById('es-pdf-iframe');
-            if (iframe) {
-                const iframeRect = iframe.getBoundingClientRect();
-                clientX = e.clientX - iframeRect.left;
-                clientY = e.clientY - iframeRect.top;
-            }
-        }
+        const clientX = e.clientX;
+        const clientY = e.clientY;
 
         const dx = (clientX - movingStartX) / rect.width;
         const dy = (clientY - movingStartY) / rect.height;
@@ -1525,7 +1516,7 @@ function attachMoveListeners(targetDoc) {
         item.posY = Math.max(0, Math.min(1 - item.height, movingItemOrigY + dy));
         item.posX = +item.posX.toFixed(4);
         item.posY = +item.posY.toFixed(4);
-        const el = iframeDoc ? iframeDoc.getElementById(`sfi-${movingItemId}`) : document.getElementById(`sfi-${movingItemId}`);
+        const el = document.getElementById(`sfi-${movingItemId}`);
         if (el) {
             el.style.left = (item.posX * 100) + '%';
             el.style.top  = (item.posY * 100) + '%';
@@ -1534,7 +1525,7 @@ function attachMoveListeners(targetDoc) {
         markDirty();
     });
 
-    targetDoc.addEventListener('mouseup', () => {
+    document.addEventListener('mouseup', () => {
         if (movingItemId !== null) {
             movingItemId = null;
             movingWrapper = null;
@@ -1542,8 +1533,7 @@ function attachMoveListeners(targetDoc) {
     });
 }
 
-// Attach to parent document immediately; also called for iframeDoc after PDF loads
-attachMoveListeners(document);
+attachMoveListeners();
 
 /* ========================================================
    RESIZE
@@ -1565,23 +1555,14 @@ function onResizeStart(e, itemId) {
     resizingWrapper = pageWrappers[item.page].wrapper;
 }
 
-function attachResizeListeners(targetDoc) {
-    targetDoc.addEventListener('mousemove', e => {
+function attachResizeListeners() {
+    document.addEventListener('mousemove', e => {
         if (resizingItemId === null) return;
         const rect = resizingWrapper.getBoundingClientRect();
         const item = signItems.find(it => it._id === resizingItemId);
         
-        let clientX = e.clientX;
-        let clientY = e.clientY;
-        if (targetDoc === document) {
-            // Mouse is over parent doc, translate to iframe coords
-            const iframe = document.getElementById('es-pdf-iframe');
-            if (iframe) {
-                const iframeRect = iframe.getBoundingClientRect();
-                clientX = e.clientX - iframeRect.left;
-                clientY = e.clientY - iframeRect.top;
-            }
-        }
+        const clientX = e.clientX;
+        const clientY = e.clientY;
 
         const dw = (clientX - resizingStartX) / rect.width;
         const dh = (clientY - resizingStartY) / rect.height;
@@ -1589,7 +1570,7 @@ function attachResizeListeners(targetDoc) {
         item.height = Math.max(0.01, Math.min(1 - item.posY, resizingOrigH + dh));
         item.width  = +item.width.toFixed(4);
         item.height = +item.height.toFixed(4);
-        const el = iframeDoc ? iframeDoc.getElementById(`sfi-${resizingItemId}`) : document.getElementById(`sfi-${resizingItemId}`);
+        const el = document.getElementById(`sfi-${resizingItemId}`);
         if (el) {
             el.style.width  = (item.width  * 100) + '%';
             el.style.height = (item.height * 100) + '%';
@@ -1598,7 +1579,7 @@ function attachResizeListeners(targetDoc) {
         markDirty();
     });
 
-    targetDoc.addEventListener('mouseup', () => {
+    document.addEventListener('mouseup', () => {
         if (resizingItemId !== null) {
             resizingItemId = null;
             resizingWrapper = null;
@@ -1606,7 +1587,7 @@ function attachResizeListeners(targetDoc) {
     });
 }
 
-attachResizeListeners(document);
+attachResizeListeners();
 
 /* ========================================================
    KEYBOARD DELETE
