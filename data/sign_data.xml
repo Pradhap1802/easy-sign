@@ -83,5 +83,50 @@
             <field name="default" eval="True"/>
             <field name="sequence">1</field>
         </record>
+        <record id="sign_item_role_signer2" model="sign.item.role">
+            <field name="name">Signer 2</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">2</field>
+        </record>
+        <record id="sign_item_role_signer3" model="sign.item.role">
+            <field name="name">Signer 3</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">3</field>
+        </record>
+        <record id="sign_item_role_signer4" model="sign.item.role">
+            <field name="name">Signer 4</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">4</field>
+        </record>
+        <record id="sign_item_role_signer5" model="sign.item.role">
+            <field name="name">Signer 5</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">5</field>
+        </record>
+        <record id="sign_item_role_signer6" model="sign.item.role">
+            <field name="name">Signer 6</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">6</field>
+        </record>
+        <record id="sign_item_role_signer7" model="sign.item.role">
+            <field name="name">Signer 7</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">7</field>
+        </record>
+        <record id="sign_item_role_signer8" model="sign.item.role">
+            <field name="name">Signer 8</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">8</field>
+        </record>
+        <record id="sign_item_role_signer9" model="sign.item.role">
+            <field name="name">Signer 9</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">9</field>
+        </record>
+        <record id="sign_item_role_signer10" model="sign.item.role">
+            <field name="name">Signer 10</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">10</field>
+        </record>
     </data>
 </odoo>

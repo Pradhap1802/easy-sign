@@ -1992,7 +1992,7 @@ const ALL_FIELD_TYPES = [
 ];
 
 function buildSignerFieldCards(signerIdx, color) {
-    let html = '<div class="es-signer-fields" id="signer-fields-' + signerIdx + '">';
+    let html = '<div class="es-signer-fields" id="signer-fields-' + signerIdx + '" style="display:none;">';
     ALL_FIELD_TYPES.forEach(function(t) {
         html += '<div class="es-signer-field-card"' +
             ' draggable="true"' +
@@ -2029,7 +2029,7 @@ function getNextUnusedRoleId() {
     return unusedRole ? unusedRole.id : (SIGN_ROLES[0] ? SIGN_ROLES[0].id : '');
 }
 
-function buildSignersPanel() {
+async function buildSignersPanel() {
     // Group existing items by role_id to identify signers needed
     const rolesUsed = [];
     signItems.forEach(item => {
@@ -2040,11 +2040,11 @@ function buildSignersPanel() {
     });
 
     if (rolesUsed.length === 0) {
-        addSignerRow();
+        await addSignerRow();
     } else {
-        rolesUsed.forEach(roleId => {
-            addSignerRow({ role_id: roleId });
-        });
+        for (const roleId of rolesUsed) {
+            await addSignerRow({ role_id: roleId });
+        }
         
         // Associate items with signer rows
         signItems.forEach(item => {
@@ -2082,7 +2082,29 @@ function updateSignerFieldCounts() {
     });
 }
 
-function addSignerRow(data) {
+function toggleSignerRow(activeIdx) {
+    const list = document.getElementById('es-signers-list');
+    if (!list) return;
+    const rows = list.querySelectorAll('.es-signer-row');
+    rows.forEach(row => {
+        const rowIdx = parseInt(row.id.replace('signer-row-', ''), 10);
+        const inputs = row.querySelector('.es-signer-inputs');
+        const fields = row.querySelector('.es-signer-fields');
+        
+        if (rowIdx === activeIdx) {
+            row.classList.add('expanded');
+            if (inputs) inputs.style.display = 'flex';
+            if (fields) fields.style.display = 'grid';
+        } else {
+            row.classList.remove('expanded');
+            if (inputs) inputs.style.display = 'none';
+            if (fields) fields.style.display = 'none';
+        }
+    });
+}
+window.toggleSignerRow = toggleSignerRow;
+
+async function addSignerRow(data) {
     signerRowCount++;
     const hint = document.getElementById('es-no-signers-hint');
     if (hint) hint.style.display = 'none';
@@ -2097,10 +2119,36 @@ function addSignerRow(data) {
 
     const nameVal  = (data && data.name)  ? data.name  : '';
     const emailVal = (data && data.email) ? data.email : '';
-    const roleVal  = (data && data.role_id) ? data.role_id : getNextUnusedRoleId();
+    let roleVal  = (data && data.role_id) ? data.role_id : null;
+
+    if (!roleVal) {
+        // Dynamic get or create role for this signer index
+        const roleName = 'Signer ' + idx;
+        try {
+            const resp = await fetch('/sign/role/get_or_create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { name: roleName } }),
+            });
+            const resData = await resp.json();
+            if (resData.result) {
+                const newRole = resData.result;
+                if (!SIGN_ROLES.some(r => r.id === newRole.id)) {
+                    SIGN_ROLES.push(newRole);
+                }
+                roleVal = newRole.id;
+            }
+        } catch (e) {
+            console.error('Failed to get or create role for ' + roleName, e);
+        }
+    }
+
+    if (!roleVal) {
+        roleVal = getNextUnusedRoleId();
+    }
 
     row.innerHTML =
-        '<div class="es-signer-row-header" style="display:flex; align-items:center; justify-content:space-between; width:100%;">' +
+        '<div class="es-signer-row-header" style="display:flex; align-items:center; justify-content:space-between; width:100%; cursor:pointer;">' +
             '<span class="es-signer-num" style="color:' + color + '; font-weight:600; font-size:13px; display:inline-flex; align-items:center;">' +
                 '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:5px;"></span>' +
                 'Signer ' + idx +
@@ -2112,7 +2160,7 @@ function addSignerRow(data) {
                     ' onclick="removeSignerRow(' + idx + ')">&#215;</button>' +
             '</div>' +
         '</div>' +
-        '<div class="es-signer-inputs" style="display:flex; flex-direction:column; gap:4px; margin-top:4px; margin-bottom:4px;">' +
+        '<div class="es-signer-inputs" style="display:none; flex-direction:column; gap:4px; margin-top:4px; margin-bottom:4px;">' +
             '<input class="es-signer-input" type="text"' +
                 ' id="signer-name-' + idx + '"' +
                 ' placeholder="Full name..."' +
@@ -2141,6 +2189,17 @@ function addSignerRow(data) {
         card.addEventListener('dragstart', onSidebarDragStart);
         card.addEventListener('dragend', function() { card.classList.remove('dragging'); });
     });
+
+    // Toggle logic on click of row header
+    const header = row.querySelector('.es-signer-row-header');
+    if (header) {
+        header.addEventListener('click', function(e) {
+            if (e.target.closest('.es-signer-remove') || e.target.closest('.es-signer-menu-btn') || e.target.closest('.es-signer-badge')) {
+                return;
+            }
+            toggleSignerRow(idx);
+        });
+    }
 
     const nameEl = document.getElementById('signer-name-' + idx);
     const emailEl = document.getElementById('signer-email-' + idx);
@@ -2173,6 +2232,9 @@ function addSignerRow(data) {
             markDirty();
         });
     }
+
+    // Expand the newly created signer
+    toggleSignerRow(idx);
 
     const nameInput = document.getElementById('signer-name-' + idx);
     if (nameInput) setTimeout(function() { nameInput.focus(); }, 50);
@@ -2337,7 +2399,9 @@ async function confirmSend() {
 window.confirmSend = confirmSend;
 
 isEditMode = (signItems.length === 0);
-buildSignersPanel();
+buildSignersPanel()
+    .then(() => toggleSignerRow(1))
+    .catch(err => console.error('Error building signers panel:', err));
 initPDFIframe('/sign/template/' + TEMPLATE_ID + '/pdf');
 
 })();

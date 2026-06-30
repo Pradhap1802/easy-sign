@@ -91,6 +91,19 @@ class SignController(http.Controller):
                 request.env['sign.item'].sudo().create(item_data)
         return True
 
+    @http.route('/sign/role/get_or_create', type='json', auth='user')
+    def get_or_create_role(self, name, **kwargs):
+        role = request.env['sign.item.role'].sudo().search([('name', '=', name)], limit=1)
+        if not role:
+            max_role = request.env['sign.item.role'].sudo().search([], order='sequence desc', limit=1)
+            seq = (max_role.sequence + 1) if max_role else 10
+            role = request.env['sign.item.role'].sudo().create({
+                'name': name,
+                'sequence': seq,
+                'default': False,
+            })
+        return {'id': role.id, 'name': role.name, 'color': role.color or 0}
+
     @http.route('/sign/template/<int:template_id>/send', type='json', auth='user')
     def send_template_for_signing(self, template_id, signers=None, reference='', subject='', **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
