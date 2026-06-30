@@ -105,6 +105,29 @@ class SignController(http.Controller):
             'subject': subject or ('Signature Request: %s' % template.name),
         })
 
+        if signers:
+            request_signers = []
+            for sequence, signer_val in enumerate(signers, start=1):
+                email = signer_val.get('email', '').strip()
+                name = signer_val.get('name', '').strip() or email
+                role_id = signer_val.get('role_id')
+                
+                partner = request.env['res.partner'].sudo().search([('email', '=', email)], limit=1)
+                if not partner:
+                    partner = request.env['res.partner'].sudo().create({
+                        'name': name,
+                        'email': email,
+                    })
+                request_signers.append({
+                    'sign_request_id': sign_request.id,
+                    'role_id': role_id,
+                    'partner_id': partner.id,
+                    'sequence': sequence,
+                    'state': 'draft',
+                })
+            request.env['sign.request.signer'].sudo().create(request_signers)
+            sign_request.sudo().action_send_next_signature_request()
+
         return {
             'success': True,
             'request_id': sign_request.id,
@@ -113,32 +136,44 @@ class SignController(http.Controller):
 
     @http.route('/sign/document/<int:request_id>/<access_token>', type='http', auth='public', website=True)
     def sign_document_public(self, request_id, access_token, **kwargs):
-        sign_request = request.env['sign.request'].sudo().search([
+        signer = request.env['sign.request.signer'].sudo().search([
             ('access_token', '=', access_token),
-            ('id', '=', request_id)
+            ('sign_request_id', '=', request_id)
         ], limit=1)
-        if not sign_request:
-            return request.not_found()
-        if sign_request.state != 'sent':
-            return request.render('easy_sign.sign_already_signed', {})
         
+        if signer:
+            sign_request = signer.sign_request_id
+            if signer.state == 'signed' or sign_request.state != 'sent':
+                return request.render('easy_sign.sign_already_signed', {})
+            partner = signer.partner_id
+            current_role_id = signer.role_id.id
+        else:
+            sign_request = request.env['sign.request'].sudo().search([
+                ('access_token', '=', access_token),
+                ('id', '=', request_id)
+            ], limit=1)
+            if not sign_request:
+                return request.not_found()
+            if sign_request.state != 'sent':
+                return request.render('easy_sign.sign_already_signed', {})
+            
+            partner = None
+            if not request.env.user._is_public():
+                partner = request.env.user.partner_id
+            else:
+                last_log = request.env['sign.log'].sudo().search([
+                    ('sign_request_id', '=', sign_request.id),
+                    ('action', '=', 'send')
+                ], order='id desc', limit=1)
+                if last_log and last_log.partner_id:
+                    partner = last_log.partner_id
+            current_role_id = 0
+
         request.env['sign.log'].sudo().create({
             'sign_request_id': sign_request.id,
             'action': 'view',
             'ip_address': request.httprequest.environ.get('REMOTE_ADDR'),
         })
-
-        # Dynamically fetch recipient signer details for auto-fill
-        partner = None
-        if not request.env.user._is_public():
-            partner = request.env.user.partner_id
-        else:
-            last_log = request.env['sign.log'].sudo().search([
-                ('sign_request_id', '=', sign_request.id),
-                ('action', '=', 'send')
-            ], order='id desc', limit=1)
-            if last_log and last_log.partner_id:
-                partner = last_log.partner_id
 
         signer_vals = {
             'name': '',
@@ -164,12 +199,10 @@ class SignController(http.Controller):
                 'state': partner.state_id.name if partner.state_id else '',
             }
 
-        # Pass PDF data as base64 directly — no HTTP fetch needed in browser
         pdf_b64 = sign_request.template_id.sudo().datas or ''
         if isinstance(pdf_b64, bytes):
             pdf_b64 = pdf_b64.decode('utf-8')
 
-        # Build sign items list for the template
         sign_items_data = []
         for item in sign_request.template_id.sign_item_ids:
             sign_items_data.append({
@@ -183,23 +216,58 @@ class SignController(http.Controller):
                 'width': item.width,
                 'height': item.height,
                 'required': item.required,
+                'responsible_id': item.responsible_id.id or 0,
             })
 
+        values_dict = request.env['sign.request.item.value'].sudo().search_read(
+            [('sign_request_id', '=', sign_request.id)],
+            ['sign_item_id', 'value', 'frame_value']
+        )
+        item_values = {}
+        for v in values_dict:
+            item_values[v['sign_item_id']] = {
+                'value': v['value'],
+                'frame': v['frame_value'],
+            }
+
+        signers_list = []
+        for s in sign_request.signer_ids:
+            signers_list.append({
+                'name': s.partner_id.name,
+                'state': s.state,
+                'role_name': s.role_id.name,
+            })
+
+        show_back_button = not request.env.user._is_public() and not request.env.user.share
         values = {
             'sign_request': sign_request,
             'access_token': access_token,
             'signer_info_json': json.dumps(signer_vals),
             'pdf_b64_json': Markup(json.dumps(pdf_b64)),
             'sign_items_json': Markup(json.dumps(sign_items_data)),
+            'current_role_id': current_role_id,
+            'item_values_json': Markup(json.dumps(item_values)),
+            'signers': signers_list,
+            'show_back_button': show_back_button,
         }
         return request.render('easy_sign.sign_page', values)
 
     @http.route('/sign/submit/<int:request_id>/<access_token>', type='http', auth='public', csrf=False, methods=['POST'])
     def sign_submit(self, request_id, access_token, **kwargs):
-        sign_request = request.env['sign.request'].sudo().search([
+        signer = request.env['sign.request.signer'].sudo().search([
             ('access_token', '=', access_token),
-            ('id', '=', request_id)
+            ('sign_request_id', '=', request_id)
         ], limit=1)
+        
+        if signer:
+            sign_request = signer.sign_request_id
+        else:
+            sign_request = request.env['sign.request'].sudo().search([
+                ('access_token', '=', access_token),
+                ('id', '=', request_id)
+            ], limit=1)
+            signer = False
+
         if not sign_request or sign_request.state != 'sent':
             return json.dumps({'success': False})
         try:
@@ -207,7 +275,7 @@ class SignController(http.Controller):
             data = json.loads(kwargs.get('data', '{}'))
             for k, v in data.items():
                 signature_values[k] = v
-            sign_request._sign(signature_values)
+            sign_request._sign_with_signer(signature_values, signer)
             return json.dumps({'success': True})
         except Exception as e:
             _logger.error(e)

@@ -9,3 +9,6 @@ easy_sign.access_sign_request_item_value,access.sign.request.item.value,easy_sig
 easy_sign.access_sign_send_request_wizard,access.sign.send.request.wizard,easy_sign.model_sign_send_request_wizard,base.group_user,1,1,1,1
 easy_sign.access_sign_request_send_wizard,access.sign.request.send.wizard,easy_sign.model_sign_request_send_wizard,base.group_user,1,1,1,1
 easy_sign.access_sign_upload_pdf_wizard,access.sign.upload.pdf.wizard,easy_sign.model_sign_upload_pdf_wizard,base.group_user,1,1,1,1
+easy_sign.access_sign_request_signer,access.sign.request.signer,easy_sign.model_sign_request_signer,base.group_user,1,1,1,1
+easy_sign.access_sign_send_request_signer,access.sign.send.request.signer,easy_sign.model_sign_send_request_signer,base.group_user,1,1,1,1
+

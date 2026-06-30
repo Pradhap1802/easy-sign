@@ -213,11 +213,18 @@
                 }
             </style>
             <div class="es-top-toolbar">
-                <div class="es-toolbar-left">
-                    <a href="#" class="es-breadcrumb">... / <t t-esc="sign_request.reference"/></a>
-                    <div class="es-doc-title">
-                        <t t-esc="sign_request.reference"/>
-                        <span style="cursor:pointer; font-size: 16px;" title="Options">&#9881;</span>
+                <div class="es-toolbar-left" style="display: flex; align-items: center; gap: 15px;">
+                    <t t-if="show_back_button">
+                        <a href="/odoo?action=easy_sign.action_sign_request" class="btn btn-secondary" style="background-color: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                            <span style="font-size: 14px;">&#8592;</span> Back
+                        </a>
+                    </t>
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <a href="#" class="es-breadcrumb">... / <t t-esc="sign_request.reference"/></a>
+                        <div class="es-doc-title" style="margin-top: -2px;">
+                            <t t-esc="sign_request.reference"/>
+                            <span style="cursor:pointer; font-size: 14px;" title="Options">&#9881;</span>
+                        </div>
                     </div>
                 </div>
                 <div class="es-toolbar-center">
@@ -235,11 +242,17 @@
                     <span style="color:#495057;">|</span>
                     <span style="cursor:pointer;" title="Search">&#128269;</span>
                 </div>
-                <div class="es-toolbar-right">
-                    <div class="es-signer-status active">
-                        <span id="es-current-signer-name">Signer</span>
-                        <span>Is Signing</span>
-                    </div>
+                <div class="es-toolbar-right" style="display: flex; gap: 15px; align-items: center;">
+                    <t t-foreach="signers" t-as="signer">
+                        <div t-attf-class="es-signer-status #{'active' if signer['state'] == 'sent' else 'waiting'}">
+                            <span t-esc="signer['name']"/>
+                            <span>
+                                <t t-if="signer['state'] == 'signed'">Signed</t>
+                                <t t-elif="signer['state'] == 'sent'">Is Signing</t>
+                                <t t-else="">Waiting Signature</t>
+                            </span>
+                        </div>
+                    </t>
                 </div>
             </div>
             <div class="container">
@@ -250,7 +263,7 @@
                     <div id="es-pdf-pages" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;"></div>
                 </div>
                 <div style="text-align: center; margin-bottom: 40px; margin-top: 20px;">
-                    <button id="o_sign_submit" class="btn-primary" style="display: none; width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: #00a09d; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">Sign Document</button>
+                    <button id="o_sign_submit" class="btn-primary" style="display: none; width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: #00a09d; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">Validate &amp; Send Completed Document</button>
                 </div>
             </div>
             <script>
@@ -261,6 +274,8 @@
             const SIGNER_INFO = ]]><t t-raw="signer_info_json"/><![CDATA[;
             const SIGN_ITEMS = ]]><t t-out="sign_items_json"/><![CDATA[;
             const PDF_B64 = ]]><t t-out="pdf_b64_json"/><![CDATA[;
+            const CURRENT_ROLE_ID = ]]><t t-esc="current_role_id"/><![CDATA[;
+            const ITEM_VALUES = ]]><t t-out="item_values_json"/><![CDATA[;
 
             function buildPDFViewerURL(pdfUrl) {
                 // Legacy helper — no longer used
@@ -349,10 +364,7 @@
                 const totalPagesEl = document.getElementById('es-total-pages');
                 if (totalPagesEl) totalPagesEl.innerText = numPages;
 
-                const signerNameEl = document.getElementById('es-current-signer-name');
-                if (signerNameEl && SIGNER_INFO) {
-                    signerNameEl.innerText = SIGNER_INFO.name || SIGNER_INFO.email || 'Signer';
-                }
+                // Done via server-side loops
 
                 // ── 4. Render each page onto a canvas ─────────────────────────
                 const availWidth = Math.min(900, window.innerWidth) - 48;
@@ -435,49 +447,80 @@
                 container.style.top = (item.posY * 100) + '%';
                 container.style.width = (item.width * 100) + '%';
                 container.style.height = (item.height * 100) + '%';
-                container.style.border = '1px dashed #000';
-                container.style.zIndex = 10;
                 container.style.boxSizing = 'border-box';
-                container.style.background = 'rgba(255, 255, 255, 0.5)';
                 
-                if (['signature', 'initial'].includes(item.type)) {
-                    container.addEventListener('click', () => {
-                        selectItem(container);
-                        openSignaturePad(item.id);
-                    });
-                    container.innerHTML = '<span style="color: #888; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 11px;">Click to sign</span>';
-                } else if (item.type === 'checkbox') {
-                    container.innerHTML = '<input type="checkbox" style="margin: auto; display: block; transform: scale(2);">';
-                    const inputEl = container.querySelector('input');
-                    inputEl.addEventListener('click', () => {
-                        selectItem(container);
-                        updateRibbonText();
-                        setTimeout(goToNextSignItem, 300);
-                    });
-                    inputEl.addEventListener('change', () => {
-                        updateRibbonText();
-                    });
+                const isEditable = (CURRENT_ROLE_ID === 0 || item.responsible_id === CURRENT_ROLE_ID);
+                
+                if (isEditable) {
+                    container.style.border = '1px dashed #000';
+                    container.style.zIndex = 10;
+                    container.style.background = 'rgba(255, 255, 255, 0.5)';
+                    
+                    if (['signature', 'initial'].includes(item.type)) {
+                        container.addEventListener('click', () => {
+                            selectItem(container);
+                            openSignaturePad(item.id);
+                        });
+                        container.innerHTML = '<span style="color: #888; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 11px;">Click to sign</span>';
+                    } else if (item.type === 'checkbox') {
+                        container.innerHTML = '<input type="checkbox" style="margin: auto; display: block; transform: scale(2);">';
+                        const inputEl = container.querySelector('input');
+                        inputEl.addEventListener('click', () => {
+                            selectItem(container);
+                            updateRibbonText();
+                            setTimeout(goToNextSignItem, 300);
+                        });
+                        inputEl.addEventListener('change', () => {
+                            updateRibbonText();
+                        });
+                    } else {
+                        container.innerHTML = '<input type="text" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px;">';
+                        const inputEl = container.querySelector('input');
+                        inputEl.addEventListener('focus', () => {
+                            selectItem(container);
+                        });
+                        inputEl.addEventListener('input', () => {
+                            updateRibbonText();
+                        });
+                        inputEl.addEventListener('change', () => {
+                            updateRibbonText();
+                        });
+                        inputEl.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') {
+                                goToNextSignItem();
+                            }
+                        });
+                    }
+                    
+                    signItemInputs[item.id] = { type: item.type, el: container };
                 } else {
-                    container.innerHTML = '<input type="text" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px;">';
-                    const inputEl = container.querySelector('input');
-                    inputEl.addEventListener('focus', () => {
-                        selectItem(container);
-                    });
-                    inputEl.addEventListener('input', () => {
-                        updateRibbonText();
-                    });
-                    inputEl.addEventListener('change', () => {
-                        updateRibbonText();
-                    });
-                    inputEl.addEventListener('keypress', (e) => {
-                        if (e.key === 'Enter') {
-                            goToNextSignItem();
+                    container.style.border = '1px solid rgba(0,0,0,0.15)';
+                    container.style.zIndex = 5;
+                    container.style.background = 'rgba(240, 240, 240, 0.3)';
+                    container.style.pointerEvents = 'none';
+                    
+                    const savedVal = ITEM_VALUES[item.id];
+                    if (savedVal) {
+                        const val = savedVal.value;
+                        const frame = savedVal.frame;
+                        if (['signature', 'initial'].includes(item.type)) {
+                            const imgUrl = val || frame;
+                            if (imgUrl) {
+                                container.innerHTML = '<img src="' + imgUrl + '" style="width:100%; height:100%; object-fit:contain; pointer-events:none;">';
+                            } else {
+                                container.innerHTML = '<span style="color: #aaa; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 10px;">Signed</span>';
+                            }
+                        } else if (item.type === 'checkbox') {
+                            container.innerHTML = '<input type="checkbox" disabled' + (val === 'on' ? ' checked' : '') + ' style="margin: auto; display: block; transform: scale(2); pointer-events:none;">';
+                        } else {
+                            container.innerHTML = '<input type="text" disabled style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px; color: #495057;" value="' + (val || '') + '">';
                         }
-                    });
+                    } else {
+                        container.innerHTML = '<span style="color: #bbb; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 10px; font-style: italic;">Readonly</span>';
+                    }
                 }
                 
                 pageData.wrapper.appendChild(container);
-                signItemInputs[item.id] = { type: item.type, el: container };
             }
 
             function openSignaturePad(itemId) {
@@ -554,6 +597,7 @@
 
             function getUncompletedItems() {
                 return SIGN_ITEMS.filter(item => {
+                    if (CURRENT_ROLE_ID !== 0 && item.responsible_id !== CURRENT_ROLE_ID) return false;
                     const inputInfo = signItemInputs[item.id];
                     if (!inputInfo) return false;
                     if (['signature', 'initial'].includes(item.type)) {

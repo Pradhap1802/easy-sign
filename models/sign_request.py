@@ -68,6 +68,7 @@ class SignRequest(models.Model):
                 'datas': self.document,
             })
             self.template_id = template
+    signer_ids = fields.One2many('sign.request.signer', 'sign_request_id', string="Signers")
     nb_wait = fields.Integer(string="Sent Requests", compute="_compute_stats", store=True)
     nb_closed = fields.Integer(string="Completed Signatures", compute="_compute_stats", store=True)
     nb_total = fields.Integer(string="Requested Signatures", compute="_compute_stats", store=True)
@@ -77,19 +78,31 @@ class SignRequest(models.Model):
     completion_date = fields.Date(string="Completion Date", compute="_compute_progress", compute_sudo=True)
     sign_log_ids = fields.One2many('sign.log', 'sign_request_id', string="Logs", help="Activity logs linked to this request")
 
-    @api.depends('state')
+    @api.depends('state', 'signer_ids.state')
     def _compute_stats(self):
         for rec in self:
-            rec.nb_total = 1
-            rec.nb_wait = 1 if rec.state == 'sent' else 0
-            rec.nb_closed = 1 if rec.state == 'signed' else 0
+            if rec.signer_ids:
+                rec.nb_total = len(rec.signer_ids)
+                rec.nb_wait = len(rec.signer_ids.filtered(lambda s: s.state in ('sent', 'draft')))
+                rec.nb_closed = len(rec.signer_ids.filtered(lambda s: s.state == 'signed'))
+            else:
+                rec.nb_total = 1
+                rec.nb_wait = 1 if rec.state == 'sent' else 0
+                rec.nb_closed = 1 if rec.state == 'signed' else 0
 
-    @api.depends('state')
+    @api.depends('state', 'signer_ids.state')
     def _compute_progress(self):
         for rec in self:
-            rec.start_sign = (rec.state == 'signed')
-            rec.progress = "1 / 1" if rec.state == 'signed' else "0 / 1"
-            rec.completion_date = fields.Date.today() if rec.state == 'signed' else None
+            if rec.signer_ids:
+                total = len(rec.signer_ids)
+                signed = len(rec.signer_ids.filtered(lambda s: s.state == 'signed'))
+                rec.start_sign = (signed > 0)
+                rec.progress = "%d / %d" % (signed, total)
+                rec.completion_date = fields.Date.today() if rec.state == 'signed' else None
+            else:
+                rec.start_sign = (rec.state == 'signed')
+                rec.progress = "1 / 1" if rec.state == 'signed' else "0 / 1"
+                rec.completion_date = fields.Date.today() if rec.state == 'signed' else None
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -180,7 +193,48 @@ class SignRequest(models.Model):
 
 
 
+    def _send_signer_email(self, signer):
+        self.ensure_one()
+        base_url = self.get_base_url()
+        lang = get_lang(self.env, signer.partner_id.lang).code if signer.partner_id.lang else 'en_US'
+        link = "%s/sign/document/%s/%s" % (base_url, self.id, signer.access_token)
+        subject = self.subject or (_('Signature Request: %s') % self.reference)
+        body = self.env['ir.qweb']._render('easy_sign.sign_template_mail', {
+            'record': self,
+            'recipient': signer.partner_id,
+            'link': link,
+            'subject': subject,
+        }, lang=lang, minimal_qcontext=True)
+        self._message_send_mail(
+            body,
+            'mail.mail_notification_light',
+            {'record_name': self.reference},
+            {'model_description': _('Signature')},
+            {'email_to': signer.partner_id.email, 'subject': subject},
+            force_send=True,
+            lang=lang,
+        )
+        self.env['sign.log'].sudo().create({
+            'sign_request_id': self.id,
+            'partner_id': signer.partner_id.id,
+            'action': 'send',
+        })
+
+    def action_send_next_signature_request(self):
+        self.ensure_one()
+        pending_signers = self.signer_ids.filtered(lambda s: s.state == 'draft')
+        if pending_signers:
+            next_signer = sorted(pending_signers, key=lambda s: s.sequence)[0]
+            next_signer.write({'state': 'sent'})
+            self._send_signer_email(next_signer)
+        else:
+            self.write({'state': 'signed'})
+            self._generate_completed_document()
+
     def _sign(self, signature_values):
+        self._sign_with_signer(signature_values, False)
+
+    def _sign_with_signer(self, signature_values, signer=False):
         self.ensure_one()
         if self.state != 'sent':
             raise UserError(_("This signature request has already been processed or cancelled"))
@@ -201,13 +255,19 @@ class SignRequest(models.Model):
             })
             
         # Log signature action
+        partner = signer.partner_id if signer else self.env.user.partner_id
         self.env['sign.log'].sudo().create({
             'sign_request_id': self.id,
-            'partner_id': self.env.user.partner_id.id,
+            'partner_id': partner.id,
             'action': 'sign',
         })
         
-        self.write({'state': 'signed'})
+        if signer:
+            signer.write({'state': 'signed'})
+            self.action_send_next_signature_request()
+        else:
+            self.write({'state': 'signed'})
+            self._generate_completed_document()
 
     def _refuse(self, refuser, refusal_reason):
         self.ensure_one()
@@ -347,3 +407,24 @@ class SignRequest(models.Model):
             'res_model': self._name,
             'res_id': self.id,
         })
+
+
+class SignRequestSigner(models.Model):
+    _name = "sign.request.signer"
+    _description = "Sign Request Signer"
+    _order = "sequence, id"
+
+    def _default_access_token(self):
+        return str(uuid.uuid4())
+
+    sign_request_id = fields.Many2one('sign.request', string="Sign Request", required=True, ondelete='cascade')
+    role_id = fields.Many2one('sign.item.role', string="Role", required=True)
+    partner_id = fields.Many2one('res.partner', string="Recipient", required=True)
+    state = fields.Selection([
+        ('draft', 'Waiting'),
+        ('sent', 'Signing'),
+        ('signed', 'Signed'),
+        ('canceled', 'Canceled')
+    ], default='draft', required=True)
+    access_token = fields.Char('Security Token', required=True, default=_default_access_token, readonly=True, copy=False)
+    sequence = fields.Integer(string="Sequence", default=10)

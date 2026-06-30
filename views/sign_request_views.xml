@@ -31,6 +31,18 @@
                                 <field name="completion_date"/>
                             </group>
                         </group>
+                        <notebook>
+                            <page string="Signers" name="signers" invisible="not signer_ids">
+                                <field name="signer_ids" readonly="1">
+                                    <list>
+                                        <field name="sequence" string="Seq"/>
+                                        <field name="role_id"/>
+                                        <field name="partner_id"/>
+                                        <field name="state" widget="badge" decoration-success="state == 'signed'" decoration-info="state == 'sent'" decoration-muted="state == 'draft'"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
                     </sheet>
                 </form>
             </field>
