@@ -17,6 +17,7 @@
                                 <list editable="bottom" create="0" delete="0">
                                     <field name="role_id" readonly="1" force_save="1"/>
                                     <field name="partner_id"/>
+                                    <field name="email"/>
                                 </list>
                             </field>
                         </page>

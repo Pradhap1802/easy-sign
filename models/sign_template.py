@@ -11,6 +11,7 @@ from odoo.tools.pdf import PdfFileReader
 class SignTemplate(models.Model):
     _name = "sign.template"
     _description = "Signature Template"
+    _inherit = ['mail.thread']
 
     def _get_default_favorited_ids(self):
         return [(4, self.env.user.id)]
@@ -22,10 +23,14 @@ class SignTemplate(models.Model):
     sign_request_ids = fields.One2many('sign.request', 'template_id', string="Sign Requests")
     active = fields.Boolean(default=True, string="Active")
     favorited_ids = fields.Many2many('res.users', string="Favorited Users", relation="sign_template_favorited_users_rel", default=_get_default_favorited_ids)
+    is_favorite = fields.Boolean(string="Favorite", compute="_compute_is_favorite", inverse="_inverse_is_favorite", search="_search_is_favorite")
+    request_in_progress_count = fields.Integer(compute="_compute_request_stats")
+    request_signed_count = fields.Integer(compute="_compute_request_stats")
     user_id = fields.Many2one('res.users', string="Responsible", default=lambda self: self.env.user)
     has_sign_requests = fields.Boolean(compute="_compute_has_sign_requests", compute_sudo=True, store=True)
     share_token = fields.Char(string="Share Link", copy=False)
     valid_until = fields.Date(string="Valid Until")
+    template_signer_ids = fields.One2many('sign.template.signer', 'template_id', string="Template Signers")
     # Temporary field for form view
     datas_fname = fields.Char(string="File Name")
 
@@ -36,6 +41,30 @@ class SignTemplate(models.Model):
                 record.num_pages = self._get_pdf_number_of_pages(base64.b64decode(record.datas))
             except Exception:
                 record.num_pages = 0
+
+    @api.depends('favorited_ids')
+    def _compute_is_favorite(self):
+        for record in self:
+            record.is_favorite = self.env.user in record.favorited_ids
+
+    def _inverse_is_favorite(self):
+        for record in self:
+            if record.is_favorite:
+                record.write({'favorited_ids': [Command.link(self.env.user.id)]})
+            else:
+                record.write({'favorited_ids': [Command.unlink(self.env.user.id)]})
+
+    def _search_is_favorite(self, operator, value):
+        if operator == '=' and value:
+            return [('favorited_ids', 'in', self.env.user.id)]
+        return [('favorited_ids', 'not in', self.env.user.id)]
+
+    @api.depends('sign_request_ids.state')
+    def _compute_request_stats(self):
+        for template in self:
+            requests = template.sign_request_ids
+            template.request_in_progress_count = len(requests.filtered(lambda r: r.state == 'sent'))
+            template.request_signed_count = len(requests.filtered(lambda r: r.state == 'signed'))
 
     @api.depends('sign_request_ids')
     def _compute_has_sign_requests(self):
@@ -61,6 +90,32 @@ class SignTemplate(models.Model):
             'type': 'ir.actions.act_url',
             'url': '/sign/template/%d/edit' % self.id,
             'target': 'self',
+        }
+
+    def action_share_wizard(self):
+        self.ensure_one()
+        return {
+            'name': _("Share Document"),
+            'type': 'ir.actions.act_window',
+            'res_model': 'sign.template.share',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_template_id': self.id,
+            }
+        }
+
+    def action_sign_now_wizard(self):
+        self.ensure_one()
+        return {
+            'name': _("New Signature Request"),
+            'type': 'ir.actions.act_window',
+            'res_model': 'sign.template.sign.now.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_template_id': self.id,
+            }
         }
 
     def _get_pdf_number_of_pages(self, pdf_data):
@@ -128,3 +183,14 @@ class SignItemRole(models.Model):
     color = fields.Integer()
     default = fields.Boolean(required=True, default=False)
     sequence = fields.Integer(string="Default order", default=10)
+
+
+class SignTemplateSigner(models.Model):
+    _name = "sign.template.signer"
+    _description = "Sign Template Signer"
+
+    template_id = fields.Many2one('sign.template', string="Template", ondelete='cascade')
+    role_id = fields.Many2one('sign.item.role', string="Role", required=True)
+    partner_id = fields.Many2one('res.partner', string="Full Name")
+    email = fields.Char(string="Email")
+

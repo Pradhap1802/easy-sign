@@ -44,6 +44,7 @@
                             </page>
                         </notebook>
                     </sheet>
+                    <chatter/>
                 </form>
             </field>
         </record>
@@ -95,6 +96,5 @@
             <field name="view_mode">kanban,list,form</field>
             <field name="context">{'search_default_active': 1}</field>
         </record>
-
     </data>
 </odoo>

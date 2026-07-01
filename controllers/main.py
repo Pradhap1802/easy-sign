@@ -42,8 +42,15 @@ class SignController(http.Controller):
         sign_items = template.sign_item_ids.read([
             'id', 'type_id', 'required', 'responsible_id', 'name', 'page', 'posX', 'posY', 'width', 'height', 'alignment', 'placeholder'
         ])
-        # Pass PDF data as base64 string directly — avoids any HTTP fetch/auth issues in the browser
-        # Odoo Binary field returns bytes (base64-encoded). Decode to str for JSON.
+        
+        template_signers = [{
+            'role_id': s.role_id.id,
+            'partner_id': s.partner_id.id if s.partner_id else False,
+            'partner_name': s.partner_id.name if s.partner_id else '',
+            'email': s.email or '',
+        } for s in template.template_signer_ids]
+
+        # Pass PDF data as base64 string directly
         raw_datas = template.sudo().datas
         if raw_datas:
             pdf_b64_str = raw_datas.decode('utf-8') if isinstance(raw_datas, bytes) else str(raw_datas)
@@ -57,6 +64,7 @@ class SignController(http.Controller):
             'sign_item_types_json': Markup(json.dumps(sign_item_types)),
             'sign_roles_json':      Markup(json.dumps(sign_roles)),
             'sign_items_json':      Markup(json.dumps(sign_items)),
+            'template_signers_json': Markup(json.dumps(template_signers)),
             'template_name_json':   Markup(json.dumps(template.name or '')),
             'pdf_b64_json':         Markup(json.dumps(pdf_b64_str)),
         })
@@ -71,7 +79,7 @@ class SignController(http.Controller):
         ])
 
     @http.route('/sign/template/<int:template_id>/save', type='json', auth='user')
-    def save_template_items(self, template_id, items, **kwargs):
+    def save_template_items(self, template_id, items, signers=None, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
         if not template:
             return False
@@ -89,6 +97,17 @@ class SignController(http.Controller):
                 # Create new item
                 item_data.pop('id', None)
                 request.env['sign.item'].sudo().create(item_data)
+                
+        # Save template signers mapping
+        if signers is not None:
+            template.template_signer_ids.unlink()
+            for s in signers:
+                request.env['sign.template.signer'].sudo().create({
+                    'template_id': template.id,
+                    'role_id': s.get('role_id'),
+                    'partner_id': s.get('partner_id') or False,
+                    'email': s.get('email') or '',
+                })
         return True
 
     @http.route('/sign/role/get_or_create', type='json', auth='user')
@@ -424,3 +443,11 @@ class SignController(http.Controller):
         if first_signer:
             return request.redirect('/sign/document/%d/%s' % (sign_request.id, first_signer.access_token))
         return request.not_found()
+
+    @http.route('/sign/partners/search', type='json', auth='user')
+    def search_partners(self, term, limit=10, **kwargs):
+        domain = ['|', ('name', 'ilike', term), ('email', 'ilike', term)]
+        partners = request.env['res.partner'].sudo().search_read(domain, ['id', 'name', 'email'], limit=limit)
+        return partners
+
+

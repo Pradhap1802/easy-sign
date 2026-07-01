@@ -11,6 +11,14 @@ export class SignRequestKanbanController extends KanbanController {
         this.actionService = useService("action");
     }
 
+    async openRecord(record) {
+        if (this.props.resModel === "sign.template") {
+            window.location.href = `/sign/template/${record.resId}/edit`;
+            return;
+        }
+        return super.openRecord(record);
+    }
+
     async onClickUploadPdf() {
         this.actionService.doAction({
             name: "Upload PDF",

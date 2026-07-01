@@ -17,17 +17,26 @@ class SignSendRequestWizard(models.TransientModel):
         active_id = self.env.context.get('active_id')
         if active_id and self.env.context.get('active_model') == 'sign.template':
             template = self.env['sign.template'].browse(active_id)
-            roles = template.sign_item_ids.mapped('responsible_id')
-            if not roles and template.sign_item_ids:
-                default_role = self.env['sign.item.role'].search([('default', '=', True)], limit=1)
-                if default_role:
-                    roles = default_role
             
             signer_vals = []
-            for role in roles:
-                signer_vals.append((0, 0, {
-                    'role_id': role.id,
-                }))
+            if template.template_signer_ids:
+                for s in template.template_signer_ids:
+                    signer_vals.append((0, 0, {
+                        'role_id': s.role_id.id,
+                        'partner_id': s.partner_id.id if s.partner_id else False,
+                        'email': s.email or (s.partner_id.email if s.partner_id else ''),
+                    }))
+            else:
+                roles = template.sign_item_ids.mapped('responsible_id')
+                if not roles and template.sign_item_ids:
+                    default_role = self.env['sign.item.role'].search([('default', '=', True)], limit=1)
+                    if default_role:
+                        roles = default_role
+                
+                for role in roles:
+                    signer_vals.append((0, 0, {
+                        'role_id': role.id,
+                    }))
             res['signer_ids'] = signer_vals
         return res
 
@@ -69,7 +78,13 @@ class SignSendRequestSigner(models.TransientModel):
 
     wizard_id = fields.Many2one('sign.send.request.wizard', string="Wizard", required=True, ondelete='cascade')
     role_id = fields.Many2one('sign.item.role', string="Role", required=True)
-    partner_id = fields.Many2one('res.partner', string="Recipient", required=True)
+    partner_id = fields.Many2one('res.partner', string="Full Name", required=True)
+    email = fields.Char(string="Email")
+
+    @api.onchange('partner_id')
+    def _onchange_partner_id(self):
+        if self.partner_id:
+            self.email = self.partner_id.email
 
 
 class SignRequestSendWizard(models.TransientModel):

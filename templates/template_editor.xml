@@ -1037,6 +1037,8 @@ const SIGN_ROLES = ]]><t t-out="sign_roles_json"/><![CDATA[;
 const INITIAL_ITEMS = ]]><t t-out="sign_items_json"/><![CDATA[;
 const TEMPLATE_NAME = ]]><t t-out="template_name_json"/><![CDATA[;
 const PDF_B64 = ]]><t t-out="pdf_b64_json"/><![CDATA[;
+const TEMPLATE_SIGNERS = ]]><t t-out="template_signers_json"/><![CDATA[;
+
 
 /* ========================================================
    PDF.js direct canvas rendering
@@ -1896,11 +1898,38 @@ async function saveTemplate() {
         };
     });
 
+    const signersPayload = [];
+    const listEl = document.getElementById('es-signers-list');
+    if (listEl) {
+        const rows = listEl.querySelectorAll('.es-signer-row');
+        rows.forEach(row => {
+            const idx = row.id.replace('signer-row-', '');
+            const nameEl = document.getElementById('signer-name-' + idx);
+            const emailEl = document.getElementById('signer-email-' + idx);
+            const addressEl = document.getElementById('signer-address-' + idx);
+            const roleEl = document.getElementById('signer-role-' + idx);
+            
+            const partnerId = nameEl ? (nameEl.getAttribute('data-partner-id') || '') : '';
+            const email = emailEl ? emailEl.value.trim() : '';
+            const addressId = addressEl ? addressEl.value : '';
+            const roleId = roleEl ? parseInt(roleEl.value, 10) : false;
+            
+            if (roleId) {
+                signersPayload.push({
+                    role_id: roleId,
+                    partner_id: partnerId ? parseInt(partnerId, 10) : false,
+                    email: email,
+                    address_id: addressId ? parseInt(addressId, 10) : false
+                });
+            }
+        });
+    }
+
     try {
         const response = await fetch('/sign/template/' + TEMPLATE_ID + '/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { items: payload } }),
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { items: payload, signers: signersPayload } }),
         });
         const result = await response.json();
         if (result.result === true || result.result) {
@@ -2084,44 +2113,56 @@ function getNextUnusedRoleId() {
 }
 
 async function buildSignersPanel() {
-    // Group existing items by role_id to identify signers needed
-    const rolesUsed = [];
-    signItems.forEach(item => {
-        const roleId = Array.isArray(item.responsible_id) ? item.responsible_id[0] : item.responsible_id;
-        if (roleId && !rolesUsed.includes(roleId)) {
-            rolesUsed.push(roleId);
+    // Check if we have pre-saved template signers
+    if (TEMPLATE_SIGNERS && TEMPLATE_SIGNERS.length > 0) {
+        for (const s of TEMPLATE_SIGNERS) {
+            await addSignerRow({
+                role_id: s.role_id,
+                name: s.partner_name || '',
+                partner_id: s.partner_id || '',
+                email: s.email || '',
+            });
         }
-    });
-
-    if (rolesUsed.length === 0) {
-        await addSignerRow();
     } else {
-        for (const roleId of rolesUsed) {
-            await addSignerRow({ role_id: roleId });
-        }
-        
-        // Associate items with signer rows
+        // Group existing items by role_id to identify signers needed
+        const rolesUsed = [];
         signItems.forEach(item => {
             const roleId = Array.isArray(item.responsible_id) ? item.responsible_id[0] : item.responsible_id;
-            if (roleId) {
-                const list = document.getElementById('es-signers-list');
-                const rows = list ? list.querySelectorAll('.es-signer-row') : [];
-                let foundIdx = null;
-                rows.forEach(row => {
-                    const idx = parseInt(row.id.replace('signer-row-', ''), 10);
-                    const roleEl = document.getElementById('signer-role-' + idx);
-                    if (roleEl && parseInt(roleEl.value, 10) === roleId) {
-                        foundIdx = idx;
-                    }
-                });
-                if (foundIdx !== null) {
-                    item._signerIdx = foundIdx;
-                    item._signerColor = getSignerColor(foundIdx);
-                }
+            if (roleId && !rolesUsed.includes(roleId)) {
+                rolesUsed.push(roleId);
             }
         });
-        updateSignerFieldCounts();
+
+        if (rolesUsed.length === 0) {
+            await addSignerRow();
+        } else {
+            for (const roleId of rolesUsed) {
+                await addSignerRow({ role_id: roleId });
+            }
+        }
     }
+    
+    // Associate items with signer rows
+    signItems.forEach(item => {
+        const roleId = Array.isArray(item.responsible_id) ? item.responsible_id[0] : item.responsible_id;
+        if (roleId) {
+            const list = document.getElementById('es-signers-list');
+            const rows = list ? list.querySelectorAll('.es-signer-row') : [];
+            let foundIdx = null;
+            rows.forEach(row => {
+                const idx = parseInt(row.id.replace('signer-row-', ''), 10);
+                const roleEl = document.getElementById('signer-role-' + idx);
+                if (roleEl && parseInt(roleEl.value, 10) === roleId) {
+                    foundIdx = idx;
+                }
+            });
+            if (foundIdx !== null) {
+                item._signerIdx = foundIdx;
+                item._signerColor = getSignerColor(foundIdx);
+            }
+        }
+    });
+    updateSignerFieldCounts();
 }
 
 function updateSignerFieldCounts() {
@@ -2174,6 +2215,7 @@ async function addSignerRow(data) {
     const nameVal  = (data && data.name)  ? data.name  : '';
     const emailVal = (data && data.email) ? data.email : '';
     let roleVal  = (data && data.role_id) ? data.role_id : null;
+    const partnerIdVal = (data && data.partner_id) ? data.partner_id : '';
 
     if (!roleVal) {
         // Dynamic get or create role for this signer index
@@ -2215,11 +2257,15 @@ async function addSignerRow(data) {
             '</div>' +
         '</div>' +
         '<div class="es-signer-inputs" style="display:none; flex-direction:column; gap:4px; margin-top:4px; margin-bottom:4px;">' +
-            '<input class="es-signer-input" type="text"' +
-                ' id="signer-name-' + idx + '"' +
-                ' placeholder="Full name..."' +
-                ' value="' + nameVal.replace(/"/g, '&quot;') + '"' +
-                ' autocomplete="off"/>' +
+            '<div style="position:relative; width:100%;">' +
+                '<input class="es-signer-input signer-name-autocomplete" type="text"' +
+                    ' id="signer-name-' + idx + '"' +
+                    ' placeholder="Full name..."' +
+                    ' value="' + nameVal.replace(/"/g, '&quot;') + '"' +
+                    ' data-partner-id="' + partnerIdVal + '"' +
+                    ' autocomplete="off"/>' +
+                '<div class="es-autocomplete-dropdown" id="signer-name-dropdown-' + idx + '" style="display:none; position:absolute; z-index:1000; background:#1e293b; border:1px solid #334155; border-radius:6px; max-height:200px; overflow-y:auto; width:100%; box-shadow:0 4px 6px rgba(0,0,0,0.3); margin-top:2px;"></div>' +
+            '</div>' +
             '<input class="es-signer-input" type="email"' +
                 ' id="signer-email-' + idx + '"' +
                 ' placeholder="Email address..."' +
@@ -2256,6 +2302,7 @@ async function addSignerRow(data) {
     }
 
     const nameEl = document.getElementById('signer-name-' + idx);
+    const dropdownEl = document.getElementById('signer-name-dropdown-' + idx);
     const emailEl = document.getElementById('signer-email-' + idx);
     const roleEl = document.getElementById('signer-role-' + idx);
     
@@ -2267,6 +2314,72 @@ async function addSignerRow(data) {
             }
         }
     };
+
+    // Auto-complete listener
+    if (nameEl && dropdownEl) {
+        let fetchTimeout = null;
+        nameEl.addEventListener('input', function() {
+            const val = nameEl.value.trim();
+            if (fetchTimeout) clearTimeout(fetchTimeout);
+            if (!val) {
+                dropdownEl.style.display = 'none';
+                nameEl.removeAttribute('data-partner-id');
+                return;
+            }
+            fetchTimeout = setTimeout(async function() {
+                try {
+                    const resp = await fetch('/sign/partners/search', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { term: val } }),
+                    });
+                    const resData = await resp.json();
+                    if (resData.result && resData.result.length > 0) {
+                        dropdownEl.innerHTML = resData.result.map(p => {
+                            return '<div class="es-autocomplete-item" data-id="' + p.id + '" data-email="' + (p.email || '') + '" data-name="' + p.name + '" style="padding:8px 12px; cursor:pointer; color:#e2e8f0; font-size:12px; transition:background 0.15s; text-align:left;">' +
+                                '<strong>' + p.name + '</strong>' + (p.email ? ' <span style="color:#64748b;">&lt;' + p.email + '&gt;</span>' : '') +
+                            '</div>';
+                        }).join('');
+                        dropdownEl.style.display = 'block';
+                        
+                        dropdownEl.querySelectorAll('.es-autocomplete-item').forEach(item => {
+                            item.addEventListener('mouseenter', function() {
+                                item.style.background = '#334155';
+                            });
+                            item.addEventListener('mouseleave', function() {
+                                item.style.background = 'transparent';
+                            });
+                            item.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                const pId = parseInt(item.getAttribute('data-id'), 10);
+                                const pName = item.getAttribute('data-name');
+                                const pEmail = item.getAttribute('data-email');
+                                
+                                nameEl.value = pName;
+                                nameEl.setAttribute('data-partner-id', pId);
+                                if (pEmail && emailEl) {
+                                    emailEl.value = pEmail;
+                                }
+                                dropdownEl.style.display = 'none';
+                                markDirty();
+                                onSignerInfoChange();
+                            });
+                        });
+                    } else {
+                        dropdownEl.style.display = 'none';
+                    }
+                } catch (err) {
+                    console.error('Search failed', err);
+                }
+            }, 250);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== nameEl && e.target !== dropdownEl && !dropdownEl.contains(e.target)) {
+                dropdownEl.style.display = 'none';
+            }
+        });
+    }
     
     if (nameEl) nameEl.addEventListener('input', onSignerInfoChange);
     if (emailEl) emailEl.addEventListener('input', onSignerInfoChange);
