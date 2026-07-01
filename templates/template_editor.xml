@@ -828,6 +828,9 @@
                         <button class="es-btn-primary-odoo" id="es-btn-send" onclick="openSendModal()">
                             Send
                         </button>
+                        <button class="es-btn-secondary-odoo" id="es-btn-share" onclick="openShareModal()">
+                            Share
+                        </button>
                         <button class="es-btn-primary-odoo" style="background:#5c5082;" id="es-btn-save" onclick="saveTemplate()">
                             Save
                         </button>
@@ -972,6 +975,54 @@
                 </div>
             </div>
 
+            <!-- SHARE MODAL -->
+            <div class="es-modal-overlay" id="es-share-modal">
+                <div class="es-modal" style="width: 500px;">
+                    <div class="es-modal-title" style="justify-content: space-between; width: 100%; display: flex; align-items: center;">
+                        <span style="display: inline-flex; align-items: center; gap: 10px;">
+                            <div class="es-modal-icon" style="background: linear-gradient(135deg, #71639e, #5c5082);">&#128279;</div>
+                            Share Document
+                        </span>
+                        <button type="button" class="close" onclick="closeShareModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer; line-height:1; padding:0;">&#215;</button>
+                    </div>
+                    <div class="es-modal-body">
+                        <!-- Share Link -->
+                        <div class="es-form-group">
+                            <label class="es-label">Share Link</label>
+                            <div style="position: relative; display: flex; align-items: center; width: 100%;">
+                                <input class="es-input" id="es-share-url" type="text" readonly="readonly" style="background: rgba(255,255,255,0.02); color: #cbd5e1; cursor: text; padding-right: 36px; width: 100%; box-sizing: border-box;"/>
+                                <span onclick="copyShareUrl()" title="Copy share link" style="position: absolute; right: 12px; cursor: pointer; color: #94a3b8; font-size: 14px; user-select: none;">&#128203;</span>
+                            </div>
+                        </div>
+                        <div class="es-form-group" style="position: relative;">
+                            <label class="es-label">Valid Until</label>
+                            <div class="o_datepicker" style="position: relative; display: flex; align-items: center; width: 100%;">
+                                <input class="o_datepicker_input es-input" id="es-share-valid-until" type="text" placeholder="YYYY-MM-DD" onchange="updateShareValidity()" style="padding-right: 36px; width: 100%; box-sizing: border-box;"/>
+                                <span class="o_datepicker_button" id="es-calendar-icon" style="position: absolute; right: 12px; cursor: pointer; color: #94a3b8; font-size: 14px; user-select: none;">&#128197;</span>
+                            </div>
+                            <!-- Custom Calendar Dropdown -->
+                            <div id="es-calendar-picker" style="display: none; position: absolute; z-index: 1000; background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); width: 250px; margin-top: 5px; top: 100%; left: 0;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <button type="button" id="cal-prev-month" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-weight: bold; padding: 0 4px;">&lt;</button>
+                                    <span id="cal-month-year" style="font-size: 13px; font-weight: 600; color: #f1f5f9;"></span>
+                                    <button type="button" id="cal-next-month" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; font-weight: bold; padding: 0 4px;">&gt;</button>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 11px; font-weight: 600; color: #71639e; margin-bottom: 4px;">
+                                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                                </div>
+                                <div id="cal-days" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 12px; color: #cbd5e1;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="es-modal-footer" style="display: flex; gap: 10px; justify-content: flex-start; width: 100%;">
+                        <button class="es-btn es-btn-danger" id="es-btn-stop-sharing" onclick="stopSharing()" style="padding: 8px 16px;">Stop sharing</button>
+                        <button class="es-btn es-btn-primary-odoo" onclick="copyShareUrl()" style="padding: 8px 16px;">Copy link</button>
+                        <button class="es-btn es-btn-ghost" onclick="closeShareModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+
             <script>
 <![CDATA[
 (function() {
@@ -1014,6 +1065,7 @@ function updateEditModeUI() {
     const btnEdit = document.getElementById('es-btn-edit');
     const status = document.getElementById('es-save-status');
     const btnSend = document.getElementById('es-btn-send');
+    const btnShare = document.getElementById('es-btn-share');
     
     if (isEditMode) {
         if (btnSave) btnSave.style.display = '';
@@ -1021,12 +1073,14 @@ function updateEditModeUI() {
         if (btnEdit) btnEdit.style.display = 'none';
         if (status) status.style.display = '';
         if (btnSend) btnSend.disabled = true;
+        if (btnShare) btnShare.disabled = true;
     } else {
         if (btnSave) btnSave.style.display = 'none';
         if (btnDiscard) btnDiscard.style.display = 'none';
         if (btnEdit) btnEdit.style.display = '';
         if (status) status.style.display = 'none';
         if (btnSend) btnSend.disabled = false;
+        if (btnShare) btnShare.disabled = false;
     }
     
     const btnAddSigner = document.querySelector('.es-btn-add-signer');
@@ -2345,6 +2399,223 @@ window.closeSendModal = closeSendModal;
 document.getElementById('es-send-modal').addEventListener('click', function(e) {
     if (e.target === this) closeSendModal();
 });
+
+/* ========================================================
+   SHARE MODAL
+   ======================================================== */
+async function openShareModal() {
+    try {
+        const resp = await fetch('/sign/template/' + TEMPLATE_ID + '/share/get_or_create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: {} }),
+        });
+        const data = await resp.json();
+        if (data.result && data.result.share_url) {
+            document.getElementById('es-share-url').value = data.result.share_url;
+            document.getElementById('es-share-valid-until').value = data.result.valid_until || '';
+            const stopBtn = document.getElementById('es-btn-stop-sharing');
+            if (stopBtn) stopBtn.style.display = 'block';
+        } else {
+            showToast((data.result && data.result.error) || 'Failed to get share link', 'error');
+            return;
+        }
+    } catch (err) {
+        showToast('Network error: ' + (err.message || 'Unknown'), 'error');
+        return;
+    }
+    
+    const modal = document.getElementById('es-share-modal');
+    if (modal) modal.classList.add('open');
+}
+window.openShareModal = openShareModal;
+
+function closeShareModal() {
+    const modal = document.getElementById('es-share-modal');
+    if (modal) modal.classList.remove('open');
+}
+window.closeShareModal = closeShareModal;
+
+// Close share modal on backdrop click
+document.getElementById('es-share-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeShareModal();
+});
+
+function copyShareUrl() {
+    const copyText = document.getElementById('es-share-url');
+    if (copyText) {
+        copyText.select();
+        copyText.setSelectionRange(0, 99999);
+        navigator.clipboard.writeText(copyText.value)
+            .then(() => {
+                showToast('Share link copied to clipboard!', 'success');
+            })
+            .catch(err => {
+                showToast('Failed to copy: ' + err, 'error');
+            });
+    }
+}
+window.copyShareUrl = copyShareUrl;
+
+async function stopSharing() {
+    if (!confirm('Are you sure you want to stop sharing this template? The current link will become invalid.')) {
+        return;
+    }
+    try {
+        const resp = await fetch('/sign/template/' + TEMPLATE_ID + '/share/stop', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: {} }),
+        });
+        const data = await resp.json();
+        if (data.result && data.result.success) {
+            document.getElementById('es-share-url').value = '';
+            document.getElementById('es-share-valid-until').value = '';
+            showToast('Sharing stopped. Link is now disabled.', 'success');
+            closeShareModal();
+        } else {
+            showToast((data.result && data.result.error) || 'Failed to stop sharing', 'error');
+        }
+    } catch (err) {
+        showToast('Network error: ' + (err.message || 'Unknown'), 'error');
+    }
+}
+window.stopSharing = stopSharing;
+
+async function updateShareValidity() {
+    const validUntil = document.getElementById('es-share-valid-until').value;
+    try {
+        const resp = await fetch('/sign/template/' + TEMPLATE_ID + '/share/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { valid_until: validUntil } }),
+        });
+        const data = await resp.json();
+        if (data.result && data.result.success) {
+            showToast('Validity expiration updated successfully!', 'success');
+        } else {
+            showToast((data.result && data.result.error) || 'Failed to update validity', 'error');
+        }
+    } catch (err) {
+        showToast('Network error: ' + (err.message || 'Unknown'), 'error');
+    }
+}
+window.updateShareValidity = updateShareValidity;
+
+// Odoo-like Datepicker Calendar Dropdown Logic
+let calCurrentDate = new Date();
+function renderCalendar(pickerDate) {
+    const monthYearSpan = document.getElementById('cal-month-year');
+    const daysContainer = document.getElementById('cal-days');
+    if (!monthYearSpan || !daysContainer) return;
+    
+    daysContainer.innerHTML = '';
+    const year = pickerDate.getFullYear();
+    const month = pickerDate.getMonth();
+    
+    const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    monthYearSpan.textContent = monthNames[month] + " " + year;
+    
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    
+    // Empty cells for alignment
+    for (let i = 0; i < firstDayIndex; i++) {
+        const emptyCell = document.createElement('span');
+        daysContainer.appendChild(emptyCell);
+    }
+    
+    // Month days
+    for (let day = 1; day <= lastDay; day++) {
+        const dayCell = document.createElement('span');
+        dayCell.textContent = day;
+        dayCell.style.padding = '4px';
+        dayCell.style.cursor = 'pointer';
+        dayCell.style.borderRadius = '4px';
+        dayCell.style.display = 'inline-block';
+        dayCell.style.transition = 'background 0.15s';
+        
+        const formattedMonth = String(month + 1).padStart(2, '0');
+        const formattedDay = String(day).padStart(2, '0');
+        const cellDateStr = year + '-' + formattedMonth + '-' + formattedDay;
+        const currentVal = document.getElementById('es-share-valid-until').value;
+        const isSelected = (cellDateStr === currentVal);
+        
+        if (isSelected) {
+            dayCell.style.background = '#71639e';
+            dayCell.style.color = '#ffffff';
+            dayCell.style.fontWeight = 'bold';
+        }
+        
+        dayCell.addEventListener('mouseenter', function() {
+            if (!isSelected) {
+                dayCell.style.background = 'rgba(113, 99, 158, 0.2)';
+            }
+        });
+        dayCell.addEventListener('mouseleave', function() {
+            if (!isSelected) {
+                dayCell.style.background = 'transparent';
+            }
+        });
+        
+        dayCell.addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('es-share-valid-until').value = cellDateStr;
+            document.getElementById('es-calendar-picker').style.display = 'none';
+            updateShareValidity();
+        });
+        
+        daysContainer.appendChild(dayCell);
+    }
+}
+
+// Event Listeners for Datepicker Dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarIcon = document.getElementById('es-calendar-icon');
+    if (calendarIcon) {
+        calendarIcon.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const picker = document.getElementById('es-calendar-picker');
+            if (picker.style.display === 'none' || !picker.style.display) {
+                picker.style.display = 'block';
+                const val = document.getElementById('es-share-valid-until').value;
+                const parsed = Date.parse(val);
+                calCurrentDate = isNaN(parsed) ? new Date() : new Date(parsed);
+                renderCalendar(calCurrentDate);
+            } else {
+                picker.style.display = 'none';
+            }
+        });
+    }
+
+    const prevBtn = document.getElementById('cal-prev-month');
+    if (prevBtn) {
+        prevBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            calCurrentDate.setMonth(calCurrentDate.getMonth() - 1);
+            renderCalendar(calCurrentDate);
+        });
+    }
+
+    const nextBtn = document.getElementById('cal-next-month');
+    if (nextBtn) {
+        nextBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            calCurrentDate.setMonth(calCurrentDate.getMonth() + 1);
+            renderCalendar(calCurrentDate);
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        const picker = document.getElementById('es-calendar-picker');
+        const icon = document.getElementById('es-calendar-icon');
+        if (picker && e.target !== picker && !picker.contains(e.target) && e.target !== icon) {
+            picker.style.display = 'none';
+        }
+    });
+});
+
+
 
 /* ========================================================
    CONFIRM SEND

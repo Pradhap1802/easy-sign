@@ -309,3 +309,118 @@ class SignController(http.Controller):
                 ('Content-Disposition', content_disposition('%s.pdf' % sign_request.reference)),
             ]
         )
+
+    @http.route('/sign/template/<int:template_id>/share/get_or_create', type='json', auth='user')
+    def share_get_or_create(self, template_id, **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template:
+            return {'error': 'Template not found'}
+        if not template.share_token:
+            import uuid
+            template.sudo().write({'share_token': str(uuid.uuid4())})
+        
+        base_url = request.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        share_url = "%s/sign/share/%d/%s" % (base_url, template.id, template.share_token)
+        return {
+            'share_url': share_url,
+            'valid_until': template.valid_until.strftime('%Y-%m-%d') if template.valid_until else ''
+        }
+
+    @http.route('/sign/template/<int:template_id>/share/update', type='json', auth='user')
+    def share_update(self, template_id, valid_until=None, **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template:
+            return {'error': 'Template not found'}
+        vals = {}
+        if valid_until is not None:
+            vals['valid_until'] = valid_until or False
+        template.sudo().write(vals)
+        return {'success': True}
+
+    @http.route('/sign/template/<int:template_id>/share/stop', type='json', auth='user')
+    def share_stop(self, template_id, **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template:
+            return {'error': 'Template not found'}
+        template.sudo().write({
+            'share_token': False,
+            'valid_until': False
+        })
+        return {'success': True}
+
+    @http.route('/sign/share/<int:template_id>/<share_token>', type='http', auth='public', website=True)
+    def share_template_page(self, template_id, share_token, **kwargs):
+        template = request.env['sign.template'].sudo().search([
+            ('id', '=', template_id),
+            ('share_token', '=', share_token)
+        ], limit=1)
+        if not template:
+            return request.not_found()
+            
+        from odoo.fields import Date
+        if template.valid_until and template.valid_until < Date.today():
+            return request.render('easy_sign.sign_expired_template', {'template': template})
+            
+        roles = template.sign_item_ids.mapped('responsible_id')
+        if not roles:
+            default_role = request.env['sign.item.role'].sudo().search([('name', '=', 'Signer 1')], limit=1)
+            roles = default_role
+            
+        return request.render('easy_sign.sign_share_template', {
+            'template': template,
+            'roles': roles,
+        })
+
+    @http.route('/sign/share/<int:template_id>/<share_token>/submit', type='http', auth='public', methods=['POST'], website=True, csrf=True)
+    def share_template_submit(self, template_id, share_token, **kwargs):
+        template = request.env['sign.template'].sudo().search([
+            ('id', '=', template_id),
+            ('share_token', '=', share_token)
+        ], limit=1)
+        if not template:
+            return request.not_found()
+            
+        from odoo.fields import Date
+        if template.valid_until and template.valid_until < Date.today():
+            return request.render('easy_sign.sign_expired_template', {'template': template})
+            
+        roles = template.sign_item_ids.mapped('responsible_id')
+        if not roles:
+            default_role = request.env['sign.item.role'].sudo().search([('name', '=', 'Signer 1')], limit=1)
+            roles = default_role
+            
+        sign_request = request.env['sign.request'].sudo().create({
+            'template_id': template.id,
+            'reference': "%s (Shared)" % (template.name or 'Document'),
+            'state': 'sent'
+        })
+        
+        first_signer = False
+        for idx, role in enumerate(roles, start=1):
+            name = kwargs.get('name_%d' % role.id, '').strip()
+            email = kwargs.get('email_%d' % role.id, '').strip()
+            
+            partner = request.env['res.partner'].sudo().search([('email', '=', email)], limit=1)
+            if not partner and email:
+                partner = request.env['res.partner'].sudo().create({
+                    'name': name or email,
+                    'email': email
+                })
+                
+            import uuid
+            signer = request.env['sign.request.signer'].sudo().create({
+                'sign_request_id': sign_request.id,
+                'role_id': role.id,
+                'partner_id': partner.id,
+                'sequence': idx,
+                'state': 'draft',
+                'access_token': str(uuid.uuid4())
+            })
+            if idx == 1:
+                first_signer = signer
+                
+        sign_request.sudo().action_send_next_signature_request()
+        
+        if first_signer:
+            return request.redirect('/sign/document/%d/%s' % (sign_request.id, first_signer.access_token))
+        return request.not_found()

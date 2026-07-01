@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 import io
+import uuid
 from odoo import api, fields, models, _, Command
 from odoo.exceptions import UserError
 from odoo.tools import pdf
@@ -23,6 +24,8 @@ class SignTemplate(models.Model):
     favorited_ids = fields.Many2many('res.users', string="Favorited Users", relation="sign_template_favorited_users_rel", default=_get_default_favorited_ids)
     user_id = fields.Many2one('res.users', string="Responsible", default=lambda self: self.env.user)
     has_sign_requests = fields.Boolean(compute="_compute_has_sign_requests", compute_sudo=True, store=True)
+    share_token = fields.Char(string="Share Link", copy=False)
+    valid_until = fields.Date(string="Valid Until")
     # Temporary field for form view
     datas_fname = fields.Char(string="File Name")
 
