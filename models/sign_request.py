@@ -320,7 +320,7 @@ class SignRequest(models.Model):
                 if item.page not in itemsByPage:
                     itemsByPage[item.page] = []
                 itemsByPage[item.page].append(item)
-            items_ids = [id for items in itemsByPage.values() for id in items.ids]
+            items_ids = self.template_id.sign_item_ids.ids
             values_dict = self.env['sign.request.item.value'].sudo().search_read(
                 [('sign_item_id', 'in', items_ids), ('sign_request_id', '=', self.id)],
                 ['sign_item_id', 'value', 'frame_value']
