@@ -107,43 +107,248 @@
                 .btn-primary:hover {
                     background-color: #008784;
                 }
-                .modal {
+                /* Premium Signature Modal Styles */
+                .es-signature-modal-backdrop {
                     position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(0,0,0,0.5);
+                    inset: 0;
+                    background: rgba(15, 23, 42, 0.6);
+                    backdrop-filter: blur(8px);
+                    z-index: 2000;
                     display: flex;
+                    align-items: center;
                     justify-content: center;
-                    align-items: center;
-                    z-index: 1000;
+                    padding: 20px;
+                    box-sizing: border-box;
                 }
-                .modal-dialog {
-                    background-color: white;
-                    border-radius: 8px;
-                    width: 80%;
-                    max-width: 600px;
-                    color: #333;
-                }
-                .modal-header, .modal-body, .modal-footer {
-                    padding: 15px;
-                }
-                .modal-header {
-                    border-bottom: 1px solid #eee;
+                .es-signature-modal {
+                    background: #ffffff;
+                    border-radius: 16px;
+                    width: 600px;
+                    max-width: 100%;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                    border: 1px solid #e2e8f0;
+                    overflow: hidden;
                     display: flex;
-                    justify-content: space-between;
+                    flex-direction: column;
+                    color: #333;
+                    animation: esModalFadeIn 0.25s ease-out;
+                }
+                @keyframes esModalFadeIn {
+                    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                .es-signature-modal-header {
+                    display: flex;
                     align-items: center;
+                    justify-content: space-between;
+                    padding: 16px 24px;
+                    border-bottom: 1px solid #f1f5f9;
                 }
-                .modal-footer {
-                    border-top: 1px solid #eee;
-                    text-align: right;
+                .es-signature-modal-title {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    margin: 0;
                 }
-                .close {
-                    background: none;
+                .es-signature-modal-close {
+                    background: transparent;
                     border: none;
                     font-size: 24px;
+                    color: #94a3b8;
                     cursor: pointer;
+                    line-height: 1;
+                    transition: color 0.15s;
+                    padding: 0;
+                }
+                .es-signature-modal-close:hover {
+                    color: #0f172a;
+                }
+                .es-signature-modal-tabs {
+                    display: flex;
+                    background: #f8fafc;
+                    border-bottom: 1px solid #e2e8f0;
+                    padding: 0 16px;
+                }
+                .es-signature-tab-btn {
+                    flex: 1;
+                    background: transparent;
+                    border: none;
+                    border-bottom: 2px solid transparent;
+                    padding: 14px 16px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #64748b;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                }
+                .es-signature-tab-btn:hover {
+                    color: #0f172a;
+                }
+                .es-signature-tab-btn.active {
+                    color: #714b67;
+                    border-bottom-color: #714b67;
+                }
+                .es-signature-tab-btn .tab-icon {
+                    font-size: 15px;
+                }
+                .es-signature-modal-body {
+                    padding: 24px;
+                    min-height: 240px;
+                    display: flex;
+                    flex-direction: column;
+                    box-sizing: border-box;
+                }
+                .es-signature-tab-content {
+                    display: none;
+                    flex-direction: column;
+                    flex: 1;
+                }
+                .es-signature-tab-content.active {
+                    display: flex;
+                }
+                .es-auto-input-group {
+                    display: flex;
+                    gap: 12px;
+                    margin-bottom: 16px;
+                }
+                .es-auto-input {
+                    flex: 1;
+                    padding: 10px 14px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    outline: none;
+                    transition: border-color 0.15s;
+                }
+                .es-auto-input:focus {
+                    border-color: #714b67;
+                }
+                .es-auto-font-select {
+                    padding: 10px 14px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    outline: none;
+                    background-color: #ffffff;
+                    cursor: pointer;
+                    transition: border-color 0.15s;
+                }
+                .es-auto-font-select:focus {
+                    border-color: #714b67;
+                }
+                .es-auto-preview-container {
+                    flex: 1;
+                    background: #f8fafc;
+                    border: 2px dashed #cbd5e1;
+                    border-radius: 12px;
+                    min-height: 160px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+                .es-auto-preview {
+                    font-size: 38px;
+                    color: #0f172a;
+                    user-select: none;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    width: 90%;
+                    text-align: center;
+                    padding: 10px;
+                }
+                .es-draw-canvas-container {
+                    position: relative;
+                    border: 2px dashed #cbd5e1;
+                    border-radius: 12px;
+                    background: #ffffff;
+                    height: 200px;
+                    overflow: hidden;
+                }
+                #signature-pad {
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    cursor: crosshair;
+                }
+                .es-canvas-clear-btn {
+                    position: absolute;
+                    bottom: 12px;
+                    right: 12px;
+                    background: #ffffff;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #475569;
+                    cursor: pointer;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+                    transition: all 0.15s;
+                }
+                .es-canvas-clear-btn:hover {
+                    background: #f8fafc;
+                    color: #0f172a;
+                    border-color: #94a3b8;
+                }
+                .es-upload-dropzone {
+                    flex: 1;
+                    border: 2px dashed #cbd5e1;
+                    border-radius: 12px;
+                    background: #f8fafc;
+                    min-height: 200px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    padding: 20px;
+                    box-sizing: border-box;
+                    text-align: center;
+                }
+                .es-upload-dropzone:hover {
+                    background: #f1f5f9;
+                    border-color: #714b67;
+                }
+                .es-upload-dropzone .upload-icon {
+                    font-size: 32px;
+                    margin-bottom: 10px;
+                }
+                .es-upload-dropzone .upload-text {
+                    font-size: 14px;
+                    color: #64748b;
+                }
+                .es-upload-dropzone .upload-text strong {
+                    color: #714b67;
+                }
+                .es-upload-preview-img {
+                    max-width: 100%;
+                    max-height: 160px;
+                    object-fit: contain;
+                }
+                .es-signature-modal-footer {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                    padding: 16px 24px;
+                    border-top: 1px solid #f1f5f9;
+                    background: #f8fafc;
+                }
+                .es-modal-agreement-text {
+                    font-size: 11px;
+                    color: #64748b;
+                    line-height: 1.4;
+                }
+                .es-modal-footer-buttons {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
                 }
                 .btn-secondary {
                     background-color: #6c757d;
@@ -523,76 +728,315 @@
                 pageData.wrapper.appendChild(container);
             }
 
+            let activeSignatureTab = 'auto';
+            let uploadedImageBase64 = null;
+            let canvasRef = null;
+            let ctxRef = null;
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+
             function openSignaturePad(itemId) {
+                if (!document.getElementById('es-signature-fonts')) {
+                    const link = document.createElement('link');
+                    link.id = 'es-signature-fonts';
+                    link.rel = 'stylesheet';
+                    link.href = 'https://fonts.googleapis.com/css2?family=Alex+Brush&family=Dancing+Script:wght@700&family=Great+Vibes&family=Pacifico&family=Playball&display=swap';
+                    document.head.appendChild(link);
+                }
+
+                const item = SIGN_ITEMS.find(i => i.id == itemId);
+                const isInitial = item && item.type === 'initial';
+                const defaultText = isInitial ? getInitials(SIGNER_INFO.name) : (SIGNER_INFO.name || '');
+
                 const modal = document.createElement('div');
                 modal.id = 'signature-modal';
-                modal.className = 'modal';
+                modal.className = 'es-signature-modal-backdrop';
                 modal.innerHTML = `
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Sign Here</h5>
-                                <button type="button" class="close" onclick="closeSignaturePad()">
-                                    <span>&times;</span>
-                                </button>
+                    <div class="es-signature-modal">
+                        <div class="es-signature-modal-header">
+                            <h5 class="es-signature-modal-title">${isInitial ? 'Adopt Your Initials' : 'Adopt Your Signature'}</h5>
+                            <button type="button" class="es-signature-modal-close" onclick="closeSignaturePad()">&times;</button>
+                        </div>
+                        
+                        <!-- Tabs -->
+                        <div class="es-signature-modal-tabs">
+                            <button type="button" class="es-signature-tab-btn active" onclick="switchSignatureTab('auto')">
+                                <span class="tab-icon">⌨</span> Auto
+                            </button>
+                            <button type="button" class="es-signature-tab-btn" onclick="switchSignatureTab('draw')">
+                                <span class="tab-icon">✍</span> Draw
+                            </button>
+                            <button type="button" class="es-signature-tab-btn" onclick="switchSignatureTab('upload')">
+                                <span class="tab-icon">📤</span> Upload
+                            </button>
+                        </div>
+                        
+                        <div class="es-signature-modal-body">
+                            <!-- Tab 1: Auto -->
+                            <div class="es-signature-tab-content active" id="tab-content-auto">
+                                <div class="es-auto-input-group">
+                                    <input type="text" class="es-auto-input" id="es-signer-name-input" value="${defaultText.replace(/"/g, '&quot;')}" placeholder="Type your name..." oninput="updateAutoSignature()"/>
+                                    <select class="es-auto-font-select" id="es-signer-font-select" onchange="updateAutoSignature()">
+                                        <option value="'Dancing Script', cursive">Dancing Script</option>
+                                        <option value="'Pacifico', cursive">Pacifico</option>
+                                        <option value="'Great Vibes', cursive">Great Vibes</option>
+                                        <option value="'Playball', cursive">Playball</option>
+                                        <option value="'Alex Brush', cursive">Alex Brush</option>
+                                    </select>
+                                </div>
+                                <div class="es-auto-preview-container">
+                                    <div class="es-auto-preview" id="es-auto-signature-preview">Your Signature</div>
+                                </div>
                             </div>
-                            <div class="modal-body">
-                                <canvas id="signature-pad" style="border:1px solid #000; width:100%; height:200px;"></canvas>
+                            
+                            <!-- Tab 2: Draw -->
+                            <div class="es-signature-tab-content" id="tab-content-draw">
+                                <div class="es-draw-canvas-container">
+                                    <canvas id="signature-pad"></canvas>
+                                    <button type="button" class="es-canvas-clear-btn" onclick="clearSignatureCanvas()">Clear</button>
+                                </div>
                             </div>
-                            <div class="modal-footer">
+                            
+                            <!-- Tab 3: Upload -->
+                            <div class="es-signature-tab-content" id="tab-content-upload">
+                                <div class="es-upload-dropzone" id="es-upload-dropzone" onclick="triggerSignatureUpload()">
+                                    <span class="upload-icon">📁</span>
+                                    <span class="upload-text">Drag & drop your signature image here, or <strong>browse</strong></span>
+                                    <input type="file" id="es-signature-file-input" style="display:none;" accept="image/*" onchange="handleSignatureUpload(event)"/>
+                                    <img id="es-upload-preview" class="es-upload-preview-img" style="display:none;"/>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="es-signature-modal-footer">
+                            <span class="es-modal-agreement-text">By clicking Adopt and Sign, I agree that this signature/initials will be as valid as my handwritten signature.</span>
+                            <div class="es-modal-footer-buttons">
                                 <button type="button" class="btn-secondary" onclick="closeSignaturePad()">Cancel</button>
-                                <button type="button" class="btn-primary" onclick="saveSignature(${itemId})">Save</button>
+                                <button type="button" class="btn-primary" style="margin-top:0;" onclick="adoptSignature(${itemId})">Adopt & Sign</button>
                             </div>
                         </div>
                     </div>
                 `;
                 document.body.appendChild(modal);
-                const canvas = modal.querySelector('#signature-pad');
-                const ctx = canvas.getContext('2d');
-                let isDrawing = false;
-                let lastX = 0;
-                let lastY = 0;
-                canvas.addEventListener('mousedown', e => { isDrawing = true; [lastX, lastY] = getMousePos(canvas, e); });
-                canvas.addEventListener('mouseup', () => isDrawing = false);
-                canvas.addEventListener('mousemove', e => {
-                    if (isDrawing) {
-                        const [x, y] = getMousePos(canvas, e);
-                        ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.lineWidth = 2; ctx.stroke();
-                        [lastX, lastY] = [x, y];
+                
+                activeSignatureTab = 'auto';
+                uploadedImageBase64 = null;
+                updateAutoSignature();
+
+                canvasRef = modal.querySelector('#signature-pad');
+                ctxRef = canvasRef.getContext('2d');
+                
+                function getPos(e) {
+                    const r = canvasRef.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    return [clientX - r.left, clientY - r.top];
+                }
+                
+                function startDraw(e) {
+                    isDrawing = true;
+                    [lastX, lastY] = getPos(e);
+                    ctxRef.beginPath();
+                    ctxRef.moveTo(lastX, lastY);
+                }
+                
+                function draw(e) {
+                    if (!isDrawing) return;
+                    e.preventDefault();
+                    const [x, y] = getPos(e);
+                    ctxRef.lineTo(x, y);
+                    ctxRef.stroke();
+                    [lastX, lastY] = [x, y];
+                }
+                
+                function endDraw() {
+                    isDrawing = false;
+                }
+                
+                canvasRef.addEventListener('mousedown', startDraw);
+                canvasRef.addEventListener('mousemove', draw);
+                canvasRef.addEventListener('mouseup', endDraw);
+                canvasRef.addEventListener('mouseleave', endDraw);
+                
+                canvasRef.addEventListener('touchstart', startDraw, { passive: false });
+                canvasRef.addEventListener('touchmove', draw, { passive: false });
+                canvasRef.addEventListener('touchend', endDraw);
+            }
+
+            function getInitials(name) {
+                if (!name) return 'MA';
+                return name.split(' ').map(n => n.charAt(0)).join('').toUpperCase();
+            }
+
+            function updateAutoSignature() {
+                const nameInput = document.getElementById('es-signer-name-input');
+                const fontSelect = document.getElementById('es-signer-font-select');
+                const preview = document.getElementById('es-auto-signature-preview');
+                
+                if (nameInput && fontSelect && preview) {
+                    const name = nameInput.value.trim();
+                    const font = fontSelect.value;
+                    
+                    preview.style.fontFamily = font;
+                    preview.textContent = name || 'Your Signature';
+                }
+            }
+            window.updateAutoSignature = updateAutoSignature;
+
+            function switchSignatureTab(tabName) {
+                activeSignatureTab = tabName;
+                
+                const buttons = document.querySelectorAll('.es-signature-tab-btn');
+                buttons.forEach(btn => {
+                    if (btn.getAttribute('onclick').includes(tabName)) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
                     }
                 });
+                
+                const contents = document.querySelectorAll('.es-signature-tab-content');
+                contents.forEach(content => {
+                    if (content.id === 'tab-content-' + tabName) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+                
+                if (tabName === 'auto') {
+                    const input = document.getElementById('es-signer-name-input');
+                    if (input) input.focus();
+                } else if (tabName === 'draw' && canvasRef) {
+                    setTimeout(() => {
+                        const dpr = window.devicePixelRatio || 1;
+                        const rect = canvasRef.getBoundingClientRect();
+                        canvasRef.width = rect.width * dpr;
+                        canvasRef.height = rect.height * dpr;
+                        ctxRef.scale(dpr, dpr);
+                        ctxRef.strokeStyle = '#000000';
+                        ctxRef.lineWidth = 2.5;
+                        ctxRef.lineCap = 'round';
+                        ctxRef.lineJoin = 'round';
+                    }, 50);
+                }
+            }
+            window.switchSignatureTab = switchSignatureTab;
+
+            function clearSignatureCanvas() {
+                if (canvasRef && ctxRef) {
+                    ctxRef.clearRect(0, 0, canvasRef.width, canvasRef.height);
+                    ctxRef.beginPath();
+                }
+            }
+            window.clearSignatureCanvas = clearSignatureCanvas;
+
+            function triggerSignatureUpload() {
+                const fileInput = document.getElementById('es-signature-file-input');
+                if (fileInput) fileInput.click();
+            }
+            window.triggerSignatureUpload = triggerSignatureUpload;
+
+            function handleSignatureUpload(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        uploadedImageBase64 = evt.target.result;
+                        const preview = document.getElementById('es-upload-preview');
+                        if (preview) {
+                            preview.src = uploadedImageBase64;
+                            preview.style.display = 'block';
+                        }
+                        
+                        const dropzone = document.getElementById('es-upload-dropzone');
+                        if (dropzone) {
+                            const icon = dropzone.querySelector('.upload-icon');
+                            const text = dropzone.querySelector('.upload-text');
+                            if (icon) icon.style.display = 'none';
+                            if (text) text.style.display = 'none';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+            window.handleSignatureUpload = handleSignatureUpload;
+
+            function generateAutoSignatureImage(text, font) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 600;
+                canvas.height = 150;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = 'bold 55px ' + font;
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+                return canvas.toDataURL('image/png');
             }
 
-            function getMousePos(canvas, evt) {
-                const rect = canvas.getBoundingClientRect();
-                return [evt.clientX - rect.left, evt.clientY - rect.top];
+            function isCanvasBlank(canvas) {
+                const blank = document.createElement('canvas');
+                blank.width = canvas.width;
+                blank.height = canvas.height;
+                return canvas.toDataURL() === blank.toDataURL();
             }
 
-            function saveSignature(itemId) {
-                const modal = document.getElementById('signature-modal');
-                const canvas = modal.querySelector('#signature-pad');
-                signatureData[itemId] = canvas.toDataURL('image/png');
+            function adoptSignature(itemId) {
+                let dataUrl = null;
+                
+                if (activeSignatureTab === 'auto') {
+                    const nameInput = document.getElementById('es-signer-name-input');
+                    const fontSelect = document.getElementById('es-signer-font-select');
+                    const name = nameInput ? nameInput.value.trim() : '';
+                    const font = fontSelect ? fontSelect.value : "'Dancing Script', cursive";
+                    
+                    if (!name) {
+                        alert('Please type your name for the signature.');
+                        return;
+                    }
+                    dataUrl = generateAutoSignatureImage(name, font);
+                } else if (activeSignatureTab === 'draw') {
+                    if (!canvasRef || isCanvasBlank(canvasRef)) {
+                        alert('Please draw your signature.');
+                        return;
+                    }
+                    dataUrl = canvasRef.toDataURL('image/png');
+                } else if (activeSignatureTab === 'upload') {
+                    if (!uploadedImageBase64) {
+                        alert('Please upload a signature image.');
+                        return;
+                    }
+                    dataUrl = uploadedImageBase64;
+                }
+                
+                if (!dataUrl) return;
+                
+                signatureData[itemId] = dataUrl;
                 const signItem = signItemInputs[itemId];
                 if (signItem) {
                     const img = document.createElement('img');
-                    img.src = signatureData[itemId];
+                    img.src = dataUrl;
                     img.style.width = '100%';
                     img.style.height = '100%';
                     signItem.el.innerHTML = '';
                     signItem.el.appendChild(img);
                 }
+                
                 closeSignaturePad();
                 updateRibbonText();
                 setTimeout(goToNextSignItem, 400);
             }
-
-            window.saveSignature = saveSignature;
+            window.adoptSignature = adoptSignature;
 
             function closeSignaturePad() {
                 const modal = document.getElementById('signature-modal');
                 if (modal) modal.remove();
+                canvasRef = null;
+                ctxRef = null;
             }
-
             window.closeSignaturePad = closeSignaturePad;
 
             function getUncompletedItems() {
