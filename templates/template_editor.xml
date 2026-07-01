@@ -853,15 +853,34 @@
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:16px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-size:12px;color:#94a3b8;">Tags:</span>
-                        <select class="es-signer-select" style="width:120px;padding:4px 8px;font-size:12px;background:#141625;border-color:rgba(255,255,255,0.08);">
-                            <option value="">Choose tag...</option>
-                            <option value="agreement">Agreement</option>
-                            <option value="contract">Contract</option>
-                            <option value="internal">Internal</option>
-                        </select>
+                    <!-- ===== DYNAMIC TAGS PICKER ===== -->
+                    <div style="display:flex;align-items:center;gap:8px;position:relative;">
+                        <span style="font-size:12px;color:#94a3b8;white-space:nowrap;">Tags:</span>
+                        <!-- Selected tag badges shown inline -->
+                        <div id="es-tag-badges" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;max-width:260px;"></div>
+                        <!-- Dropdown trigger button -->
+                        <button id="es-tag-dropdown-btn"
+                            onclick="toggleTagDropdown(event)"
+                            style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;
+                                   border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                            <span>&#43;</span> Add Tag
+                        </button>
+                        <!-- Dropdown panel -->
+                        <div id="es-tag-dropdown"
+                            style="display:none;position:absolute;top:100%;right:0;margin-top:4px;
+                                   background:#1e2030;border:1px solid rgba(255,255,255,0.12);border-radius:8px;
+                                   padding:6px 0;z-index:9999;min-width:180px;max-height:240px;overflow-y:auto;
+                                   box-shadow:0 8px 24px rgba(0,0,0,0.5);">
+                            <div id="es-tag-dropdown-empty"
+                                style="padding:10px 14px;font-size:12px;color:#64748b;display:none;">
+                                No tags configured. Go to<br/>
+                                <a href="/odoo/action-easy_sign.action_sign_tag" target="_blank"
+                                   style="color:#7c6fd0;text-decoration:underline;">Configuration → Tags</a>
+                                to add tags.
+                            </div>
+                        </div>
                     </div>
+                    <!-- ===== END TAGS PICKER ===== -->
                     <button class="es-btn-secondary-odoo" id="es-btn-back" onclick="window.history.back()">
                         &#8592; Back
                     </button>
@@ -1038,7 +1057,153 @@ const INITIAL_ITEMS = ]]><t t-out="sign_items_json"/><![CDATA[;
 const TEMPLATE_NAME = ]]><t t-out="template_name_json"/><![CDATA[;
 const PDF_B64 = ]]><t t-out="pdf_b64_json"/><![CDATA[;
 const TEMPLATE_SIGNERS = ]]><t t-out="template_signers_json"/><![CDATA[;
+const ALL_TAGS = ]]><t t-out="all_tags_json"/><![CDATA[;
+let selectedTagIds = ]]><t t-out="template_tag_ids_json"/><![CDATA[;
 
+/* ========================================================
+   ODOO COLOR PALETTE (matches Odoo many2many_tags colors)
+   ======================================================== */
+const ODOO_COLORS = [
+    '#E05353','#DF7F31','#E2C700','#51B8EB','#6874CB',
+    '#A95CC6','#3AAB59','#D5627F','#737373','#1EAACC',
+    '#F08080','#F4A460','#DAA520','#87CEEB','#9370DB',
+    '#DA70D6','#3CB371','#DB7093','#A9A9A9','#00CED1'
+];
+function odooColor(idx) {
+    return ODOO_COLORS[(idx || 0) % ODOO_COLORS.length];
+}
+
+/* ========================================================
+   TAG PICKER
+   ======================================================== */
+function renderTagBadges() {
+    const container = document.getElementById('es-tag-badges');
+    if (!container) return;
+    container.innerHTML = '';
+    selectedTagIds.forEach(function(tagId) {
+        const tag = ALL_TAGS.find(function(t) { return t.id === tagId; });
+        if (!tag) return;
+        const badge = document.createElement('span');
+        const bg = odooColor(tag.color);
+        badge.style.cssText = 'display:inline-flex;align-items:center;gap:4px;padding:2px 8px 2px 8px;border-radius:12px;font-size:11px;font-weight:600;cursor:default;color:#fff;background:' + bg + ';';
+        badge.textContent = tag.name;
+        // Remove button
+        const rm = document.createElement('span');
+        rm.textContent = '×';
+        rm.style.cssText = 'margin-left:3px;cursor:pointer;font-size:13px;font-weight:700;opacity:0.8;';
+        rm.onclick = function(e) {
+            e.stopPropagation();
+            selectedTagIds = selectedTagIds.filter(function(id) { return id !== tagId; });
+            renderTagBadges();
+            buildTagDropdownItems();
+            saveTemplateTags();
+        };
+        badge.appendChild(rm);
+        container.appendChild(badge);
+    });
+}
+
+function buildTagDropdownItems() {
+    const dropdown = document.getElementById('es-tag-dropdown');
+    const emptyMsg = document.getElementById('es-tag-dropdown-empty');
+    if (!dropdown) return;
+    // Remove existing items (keep empty message div)
+    Array.from(dropdown.children).forEach(function(child) {
+        if (child.id !== 'es-tag-dropdown-empty') child.remove();
+    });
+    if (ALL_TAGS.length === 0) {
+        if (emptyMsg) emptyMsg.style.display = '';
+        return;
+    }
+    if (emptyMsg) emptyMsg.style.display = 'none';
+    ALL_TAGS.forEach(function(tag) {
+        const isSelected = selectedTagIds.indexOf(tag.id) !== -1;
+        const item = document.createElement('div');
+        const bg = odooColor(tag.color);
+        item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;font-size:13px;transition:background 0.12s;';
+        item.onmouseenter = function() { item.style.background = 'rgba(255,255,255,0.06)'; };
+        item.onmouseleave = function() { item.style.background = ''; };
+
+        const dot = document.createElement('span');
+        dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + bg + ';flex-shrink:0;';
+        item.appendChild(dot);
+
+        const label = document.createElement('span');
+        label.textContent = tag.name;
+        label.style.cssText = 'flex:1;color:#e2e8f0;';
+        item.appendChild(label);
+
+        if (isSelected) {
+            const chk = document.createElement('span');
+            chk.textContent = '✓';
+            chk.style.cssText = 'color:#10b981;font-weight:700;';
+            item.appendChild(chk);
+        }
+        item.onclick = function(e) {
+            e.stopPropagation();
+            if (isSelected) {
+                selectedTagIds = selectedTagIds.filter(function(id) { return id !== tag.id; });
+            } else {
+                selectedTagIds = selectedTagIds.concat([tag.id]);
+            }
+            renderTagBadges();
+            buildTagDropdownItems();
+            saveTemplateTags();
+        };
+        dropdown.appendChild(item);
+    });
+}
+
+function toggleTagDropdown(e) {
+    e.stopPropagation();
+    const dd = document.getElementById('es-tag-dropdown');
+    if (!dd) return;
+    const isOpen = dd.style.display !== 'none';
+    if (isOpen) {
+        dd.style.display = 'none';
+    } else {
+        buildTagDropdownItems();
+        dd.style.display = 'block';
+    }
+}
+window.toggleTagDropdown = toggleTagDropdown;
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function() {
+    const dd = document.getElementById('es-tag-dropdown');
+    if (dd) dd.style.display = 'none';
+});
+
+function saveTemplateTags() {
+    fetch('/web/dataset/call_kw', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            jsonrpc: '2.0', method: 'call', id: 1,
+            params: {
+                model: 'sign.template',
+                method: 'write',
+                args: [[TEMPLATE_ID], { tag_ids: [[6, 0, selectedTagIds]] }],
+                kwargs: {}
+            }
+        })
+    }).then(function(r) { return r.json(); }).then(function(result) {
+        if (result.result) {
+            showToast('Tags saved', 'success');
+        }
+    }).catch(function(err) {
+        console.error('Tag save error:', err);
+    });
+}
+
+// Initialize on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        renderTagBadges();
+    });
+} else {
+    renderTagBadges();
+}
 
 /* ========================================================
    PDF.js direct canvas rendering

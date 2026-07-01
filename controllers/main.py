@@ -50,6 +50,10 @@ class SignController(http.Controller):
             'email': s.email or '',
         } for s in template.template_signer_ids]
 
+        # Load all available sign tags and template's current tag IDs
+        all_tags = request.env['sign.tag'].sudo().search_read([], ['id', 'name', 'color'])
+        template_tag_ids = template.tag_ids.ids
+
         # Pass PDF data as base64 string directly
         raw_datas = template.sudo().datas
         if raw_datas:
@@ -67,6 +71,8 @@ class SignController(http.Controller):
             'template_signers_json': Markup(json.dumps(template_signers)),
             'template_name_json':   Markup(json.dumps(template.name or '')),
             'pdf_b64_json':         Markup(json.dumps(pdf_b64_str)),
+            'all_tags_json':        Markup(json.dumps(all_tags)),
+            'template_tag_ids_json': Markup(json.dumps(template_tag_ids)),
         })
 
     @http.route('/sign/template/<int:template_id>/items', type='json', auth='user')
@@ -108,6 +114,16 @@ class SignController(http.Controller):
                     'partner_id': s.get('partner_id') or False,
                     'email': s.get('email') or '',
                 })
+        return True
+
+    @http.route('/sign/template/<int:template_id>/save_tags', type='json', auth='user')
+    def save_template_tags(self, template_id, tag_ids=None, **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template:
+            return False
+        if tag_ids is None:
+            tag_ids = []
+        template.write({'tag_ids': [(6, 0, tag_ids)]})
         return True
 
     @http.route('/sign/role/get_or_create', type='json', auth='user')

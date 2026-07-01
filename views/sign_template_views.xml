@@ -20,8 +20,9 @@
                                 <field name="num_pages" string="Number of pages"/>
                                 <field name="active" invisible="1"/>
                             </group>
-                            <group>
-                            </group>
+                             <group>
+                                 <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                             </group>
                         </group>
                     </sheet>
                     <chatter/>
@@ -35,6 +36,7 @@
             <field name="arch" type="xml">
                 <list string="Sign Templates" js_class="sign_request_list">
                     <field name="name"/>
+                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
                     <field name="user_id"/>
                     <field name="num_pages"/>
                     <field name="active"/>
@@ -53,15 +55,20 @@
                     <field name="request_in_progress_count"/>
                     <field name="request_signed_count"/>
                     <field name="is_favorite"/>
+                    <field name="tag_ids"/>
                     <templates>
                         <t t-name="card">
                             <div class="oe_kanban_global_click p-3 d-flex flex-column justify-content-between" style="min-height: 110px; border-radius: 8px; border-left: 5px solid #71639e;">
-                                <div class="d-flex align-items-start justify-content-between mb-2">
-                                    <div class="d-flex align-items-center gap-2">
+                                <div class="d-flex flex-column mb-2 w-100">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap w-100">
                                         <field name="is_favorite" widget="boolean_favorite" nolabel="1"/>
                                         <h5 class="o_kanban_record_title font-weight-bold mb-0 text-truncate" style="font-size: 14px;">
                                             <field name="name"/>
                                         </h5>
+                                    </div>
+                                    <!-- Tag badges under title -->
+                                    <div class="mt-1" onclick="event.stopPropagation();">
+                                        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
                                     </div>
                                 </div>
                                 <div class="d-flex align-items-center justify-content-between mt-3 w-100 flex-wrap gap-3">
@@ -105,12 +112,14 @@
                 <search string="Search Templates">
                     <field name="name" string="Template"/>
                     <field name="user_id"/>
+                    <field name="tag_ids" string="Tags"/>
                     <filter string="My Favorites" name="my_favorites" domain="[('is_favorite', '=', True)]"/>
                     <filter string="My Templates" name="my_templates" domain="[('user_id', '=', uid)]"/>
                     <separator/>
                     <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
                     <group expand="0" string="Group By">
                         <filter string="Responsible" name="responsible" context="{'group_by': 'user_id'}"/>
+                        <filter string="Tags" name="group_by_tags" context="{'group_by': 'tag_ids'}"/>
                     </group>
                 </search>
             </field>

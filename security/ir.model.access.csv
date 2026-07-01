@@ -15,5 +15,6 @@ easy_sign.access_sign_template_signer,access.sign.template.signer,easy_sign.mode
 easy_sign.access_sign_template_share,access.sign.template.share,easy_sign.model_sign_template_share,base.group_user,1,1,1,1
 easy_sign.access_sign_template_sign_now_wizard,access.sign.template.sign.now.wizard,easy_sign.model_sign_template_sign_now_wizard,base.group_user,1,1,1,1
 easy_sign.access_sign_template_sign_now_signer,access.sign.template.sign.now.signer,easy_sign.model_sign_template_sign_now_signer,base.group_user,1,1,1,1
+easy_sign.access_sign_tag,access.sign.tag,easy_sign.model_sign_tag,base.group_user,1,1,1,1
 
 

@@ -20,6 +20,7 @@ Let your customers follow the signature process easily.
         'wizard/sign_upload_pdf_wizard_views.xml',
         'wizard/sign_template_share_views.xml',
         'wizard/sign_template_sign_now_wizard_views.xml',
+        'views/sign_tag_views.xml',
         'views/sign_template_views.xml',
         'views/sign_request_views.xml',
         'views/sign_log_views.xml',

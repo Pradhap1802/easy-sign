@@ -31,6 +31,7 @@ class SignTemplate(models.Model):
     share_token = fields.Char(string="Share Link", copy=False)
     valid_until = fields.Date(string="Valid Until")
     template_signer_ids = fields.One2many('sign.template.signer', 'template_id', string="Template Signers")
+    tag_ids = fields.Many2many('sign.tag', 'sign_template_tag_rel', 'template_id', 'tag_id', string="Tags")
     # Temporary field for form view
     datas_fname = fields.Char(string="File Name")
 

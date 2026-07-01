@@ -29,6 +29,8 @@
                             <group string="Info">
                                 <field name="progress" string="Progress"/>
                                 <field name="completion_date"/>
+                                <field name="validity_date" string="Valid Until"/>
+                                <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
                             </group>
                         </group>
                         <notebook>
@@ -56,6 +58,7 @@
                 <list string="Sign Requests" js_class="sign_request_list">
                     <field name="create_date" string="Date"/>
                     <field name="reference" string="Name"/>
+                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" string="Tags"/>
                     <field name="create_uid" string="Sent by"/>
                     <field name="state" string="Status" widget="badge" decoration-success="state == 'signed'" decoration-info="state == 'sent'" decoration-danger="state == 'canceled'"/>
                     <field name="validity_date" string="Valid Until"/>
@@ -90,10 +93,30 @@
             </field>
         </record>
 
+        <record id="view_sign_request_search" model="ir.ui.view">
+            <field name="name">sign.request.search</field>
+            <field name="model">sign.request</field>
+            <field name="arch" type="xml">
+                <search string="Search Requests">
+                    <field name="reference" string="Name"/>
+                    <field name="tag_ids" string="Tags"/>
+                    <filter string="To Sign" name="to_sign" domain="[('state', '=', 'sent')]"/>
+                    <filter string="Signed" name="signed" domain="[('state', '=', 'signed')]"/>
+                    <separator/>
+                    <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                        <filter string="Tags" name="group_by_tags" context="{'group_by': 'tag_ids'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
         <record id="action_sign_request" model="ir.actions.act_window">
             <field name="name">Sign Requests</field>
             <field name="res_model">sign.request</field>
             <field name="view_mode">kanban,list,form</field>
+            <field name="search_view_id" ref="view_sign_request_search"/>
             <field name="context">{'search_default_active': 1}</field>
         </record>
     </data>

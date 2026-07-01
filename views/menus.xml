@@ -33,5 +33,13 @@
             <field name="view_mode">list,form</field>
         </record>
         <menuitem id="menu_sign_config_types" name="Field Types" parent="easy_sign.menu_sign_config" action="action_sign_item_type" sequence="20"/>
+
+        <!-- Tags window action & menu -->
+        <record id="action_sign_tag" model="ir.actions.act_window">
+            <field name="name">Tags</field>
+            <field name="res_model">sign.tag</field>
+            <field name="view_mode">list,form</field>
+        </record>
+        <menuitem id="menu_sign_config_tags" name="Tags" parent="easy_sign.menu_sign_config" action="action_sign_tag" sequence="30"/>
     </data>
 </odoo>

@@ -77,6 +77,7 @@ class SignRequest(models.Model):
     active = fields.Boolean(default=True, string="Active", copy=False)
     completion_date = fields.Date(string="Completion Date", compute="_compute_progress", compute_sudo=True)
     sign_log_ids = fields.One2many('sign.log', 'sign_request_id', string="Logs", help="Activity logs linked to this request")
+    tag_ids = fields.Many2many('sign.tag', 'sign_request_tag_rel', 'request_id', 'tag_id', string="Tags")
 
     @api.depends('state', 'signer_ids.state')
     def _compute_stats(self):
