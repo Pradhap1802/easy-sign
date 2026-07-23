@@ -9,6 +9,7 @@
                     <header>
                         <button name="go_to_edit_template" string="Edit Template" type="object" invisible="state in ('signed', 'canceled')" class="oe_highlight"/>
                         <button name="action_open_send_wizard" string="Send" type="object" invisible="state != 'sent'" class="oe_highlight"/>
+                        <button name="action_send_reminder" string="Send Reminder" type="object" invisible="state != 'sent'" class="btn-secondary"/>
                         <button name="cancel" string="Cancel" type="object" invisible="state != 'sent'" class="btn-danger"/>
                         <button name="go_to_signable_document" string="Sign Document" type="object" invisible="state != 'sent'" class="oe_highlight"/>
                         <button name="get_completed_document" string="Download Signed Document" type="object" invisible="state != 'signed'"/>

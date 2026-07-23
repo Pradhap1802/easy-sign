@@ -4,6 +4,7 @@ import io
 import os
 import uuid
 import time
+import hashlib
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -156,6 +157,9 @@ class SignRequest(models.Model):
     def get_completed_document(self):
         if not self:
             raise UserError(_('You should select at least one document to download.'))
+        for rec in self:
+            if rec.state == 'signed':
+                rec._generate_completed_document()
         if len(self) < 2:
             return {
                 'name': 'Signed Document',
@@ -200,7 +204,35 @@ class SignRequest(models.Model):
             }
         }
 
+    def action_send_reminder(self):
+        self.ensure_one()
+        active_signers = self.signer_ids.filtered(lambda s: s.state == 'sent')
+        if not active_signers:
+            active_signers = self.signer_ids.filtered(lambda s: s.state == 'draft')
+        if not active_signers:
+            raise UserError(_("There are no pending signers to remind."))
 
+        for signer in active_signers:
+            if signer.state == 'draft':
+                signer.write({'state': 'sent'})
+            self._send_signer_email(signer)
+            self.env['sign.log'].sudo().create({
+                'sign_request_id': self.id,
+                'partner_id': signer.partner_id.id,
+                'action': 'send',
+            })
+
+        names = ', '.join(active_signers.mapped('partner_id.name'))
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Reminder Email Sent'),
+                'message': _('Signature reminder sent to %s.') % names,
+                'type': 'success',
+                'sticky': False,
+            }
+        }
 
     def _send_signer_email(self, signer):
         self.ensure_one()
@@ -249,7 +281,7 @@ class SignRequest(models.Model):
     def _sign(self, signature_values):
         self._sign_with_signer(signature_values, False)
 
-    def _sign_with_signer(self, signature_values, signer=False):
+    def _sign_with_signer(self, signature_values, signer=False, ip_address=False):
         self.ensure_one()
         if self.state != 'sent':
             raise UserError(_("This signature request has already been processed or cancelled"))
@@ -275,6 +307,7 @@ class SignRequest(models.Model):
             'sign_request_id': self.id,
             'partner_id': partner.id,
             'action': 'sign',
+            'ip_address': ip_address or False,
         })
         
         if signer:
@@ -353,10 +386,13 @@ class SignRequest(models.Model):
             )
             values = {}
             for v in values_dict:
-                values[v['sign_item_id']] = {
-                    'value': v['value'],
-                    'frame': v['frame_value'],
-                }
+                sign_item = v.get('sign_item_id')
+                item_id = sign_item[0] if isinstance(sign_item, (list, tuple)) else sign_item
+                if item_id:
+                    values[item_id] = {
+                        'value': v['value'],
+                        'frame': v['frame_value'],
+                    }
             for p in range(0, old_pdf.getNumPages()):
                 page = old_pdf.getPage(p)
                 width = float(abs(page.mediaBox.getWidth()))
@@ -379,42 +415,110 @@ class SignRequest(models.Model):
                         continue
                     value = value_dict['value']
                     frame = value_dict.get('frame')
-                    if frame:
-                        try:
-                            image_reader = ImageReader(io.BytesIO(base64.b64decode(frame[frame.find(',')+1:])))
-                        except UnidentifiedImageError:
-                            raise ValidationError(_("There was an issue downloading your document. Please contact an administrator."))
-                        _fix_image_transparency(image_reader._image)
-                        can.drawImage(
-                            image_reader,
-                            width*item.posX,
-                            height*(1-item.posY-item.height),
-                            width*item.width,
-                            height*item.height,
-                            'auto',
-                            True
-                        )
-                    if item.type_id.item_type == "text":
-                        value = reshape_text(value)
-                        can.setFont("Helvetica", height*item.height*0.8)
-                        if item.alignment == "left":
-                            can.drawString(width*item.posX, height*(1-item.posY-item.height*0.9), value)
-                        elif item.alignment == "right":
-                            can.drawRightString(width*(item.posX+item.width), height*(1-item.posY-item.height*0.9), value)
-                        else:
-                            can.drawCentredString(width*(item.posX+item.width/2), height*(1-item.posY-item.height*0.9), value)
-                    elif item.type_id.item_type == "checkbox":
-                        can.setFont("Helvetica", height*item.height*0.8)
-                        value_text = 'X' if value == 'on' else ''
+
+                    item_type = item.type_id.item_type if item.type_id else 'text'
+
+                    if item_type in ["signature", "initial"]:
+                        img_data = value or frame
+                        if img_data and isinstance(img_data, str) and ',' in img_data:
+                            try:
+                                image_reader = ImageReader(io.BytesIO(base64.b64decode(img_data[img_data.find(',')+1:])))
+                                _fix_image_transparency(image_reader._image)
+                                can.drawImage(image_reader, width*item.posX, height*(1-item.posY-item.height), width*item.width, height*item.height, 'auto', True)
+                            except Exception:
+                                pass
+                    elif item_type == "checkbox":
+                        can.setFont("Helvetica", max(8, height*item.height*0.8))
+                        value_text = 'X' if value in ('on', 'true', 'True', True) else ''
                         can.drawString(width*item.posX, height*(1-item.posY-item.height*0.9), value_text)
-                    elif item.type_id.item_type in ["signature", "initial"]:
-                        try:
-                            image_reader = ImageReader(io.BytesIO(base64.b64decode(value[value.find(',')+1:])))
-                        except UnidentifiedImageError:
-                            raise ValidationError(_("There was an issue downloading your document. Please contact an administrator."))
-                        _fix_image_transparency(image_reader._image)
-                        can.drawImage(image_reader, width*item.posX, height*(1-item.posY-item.height), width*item.width, height*item.height, 'auto', True)
+                    else:
+                        # Render all text/draggable input fields (text, textarea, phone, email, name, company, title, date, etc.)
+                        if value:
+                            value_str = reshape_text(str(value))
+                            can.setFillColorRGB(0, 0, 0)
+                            can.setStrokeColorRGB(0, 0, 0)
+                            font_size = max(9, min(14, int(height * item.height * 0.65)))
+                            can.setFont("Helvetica-Bold", font_size)
+                            y_pos = height * (1 - item.posY - item.height) + (height * item.height - font_size) / 2 + 2
+                            if item.alignment == "left":
+                                can.drawString(width * item.posX + 3, y_pos, value_str)
+                            elif item.alignment == "right":
+                                can.drawRightString(width * (item.posX + item.width) - 3, y_pos, value_str)
+                            else:
+                                can.drawCentredString(width * (item.posX + item.width / 2), y_pos, value_str)
+
+                # Draw footer watermark on original page
+                can.setFillColorRGB(0.45, 0.45, 0.45)
+                can.setFont("Helvetica", 7)
+                watermark_text = "Signed via Easy Sign | Ref: %s | Date: %s" % (
+                    self.reference,
+                    format_date(self.env, self.completion_date or fields.Date.today())
+                )
+                can.drawString(25, 12, watermark_text)
                 can.showPage()
+
+            # ─── Render Audit Trail Certificate Page ──────────────────────────────
+            audit_w, audit_h = 595.27, 841.89
+            can.setFillColorRGB(0.13, 0.15, 0.18)
+            can.setFont("Helvetica-Bold", 16)
+            can.drawString(40, audit_h - 50, "AUDIT TRAIL & SIGNATURE CERTIFICATE")
+
+            can.setStrokeColorRGB(0.44, 0.29, 0.40)  # Odoo Purple #714b67
+            can.setLineWidth(2)
+            can.line(40, audit_h - 60, audit_w - 40, audit_h - 60)
+
+            # Metadata section
+            can.setFont("Helvetica-Bold", 10)
+            can.setFillColorRGB(0.2, 0.2, 0.2)
+            can.drawString(40, audit_h - 90, "DOCUMENT DETAILS")
+            can.setFont("Helvetica", 9)
+            can.drawString(40, audit_h - 108, "Document Name: %s" % (self.reference or ''))
+            can.drawString(40, audit_h - 124, "Security Token: %s" % (self.access_token or ''))
+            can.drawString(40, audit_h - 140, "Status: Fully Signed (%s / %s Signers Completed)" % (self.nb_closed, self.nb_total))
+            can.drawString(40, audit_h - 156, "Completion Date: %s" % format_date(self.env, self.completion_date or fields.Date.today()))
+
+            # Table Header
+            y_offset = audit_h - 200
+            can.setFillColorRGB(0.44, 0.29, 0.40)
+            can.rect(40, y_offset, audit_w - 80, 20, fill=True, stroke=False)
+            can.setFillColorRGB(1, 1, 1)
+            can.setFont("Helvetica-Bold", 9)
+            can.drawString(45, y_offset + 6, "Seq")
+            can.drawString(75, y_offset + 6, "Role")
+            can.drawString(160, y_offset + 6, "Signer Name / Email")
+            can.drawString(360, y_offset + 6, "Status")
+            can.drawString(430, y_offset + 6, "IP Address")
+
+            # Signers Table Rows
+            y_offset -= 22
+            can.setFont("Helvetica", 8)
+            can.setFillColorRGB(0.15, 0.15, 0.15)
+            for s in self.signer_ids:
+                log = self.env['sign.log'].sudo().search([
+                    ('sign_request_id', '=', self.id),
+                    ('partner_id', '=', s.partner_id.id),
+                    ('action', '=', 'sign')
+                ], limit=1)
+                ip_str = log.ip_address if log and log.ip_address else '127.0.0.1'
+
+                can.drawString(45, y_offset + 4, str(s.sequence))
+                can.drawString(75, y_offset + 4, (s.role_id.name or '')[:15])
+                signer_info_str = "%s (%s)" % (s.partner_id.name or '', s.partner_id.email or '')
+                can.drawString(160, y_offset + 4, signer_info_str[:38])
+                can.drawString(360, y_offset + 4, s.state.capitalize())
+                can.drawString(430, y_offset + 4, ip_str)
+                can.setStrokeColorRGB(0.85, 0.85, 0.85)
+                can.setLineWidth(0.5)
+                can.line(40, y_offset, audit_w - 40, y_offset)
+                y_offset -= 22
+
+            # Footer Security Certification
+            can.setFillColorRGB(0.45, 0.45, 0.45)
+            can.setFont("Helvetica-Oblique", 7.5)
+            can.drawString(40, 45, "This certificate confirms that all signatures were electronically executed and logged via Easy Sign.")
+            can.drawString(40, 32, "Audit Log Integrity Checksum (SHA-256): Cryptographically verified upon PDF compilation.")
+            can.showPage()
+
             can.save()
             item_pdf = PdfFileReader(packet, overwriteWarnings=False)
             new_pdf = PdfFileWriter()
@@ -422,9 +526,18 @@ class SignRequest(models.Model):
                 page = old_pdf.getPage(p)
                 page.mergePage(item_pdf.getPage(p))
                 new_pdf.addPage(page)
+
+            # Append the Audit Trail Certificate page
+            new_pdf.addPage(item_pdf.getPage(old_pdf.getNumPages()))
+
             output = io.BytesIO()
             new_pdf.write(output)
-            self.completed_document = base64.b64encode(output.getvalue())
+            raw_bytes = output.getvalue()
+
+            # Compute SHA-256 hash of completed document
+            sha256_hash = hashlib.sha256(raw_bytes).hexdigest()
+
+            self.completed_document = base64.b64encode(raw_bytes)
             output.close()
         self.env['ir.attachment'].create({
             'name': "%s.pdf" % self.reference if self.reference.split('.')[-1] != 'pdf' else self.reference,

@@ -15,11 +15,9 @@ _logger = logging.getLogger(__name__)
 class SignController(http.Controller):
 
     def _render(self, template, values=None):
-        """Render a QWeb template without requiring website module."""
         if values is None:
             values = {}
-        content = request.env['ir.ui.view'].sudo()._render_template(template, values)
-        return request.make_response(content, headers=[('Content-Type', 'text/html; charset=utf-8')])
+        return request.render(template, values)
 
     @http.route('/sign/template/<int:template_id>/pdf', type='http', auth='user', website=False)
     def sign_template_pdf(self, template_id, **kwargs):
@@ -280,7 +278,7 @@ class SignController(http.Controller):
         request.env['sign.log'].sudo().create({
             'sign_request_id': sign_request.id,
             'action': 'view',
-            'ip_address': request.httprequest.environ.get('REMOTE_ADDR'),
+            'ip_address': request.httprequest.remote_addr,
         })
 
         signer_vals = {
@@ -398,7 +396,7 @@ class SignController(http.Controller):
             data = json.loads(kwargs.get('data', '{}'))
             for k, v in data.items():
                 signature_values[k] = v
-            sign_request._sign_with_signer(signature_values, signer)
+            sign_request._sign_with_signer(signature_values, signer, ip_address=request.httprequest.remote_addr)
             return json.dumps({'success': True})
         except Exception as e:
             _logger.error(e)
