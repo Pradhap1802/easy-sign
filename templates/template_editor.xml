@@ -819,6 +819,44 @@
                     align-items: center;
                     cursor: default;
                 }
+
+                /* CONFIG MODAL STYLES */
+                .es-config-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                .es-tabs-header {
+                    display: flex;
+                    border-bottom: 1px solid rgba(255,255,255,0.08);
+                    margin-bottom: 15px;
+                    gap: 20px;
+                }
+                .es-tab-btn {
+                    background: transparent;
+                    border: none;
+                    color: #94a3b8;
+                    padding: 8px 4px;
+                    font-size: 13px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    border-bottom: 2px solid transparent;
+                    transition: all 0.15s;
+                }
+                .es-tab-btn:hover {
+                    color: #cbd5e1;
+                }
+                .es-tab-btn.active {
+                    color: #71639e;
+                    border-bottom-color: #71639e;
+                }
+                .es-tab-content {
+                    display: none;
+                }
+                .es-tab-content.active {
+                    display: block;
+                }
             </style>
 
             <!-- HEADER -->
@@ -845,7 +883,7 @@
                             <span class="es-template-name-title" id="es-template-name">
                                 <t t-esc="template.name"/>
                             </span>
-                            <button class="es-template-gear-btn" title="Template Settings">&#9881;</button>
+                            <button class="es-template-gear-btn" title="Template Settings" onclick="openConfigModal(event)">&#9881;</button>
                             <span class="es-cloud-save-status" id="es-save-status" title="Saved to cloud">
                                 <span id="es-save-text">Saved</span>
                             </span>
@@ -1042,6 +1080,100 @@
                 </div>
             </div>
 
+            <!-- CONFIGURATION MODAL -->
+            <div class="es-modal-overlay" id="es-config-modal">
+                <div class="es-modal" style="width: 720px; max-width: 95vw;">
+                    <div class="es-modal-title" style="justify-content: space-between; width: 100%; display: flex; align-items: center;">
+                        <span style="display: inline-flex; align-items: center; gap: 10px;">
+                            <div class="es-modal-icon" style="background: linear-gradient(135deg, #71639e, #5c5082);">&#9881;</div>
+                            Template Configuration
+                        </span>
+                        <button type="button" class="close" onclick="closeConfigModal()" style="background:transparent; border:none; color:#94a3b8; font-size:24px; cursor:pointer; line-height:1; padding:0;">&#215;</button>
+                    </div>
+                    <div class="es-modal-body">
+                        <!-- Settings Grid -->
+                        <div class="es-config-grid">
+                            <!-- Left Column -->
+                            <div>
+                                <div class="es-form-group">
+                                    <label class="es-label">Available in</label>
+                                    <select class="es-select" id="es-config-available">
+                                        <option value="all">All apps</option>
+                                        <option value="sign">Sign only</option>
+                                    </select>
+                                </div>
+                                <div class="es-form-group">
+                                    <label class="es-label">Authorized Users</label>
+                                    <select class="es-select" id="es-config-auth-method">
+                                        <option value="anyone">Anyone</option>
+                                        <option value="extra">Extra Security</option>
+                                    </select>
+                                </div>
+                                <div class="es-form-group">
+                                    <label class="es-label">Owner</label>
+                                    <select class="es-select" id="es-config-owner">
+                                        <!-- filled by JS -->
+                                    </select>
+                                </div>
+                                <div class="es-form-group">
+                                    <label class="es-label">CC</label>
+                                    <input class="es-input" id="es-config-cc" type="text" placeholder="comma-separated emails..."/>
+                                </div>
+                            </div>
+                            <!-- Right Column -->
+                            <div>
+                                <div class="es-form-group">
+                                    <label class="es-label">Valid for</label>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <input class="es-input" id="es-config-validity-days" type="number" min="0" style="flex: 1;"/>
+                                        <span style="font-size: 13px; color: #94a3b8;">days</span>
+                                    </div>
+                                </div>
+                                <div class="es-form-group">
+                                    <label class="es-label">Tags</label>
+                                    <div id="es-config-tags-list" style="display: flex; gap: 4px; flex-wrap: wrap; padding: 6px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; min-height: 38px; align-items: center;">
+                                        <!-- filled dynamically -->
+                                    </div>
+                                </div>
+                                <div class="es-form-group">
+                                    <label class="es-label">Documents folder</label>
+                                    <input class="es-input" id="es-config-folder" type="text" placeholder="e.g. Inbox" value="Inbox" disabled="disabled"/>
+                                </div>
+                                <div class="es-form-group">
+                                    <label class="es-label">Redirect Link</label>
+                                    <input class="es-input" id="es-config-redirect" type="text" placeholder="https://example.com/thanks"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Options -->
+                        <div>
+                            <div class="es-tabs-header">
+                                <button class="es-tab-btn active" id="btn-tab-comm" onclick="switchConfigTab('comm')">Communication</button>
+                                <button class="es-tab-btn" id="btn-tab-signers" onclick="switchConfigTab('signers')">Signers</button>
+                            </div>
+                            <!-- Communication Tab -->
+                            <div class="es-tab-content active" id="tab-content-comm">
+                                <div class="es-form-group">
+                                    <label class="es-label">Default message sent to recipients</label>
+                                    <textarea class="es-input" id="es-config-default-message" rows="3" placeholder="Write a default message..." style="resize: vertical; font-family: inherit;"></textarea>
+                                </div>
+                            </div>
+                            <!-- Signers Tab -->
+                            <div class="es-tab-content" id="tab-content-signers">
+                                <div class="es-modal-preview-signers" id="es-config-signers-list" style="max-height: 120px;">
+                                    <!-- filled dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="es-modal-footer">
+                        <button class="es-btn es-btn-ghost" onclick="closeConfigModal()">Cancel</button>
+                        <button class="es-btn es-btn-primary-odoo" onclick="saveConfigModal()">Save Configuration</button>
+                    </div>
+                </div>
+            </div>
+
             <script>
 <![CDATA[
 (function() {
@@ -1059,6 +1191,8 @@ const PDF_B64 = ]]><t t-out="pdf_b64_json"/><![CDATA[;
 const TEMPLATE_SIGNERS = ]]><t t-out="template_signers_json"/><![CDATA[;
 const ALL_TAGS = ]]><t t-out="all_tags_json"/><![CDATA[;
 let selectedTagIds = ]]><t t-out="template_tag_ids_json"/><![CDATA[;
+const USERS = ]]><t t-out="users_json"/><![CDATA[;
+let templateConfig = ]]><t t-out="template_config_json"/><![CDATA[;
 
 /* ========================================================
    ODOO COLOR PALETTE (matches Odoo many2many_tags colors)
@@ -1195,6 +1329,164 @@ function saveTemplateTags() {
         console.error('Tag save error:', err);
     });
 }
+
+/* ========================================================
+   TEMPLATE CONFIGURATION MODAL
+   ======================================================== */
+function openConfigModal(e) {
+    if (e) e.stopPropagation();
+    
+    // Set field values from state
+    const authMethodEl = document.getElementById('es-config-auth-method');
+    if (authMethodEl) authMethodEl.value = templateConfig.auth_method;
+    
+    const validityDaysEl = document.getElementById('es-config-validity-days');
+    if (validityDaysEl) validityDaysEl.value = templateConfig.validity_days;
+    
+    const ccEl = document.getElementById('es-config-cc');
+    if (ccEl) ccEl.value = templateConfig.cc_emails;
+    
+    const redirectEl = document.getElementById('es-config-redirect');
+    if (redirectEl) redirectEl.value = templateConfig.redirect_url;
+    
+    const defaultMsgEl = document.getElementById('es-config-default-message');
+    if (defaultMsgEl) defaultMsgEl.value = templateConfig.default_message;
+
+    // Fill Owner dropdown
+    const ownerEl = document.getElementById('es-config-owner');
+    if (ownerEl) {
+        ownerEl.innerHTML = USERS.map(function(u) {
+            const selected = (u.id === templateConfig.user_id) ? ' selected="selected"' : '';
+            return '<option value="' + u.id + '"' + selected + '>' + u.name + '</option>';
+        }).join('');
+    }
+
+    // Fill Tags list (read-only color-coded labels matching current selections)
+    const tagsListEl = document.getElementById('es-config-tags-list');
+    if (tagsListEl) {
+        tagsListEl.innerHTML = '';
+        if (selectedTagIds.length === 0) {
+            tagsListEl.innerHTML = '<span style="font-size:12px;color:#64748b;padding:0 6px;">No tags selected</span>';
+        } else {
+            selectedTagIds.forEach(function(tagId) {
+                const tag = ALL_TAGS.find(function(t) { return t.id === tagId; });
+                if (!tag) return;
+                const badge = document.createElement('span');
+                const bg = odooColor(tag.color);
+                badge.style.cssText = 'display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;color:#fff;background:' + bg + ';';
+                badge.textContent = tag.name;
+                tagsListEl.appendChild(badge);
+            });
+        }
+    }
+
+    // Fill Signers tab list (collect from sidebar rows)
+    const signersListEl = document.getElementById('es-config-signers-list');
+    if (signersListEl) {
+        signersListEl.innerHTML = '';
+        const signers = collectSigners();
+        if (signers.length === 0) {
+            signersListEl.innerHTML = '<div style="font-size:12px;color:#64748b;">No signers configured in sidebar yet.</div>';
+        } else {
+            signersListEl.innerHTML = signers.map(function(s) {
+                const role = getRoleById(s.role_id);
+                const roleName = role ? role.name : ('Signer');
+                return '<div class="es-modal-signer-item">' +
+                    '<span>&#9997;</span>' +
+                    '<strong>' + (s.name || s.email) + '</strong>' +
+                    '<span style="color:#64748b;margin-left:4px;">(' + roleName + ')</span>' +
+                    '<span style="color:#475569;margin-left:8px;">&lt;' + s.email + '&gt;</span>' +
+                '</div>';
+            }).join('');
+        }
+    }
+
+    // Default to Communication tab
+    switchConfigTab('comm');
+
+    // Open Modal
+    const modal = document.getElementById('es-config-modal');
+    if (modal) modal.classList.add('open');
+}
+window.openConfigModal = openConfigModal;
+
+function closeConfigModal() {
+    const modal = document.getElementById('es-config-modal');
+    if (modal) modal.classList.remove('open');
+}
+window.closeConfigModal = closeConfigModal;
+
+function switchConfigTab(tabName) {
+    // Buttons
+    const btnComm = document.getElementById('btn-tab-comm');
+    const btnSigners = document.getElementById('btn-tab-signers');
+    // Content
+    const tabComm = document.getElementById('tab-content-comm');
+    const tabSigners = document.getElementById('tab-content-signers');
+    
+    if (tabName === 'comm') {
+        if (btnComm) btnComm.classList.add('active');
+        if (btnSigners) btnSigners.classList.remove('active');
+        if (tabComm) tabComm.style.display = 'block';
+        if (tabSigners) tabSigners.style.display = 'none';
+    } else {
+        if (btnComm) btnComm.classList.remove('active');
+        if (btnSigners) btnSigners.classList.add('active');
+        if (tabComm) tabComm.style.display = 'none';
+        if (tabSigners) tabSigners.style.display = 'block';
+    }
+}
+window.switchConfigTab = switchConfigTab;
+
+function saveConfigModal() {
+    const authMethod = document.getElementById('es-config-auth-method').value;
+    const validityDays = parseInt(document.getElementById('es-config-validity-days').value || '0', 10);
+    const ccEmails = document.getElementById('es-config-cc').value.trim();
+    const redirectUrl = document.getElementById('es-config-redirect').value.trim();
+    const defaultMsg = document.getElementById('es-config-default-message').value.trim();
+    const ownerId = document.getElementById('es-config-owner').value;
+
+    const payload = {
+        auth_method: authMethod,
+        validity_days: validityDays,
+        cc_emails: ccEmails,
+        redirect_url: redirectUrl,
+        default_message: defaultMsg,
+        user_id: ownerId ? parseInt(ownerId, 10) : false
+    };
+
+    fetch('/sign/template/' + TEMPLATE_ID + '/save_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            jsonrpc: '2.0',
+            method: 'call',
+            params: { vals: payload }
+        })
+    }).then(function(r) { return r.json(); }).then(function(result) {
+        if (result.result) {
+            // Update local state
+            templateConfig.auth_method = payload.auth_method;
+            templateConfig.validity_days = payload.validity_days;
+            templateConfig.cc_emails = payload.cc_emails;
+            templateConfig.redirect_url = payload.redirect_url;
+            templateConfig.default_message = payload.default_message;
+            templateConfig.user_id = payload.user_id;
+            
+            const ownerObj = USERS.find(function(u) { return u.id === payload.user_id; });
+            templateConfig.user_name = ownerObj ? ownerObj.name : '';
+
+            showToast('Configuration saved successfully!', 'success');
+            closeConfigModal();
+        } else {
+            showToast('Failed to save configuration', 'error');
+        }
+    }).catch(function(err) {
+        console.error('Config save error:', err);
+        showToast('Error saving configuration', 'error');
+    });
+}
+window.saveConfigModal = saveConfigModal;
 
 // Initialize on page load
 if (document.readyState === 'loading') {

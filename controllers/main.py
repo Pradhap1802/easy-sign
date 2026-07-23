@@ -13,6 +13,14 @@ _logger = logging.getLogger(__name__)
 
 
 class SignController(http.Controller):
+
+    def _render(self, template, values=None):
+        """Render a QWeb template without requiring website module."""
+        if values is None:
+            values = {}
+        content = request.env['ir.ui.view'].sudo()._render_template(template, values)
+        return request.make_response(content, headers=[('Content-Type', 'text/html; charset=utf-8')])
+
     @http.route('/sign/template/<int:template_id>/pdf', type='http', auth='user', website=False)
     def sign_template_pdf(self, template_id, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
@@ -32,7 +40,7 @@ class SignController(http.Controller):
             ]
         )
 
-    @http.route('/sign/template/<int:template_id>/edit', type='http', auth='user', website=True)
+    @http.route('/sign/template/<int:template_id>/edit', type='http', auth='user')
     def sign_template_edit(self, template_id, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
         if not template:
@@ -54,13 +62,26 @@ class SignController(http.Controller):
         all_tags = request.env['sign.tag'].sudo().search_read([], ['id', 'name', 'color'])
         template_tag_ids = template.tag_ids.ids
 
+        # Load active users for selection
+        users = request.env['res.users'].sudo().search_read([('active', '=', True)], ['id', 'name'])
+
+        config_json = {
+            'auth_method': template.auth_method or 'anyone',
+            'validity_days': template.validity_days or 60,
+            'cc_emails': template.cc_emails or '',
+            'redirect_url': template.redirect_url or '',
+            'default_message': template.default_message or '',
+            'user_id': template.user_id.id if template.user_id else False,
+            'user_name': template.user_id.name if template.user_id else '',
+        }
+
         # Pass PDF data as base64 string directly
         raw_datas = template.sudo().datas
         if raw_datas:
             pdf_b64_str = raw_datas.decode('utf-8') if isinstance(raw_datas, bytes) else str(raw_datas)
         else:
             pdf_b64_str = ''
-        return request.render('easy_sign.template_editor', {
+        return self._render('easy_sign.template_editor', {
             'template': template,
             'sign_item_types': sign_item_types,
             'sign_roles': sign_roles,
@@ -73,6 +94,8 @@ class SignController(http.Controller):
             'pdf_b64_json':         Markup(json.dumps(pdf_b64_str)),
             'all_tags_json':        Markup(json.dumps(all_tags)),
             'template_tag_ids_json': Markup(json.dumps(template_tag_ids)),
+            'template_config_json':  Markup(json.dumps(config_json)),
+            'users_json':            Markup(json.dumps(users)),
         })
 
     @http.route('/sign/template/<int:template_id>/items', type='json', auth='user')
@@ -124,6 +147,18 @@ class SignController(http.Controller):
         if tag_ids is None:
             tag_ids = []
         template.write({'tag_ids': [(6, 0, tag_ids)]})
+        return True
+
+    @http.route('/sign/template/<int:template_id>/save_config', type='json', auth='user')
+    def save_template_config(self, template_id, vals=None, **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template or not vals:
+            return False
+        allowed_fields = ['auth_method', 'validity_days', 'cc_emails', 'redirect_url', 'default_message', 'user_id']
+        write_vals = {k: v for k, v in vals.items() if k in allowed_fields}
+        if 'user_id' in write_vals and write_vals['user_id'] is not False:
+            write_vals['user_id'] = int(write_vals['user_id']) if write_vals['user_id'] else False
+        template.sudo().write(write_vals)
         return True
 
     @http.route('/sign/role/get_or_create', type='json', auth='user')
@@ -182,20 +217,31 @@ class SignController(http.Controller):
             'url': '/odoo/sign-requests/%d' % sign_request.id,
         }
 
-    @http.route('/sign/document/<int:request_id>/<access_token>', type='http', auth='public', website=True)
+    @http.route('/sign/document/<int:request_id>/<access_token>', type='http', auth='public')
     def sign_document_public(self, request_id, access_token, **kwargs):
         signer = request.env['sign.request.signer'].sudo().search([
             ('access_token', '=', access_token),
             ('sign_request_id', '=', request_id)
         ], limit=1)
-        
+
         if signer:
             sign_request = signer.sign_request_id
-            if signer.state == 'signed' or sign_request.state != 'sent':
-                return request.render('easy_sign.sign_already_signed', {})
+            # Signer already signed
+            if signer.state == 'signed':
+                return self._render('easy_sign.sign_already_signed', {})
+            # Overall request is no longer open
+            if sign_request.state != 'sent':
+                return self._render('easy_sign.sign_already_signed', {})
+            # Signer is draft = not yet their turn in the sequence
+            if signer.state == 'draft':
+                return self._render('easy_sign.sign_not_yet_turn', {
+                    'sign_request': sign_request,
+                    'signer': signer,
+                })
             partner = signer.partner_id
             current_role_id = signer.role_id.id
         else:
+            # Fallback: match against request-level access_token (single signer / no signer flow)
             sign_request = request.env['sign.request'].sudo().search([
                 ('access_token', '=', access_token),
                 ('id', '=', request_id)
@@ -203,8 +249,8 @@ class SignController(http.Controller):
             if not sign_request:
                 return request.not_found()
             if sign_request.state != 'sent':
-                return request.render('easy_sign.sign_already_signed', {})
-            
+                return self._render('easy_sign.sign_already_signed', {})
+
             partner = None
             if not request.env.user._is_public():
                 partner = request.env.user.partner_id
@@ -216,6 +262,20 @@ class SignController(http.Controller):
                 if last_log and last_log.partner_id:
                     partner = last_log.partner_id
             current_role_id = 0
+
+        from odoo.fields import Date
+        if sign_request.state == 'expired' or (sign_request.validity_date and sign_request.validity_date < Date.today()):
+            if sign_request.state != 'expired':
+                sign_request.write({'state': 'expired'})
+                request.env['sign.log'].sudo().create({
+                    'sign_request_id': sign_request.id,
+                    'action': 'expire',
+                    'partner_id': False,
+                    'user_id': False,
+                })
+            return self._render('easy_sign.sign_request_expired_template', {
+                'validity_date': sign_request.validity_date.strftime('%Y-%m-%d') if sign_request.validity_date else ''
+            })
 
         request.env['sign.log'].sudo().create({
             'sign_request_id': sign_request.id,
@@ -298,7 +358,7 @@ class SignController(http.Controller):
             'signers': signers_list,
             'show_back_button': show_back_button,
         }
-        return request.render('easy_sign.sign_page', values)
+        return self._render('easy_sign.sign_page', values)
 
     @http.route('/sign/submit/<int:request_id>/<access_token>', type='http', auth='public', csrf=False, methods=['POST'])
     def sign_submit(self, request_id, access_token, **kwargs):
@@ -318,6 +378,18 @@ class SignController(http.Controller):
 
         if not sign_request or sign_request.state != 'sent':
             return json.dumps({'success': False})
+
+        from odoo.fields import Date
+        if sign_request.state == 'expired' or (sign_request.validity_date and sign_request.validity_date < Date.today()):
+            if sign_request.state != 'expired':
+                sign_request.write({'state': 'expired'})
+                request.env['sign.log'].sudo().create({
+                    'sign_request_id': sign_request.id,
+                    'action': 'expire',
+                    'partner_id': False,
+                    'user_id': False,
+                })
+            return json.dumps({'success': False, 'error': 'This signature request has expired.'})
         try:
             signature_values = {}
             data = json.loads(kwargs.get('data', '{}'))
@@ -383,7 +455,7 @@ class SignController(http.Controller):
         })
         return {'success': True}
 
-    @http.route('/sign/share/<int:template_id>/<share_token>', type='http', auth='public', website=True)
+    @http.route('/sign/share/<int:template_id>/<share_token>', type='http', auth='public')
     def share_template_page(self, template_id, share_token, **kwargs):
         template = request.env['sign.template'].sudo().search([
             ('id', '=', template_id),
@@ -394,19 +466,19 @@ class SignController(http.Controller):
             
         from odoo.fields import Date
         if template.valid_until and template.valid_until < Date.today():
-            return request.render('easy_sign.sign_expired_template', {'template': template})
+            return self._render('easy_sign.sign_expired_template', {'template': template})
             
         roles = template.sign_item_ids.mapped('responsible_id')
         if not roles:
             default_role = request.env['sign.item.role'].sudo().search([('name', '=', 'Signer 1')], limit=1)
             roles = default_role
             
-        return request.render('easy_sign.sign_share_template', {
+        return self._render('easy_sign.sign_share_template', {
             'template': template,
             'roles': roles,
         })
 
-    @http.route('/sign/share/<int:template_id>/<share_token>/submit', type='http', auth='public', methods=['POST'], website=True, csrf=True)
+    @http.route('/sign/share/<int:template_id>/<share_token>/submit', type='http', auth='public', methods=['POST'], csrf=False)
     def share_template_submit(self, template_id, share_token, **kwargs):
         template = request.env['sign.template'].sudo().search([
             ('id', '=', template_id),
@@ -417,7 +489,7 @@ class SignController(http.Controller):
             
         from odoo.fields import Date
         if template.valid_until and template.valid_until < Date.today():
-            return request.render('easy_sign.sign_expired_template', {'template': template})
+            return self._render('easy_sign.sign_expired_template', {'template': template})
             
         roles = template.sign_item_ids.mapped('responsible_id')
         if not roles:

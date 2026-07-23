@@ -32,6 +32,15 @@ class SignTemplate(models.Model):
     valid_until = fields.Date(string="Valid Until")
     template_signer_ids = fields.One2many('sign.template.signer', 'template_id', string="Template Signers")
     tag_ids = fields.Many2many('sign.tag', 'sign_template_tag_rel', 'template_id', 'tag_id', string="Tags")
+    # New fields matching Odoo Enterprise Sign configuration
+    auth_method = fields.Selection([
+        ('anyone', 'Anyone'),
+        ('extra', 'Extra Security'),
+    ], string="Authorized Users", default='anyone')
+    validity_days = fields.Integer(string="Valid for", default=60)
+    cc_emails = fields.Char(string="CC")
+    redirect_url = fields.Char(string="Redirect Link")
+    default_message = fields.Text(string="Default Message")
     # Temporary field for form view
     datas_fname = fields.Char(string="File Name")
 

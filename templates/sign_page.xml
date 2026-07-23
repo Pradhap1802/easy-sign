@@ -1356,6 +1356,60 @@
         </t>
     </template>
 
+    <template id="sign_not_yet_turn" name="Not Yet Your Turn">
+        <t>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f0f2f5;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 80px auto;
+                    background-color: white;
+                    padding: 48px 40px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+                    text-align: center;
+                }
+                .icon { font-size: 56px; margin-bottom: 16px; }
+                h1 { color: #2d3748; font-size: 24px; margin-bottom: 12px; }
+                p  { color: #718096; font-size: 15px; line-height: 1.6; }
+                .doc-name {
+                    display: inline-block;
+                    background: #edf2ff;
+                    color: #3b5bdb;
+                    border-radius: 6px;
+                    padding: 4px 12px;
+                    font-weight: 600;
+                    margin-top: 8px;
+                }
+                .note {
+                    margin-top: 24px;
+                    padding: 12px 16px;
+                    background: #fffbeb;
+                    border-left: 4px solid #f59e0b;
+                    border-radius: 4px;
+                    font-size: 13px;
+                    color: #78350f;
+                    text-align: left;
+                }
+            </style>
+            <div class="container">
+                <div class="icon">&#9203;</div>
+                <h1>Not Your Turn Yet</h1>
+                <p>You have been invited to sign:</p>
+                <span class="doc-name" t-esc="sign_request.reference"/>
+                <p style="margin-top:16px;">Please wait — a previous signer must complete their signature before you can proceed. You will receive an email notification when it is your turn.</p>
+                <div class="note">
+                    &#9432;&#160; <strong>Tip:</strong> You can safely close this page. We will send you a fresh link when it is your turn to sign.
+                </div>
+            </div>
+        </t>
+    </template>
+
     <template id="sign_pdf_iframe_templates">
     </template>
 
@@ -1585,6 +1639,90 @@
                         <div class="icon">&#9888;</div>
                         <h1>Link Expired</h1>
                         <p>This document template is no longer eligible to be signed because the expiration date (<t t-esc="template.valid_until"/>) has been reached.</p>
+                        <a href="/" class="btn-home">Go to Homepage</a>
+                    </div>
+                </body>
+            </html>
+        </t>
+    </template>
+
+    <template id="sign_request_expired_template" name="Signature Request Expired">
+        <t>
+            &lt;!DOCTYPE html&gt;
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Request Expired</title>
+                    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"/>
+                    <style>
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            background: #0f172a;
+                            color: #f1f5f9;
+                            margin: 0;
+                            padding: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                        }
+                        .container {
+                            background: #1e293b;
+                            border: 1px solid #334155;
+                            border-radius: 16px;
+                            padding: 40px;
+                            width: 100%;
+                            max-width: 480px;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                            text-align: center;
+                            box-sizing: border-box;
+                        }
+                        .icon {
+                            width: 56px;
+                            height: 56px;
+                            background: rgba(239, 68, 68, 0.1);
+                            color: #ef4444;
+                            border-radius: 50%;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 28px;
+                            margin-bottom: 20px;
+                        }
+                        h1 {
+                            font-size: 22px;
+                            font-weight: 700;
+                            margin: 0 0 10px 0;
+                            color: #ffffff;
+                        }
+                        p {
+                            font-size: 14px;
+                            color: #94a3b8;
+                            line-height: 1.5;
+                            margin: 0 0 24px 0;
+                        }
+                        .btn-home {
+                            display: inline-block;
+                            padding: 10px 20px;
+                            background: #334155;
+                            color: #f1f5f9;
+                            text-decoration: none;
+                            border-radius: 8px;
+                            font-size: 13px;
+                            font-weight: 600;
+                            transition: background 0.15s;
+                        }
+                        .btn-home:hover {
+                            background: #475569;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">&#9888;</div>
+                        <h1>Request Expired</h1>
+                        <p>This signature request has expired on <t t-esc="validity_date"/> and can no longer be signed.</p>
                         <a href="/" class="btn-home">Go to Homepage</a>
                     </div>
                 </body>

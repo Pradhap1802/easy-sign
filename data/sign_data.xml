@@ -128,5 +128,16 @@
             <field name="default" eval="False"/>
             <field name="sequence">10</field>
         </record>
+
+        <!-- Cron to automatically check and cancel/expire invalid/expired signature requests daily -->
+        <record id="ir_cron_check_expired_signature_requests" model="ir.cron">
+            <field name="name">Sign: Check Expired Signature Requests</field>
+            <field name="model_id" ref="model_sign_request"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_check_expired()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
     </data>
 </odoo>

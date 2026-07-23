@@ -140,10 +140,16 @@ class SignRequest(models.Model):
 
     def go_to_signable_document(self):
         self.ensure_one()
+        # Use the first active (sent) signer's token so the route matches sign.request.signer
+        active_signer = self.signer_ids.filtered(lambda s: s.state == 'sent')
+        if active_signer:
+            token = active_signer[0].access_token
+        else:
+            token = self.access_token
         return {
             'name': self.reference,
             'type': 'ir.actions.act_url',
-            'url': '/sign/document/%d/%s' % (self.id, self.access_token),
+            'url': '/sign/document/%d/%s' % (self.id, token),
             'target': 'self',
         }
 
@@ -408,6 +414,23 @@ class SignRequest(models.Model):
             'res_model': self._name,
             'res_id': self.id,
         })
+
+    @api.model
+    def _cron_check_expired(self):
+        today = fields.Date.today()
+        expired_requests = self.search([
+            ('state', '=', 'sent'),
+            ('validity_date', '<', today)
+        ])
+        for req in expired_requests:
+            req.write({'state': 'expired'})
+            self.env['sign.log'].sudo().create({
+                'sign_request_id': req.id,
+                'action': 'expire',
+                'partner_id': False,
+                'user_id': False,
+            })
+
 
 
 class SignRequestSigner(models.Model):
