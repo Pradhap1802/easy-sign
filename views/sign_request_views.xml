@@ -7,7 +7,7 @@
             <field name="arch" type="xml">
                 <form string="Sign Request">
                     <header>
-                        <button name="go_to_edit_template" string="Edit Template" type="object" class="oe_highlight"/>
+                        <button name="go_to_edit_template" string="Edit Template" type="object" invisible="state in ('signed', 'canceled')" class="oe_highlight"/>
                         <button name="action_open_send_wizard" string="Send" type="object" invisible="state != 'sent'" class="oe_highlight"/>
                         <button name="cancel" string="Cancel" type="object" invisible="state != 'sent'" class="btn-danger"/>
                         <button name="go_to_signable_document" string="Sign Document" type="object" invisible="state != 'sent'" class="oe_highlight"/>
@@ -75,7 +75,7 @@
                 <kanban string="Sign Requests" class="o_kanban_mobile" js_class="sign_request_kanban">
                     <field name="state"/>
                     <templates>
-                        <t t-name="kanban-box">
+                        <t t-name="card">
                             <div t-attf-class="oe_kanban_global_click">
                                 <div class="oe_kanban_content">
                                     <strong><field name="reference"/></strong>

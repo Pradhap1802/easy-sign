@@ -165,6 +165,8 @@ class SignRequest(models.Model):
 
     def go_to_edit_template(self):
         self.ensure_one()
+        if self.state in ('signed', 'canceled'):
+            raise UserError(_('You cannot edit the template of a signed or cancelled document.'))
         if not self.template_id:
             raise UserError(_('Please upload a document or select a template first.'))
         return self.template_id.go_to_custom_template()
