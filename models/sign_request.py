@@ -235,8 +235,14 @@ class SignRequest(models.Model):
             next_signer.write({'state': 'sent'})
             self._send_signer_email(next_signer)
         else:
-            self.write({'state': 'signed'})
-            self._generate_completed_document()
+            sent_unsigned = self.signer_ids.filtered(lambda s: s.state == 'sent')
+            if sent_unsigned:
+                next_signer = sorted(sent_unsigned, key=lambda s: s.sequence)[0]
+                self._send_signer_email(next_signer)
+            elif all(s.state == 'signed' for s in self.signer_ids) or not self.signer_ids:
+                self.write({'state': 'signed'})
+                self._generate_completed_document()
+
 
     def _sign(self, signature_values):
         self._sign_with_signer(signature_values, False)
@@ -284,10 +290,20 @@ class SignRequest(models.Model):
 
     def _message_send_mail(self, body, template_xmlid, record_name, model_description, email_values, **kwargs):
         self.ensure_one()
+        email_from = email_values.get('email_from')
+        if not email_from:
+            company = self.env.company
+            email_from = company.email_formatted or self.create_uid.email_formatted or self.env.user.email_formatted
+            if not email_from and company.email:
+                email_from = tools.formataddr((company.name, company.email))
+            if not email_from:
+                email_from = self.env['ir.config_parameter'].sudo().get_param('mail.default.from')
+
         mail_values = {
             'subject': email_values.get('subject', _('Signature Request')),
             'body_html': body,
             'email_to': email_values.get('email_to', ''),
+            'email_from': email_from,
             'res_id': self.id,
             'model': self._name,
         }
@@ -297,6 +313,7 @@ class SignRequest(models.Model):
         if kwargs.get('force_send'):
             mail.send()
         return mail
+
 
     @staticmethod
     def get_page_size(pdf_reader):

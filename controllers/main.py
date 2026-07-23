@@ -333,17 +333,20 @@ class SignController(http.Controller):
         )
         item_values = {}
         for v in values_dict:
-            item_values[v['sign_item_id']] = {
-                'value': v['value'],
-                'frame': v['frame_value'],
-            }
+            sign_item = v.get('sign_item_id')
+            item_id = sign_item[0] if isinstance(sign_item, (list, tuple)) else sign_item
+            if item_id:
+                item_values[item_id] = {
+                    'value': v['value'],
+                    'frame': v['frame_value'],
+                }
 
         signers_list = []
         for s in sign_request.signer_ids:
             signers_list.append({
-                'name': s.partner_id.name,
+                'name': s.partner_id.name if s.partner_id else '',
                 'state': s.state,
-                'role_name': s.role_id.name,
+                'role_name': s.role_id.name if s.role_id else '',
             })
 
         show_back_button = not request.env.user._is_public() and not request.env.user.share

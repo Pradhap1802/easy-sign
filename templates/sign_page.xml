@@ -458,6 +458,52 @@
                             </span>
                         </div>
                     </t>
+                    <!-- Top Fill-In Button -->
+                    <button id="es-top-fill-btn"
+                        onclick="fillAllFields()"
+                        style="
+                            display: none;
+                            align-items: center;
+                            gap: 8px;
+                            background: linear-gradient(135deg, #714b67 0%, #52314a 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 8px 18px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            letter-spacing: 0.5px;
+                            box-shadow: 0 2px 8px rgba(113,75,103,0.4);
+                            transition: background 0.2s, box-shadow 0.2s;
+                        "
+                        onmouseover="this.style.background='linear-gradient(135deg,#52314a 0%,#3a2234 100%)'"
+                        onmouseout="this.style.background='linear-gradient(135deg,#714b67 0%,#52314a 100%)'">
+                        <span style="font-size:15px;">&#9998;</span> Fill In
+                    </button>
+                    <!-- Start Signing / Next Field button -->
+                    <button id="es-top-next-btn"
+                        onclick="topNextClick()"
+                        style="
+                            display: none;
+                            align-items: center;
+                            gap: 8px;
+                            background: linear-gradient(135deg, #00a09d 0%, #007a78 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 8px 18px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            letter-spacing: 0.5px;
+                            box-shadow: 0 2px 8px rgba(0,160,157,0.35);
+                            transition: background 0.2s;
+                        "
+                        onmouseover="this.style.background='linear-gradient(135deg,#007a78 0%,#005756 100%)'"
+                        onmouseout="this.style.background='linear-gradient(135deg,#00a09d 0%,#007a78 100%)'">
+                        <span style="font-size:15px;">&#9654;</span> <span id="es-top-next-label">Start Signing</span>
+                    </button>
                 </div>
             </div>
             <div class="container">
@@ -1084,68 +1130,75 @@
                 }
             }
 
+            // Map any field to the signer's actual data from Odoo
+            function getSignerValueForField(meta) {
+                const name = (meta.name || '').toLowerCase();
+                const ph   = (meta.placeholder || '').toLowerCase();
+                const combined = name + ' ' + ph;
+
+                if (combined.includes('date')) {
+                    const d = new Date();
+                    return String(d.getDate()).padStart(2,'0') + '/'
+                         + String(d.getMonth()+1).padStart(2,'0') + '/'
+                         + d.getFullYear();
+                }
+                if (combined.includes('phone') || combined.includes('mobile') || combined.includes('tel')) {
+                    return SIGNER_INFO.phone || '';
+                }
+                if (combined.includes('email') || combined.includes('mail')) {
+                    return SIGNER_INFO.email || '';
+                }
+                if (combined.includes('company') || combined.includes('organisation') || combined.includes('organization') || combined.includes('firm')) {
+                    return SIGNER_INFO.company || '';
+                }
+                if (combined.includes('job') || combined.includes('title') || combined.includes('position') || combined.includes('designation')) {
+                    return SIGNER_INFO.title || '';
+                }
+                if (combined.includes('city') || combined.includes('town')) {
+                    return SIGNER_INFO.city || '';
+                }
+                if (combined.includes('zip') || combined.includes('postal') || combined.includes('pincode') || combined.includes('pin code')) {
+                    return SIGNER_INFO.zip || '';
+                }
+                if (combined.includes('country')) {
+                    return SIGNER_INFO.country || '';
+                }
+                if (combined.includes('state') || combined.includes('province') || combined.includes('region')) {
+                    return SIGNER_INFO.state || '';
+                }
+                if (combined.includes('name') || combined.includes('full name') || combined.includes('fullname')) {
+                    return SIGNER_INFO.name || '';
+                }
+                // Generic text / textarea — return name as default
+                return SIGNER_INFO.name || '';
+            }
+
             function autoFillActiveField() {
                 if (!activeItem) return;
                 const meta = getActiveItemMeta();
                 if (!meta) return;
 
-                const inputEl = activeItem.querySelector('input, textarea');
                 if (['signature', 'initial'].includes(meta.type)) {
                     openSignaturePad(meta.id);
-                } else if (meta.type === 'checkbox') {
-                    if (inputEl) {
-                        inputEl.checked = true;
-                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-                        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                } else {
-                    if (inputEl) {
-                        const nameLower = (meta.name || '').toLowerCase();
-                        const placeholderLower = (meta.placeholder || '').toLowerCase();
-                        
-                        // Check if the field is a generic text field or multiline textarea,
-                        // and exclude them from auto-fill to match user requirements.
-                        if (meta.type === 'textarea' || nameLower === 'text' || placeholderLower === 'text' || nameLower === 'multiline' || placeholderLower === 'multiline') {
-                            inputEl.focus();
-                            return;
-                        }
-
-                        if (nameLower.includes('date') || placeholderLower.includes('date')) {
-                            const today = new Date();
-                            const dd = String(today.getDate()).padStart(2, '0');
-                            const mm = String(today.getMonth() + 1).padStart(2, '0');
-                            const yyyy = today.getFullYear();
-                            inputEl.value = `${dd}/${mm}/${yyyy}`;
-                        } else if (nameLower.includes('name') || placeholderLower.includes('name')) {
-                            inputEl.value = SIGNER_INFO.name || '';
-                        } else if (nameLower.includes('email') || placeholderLower.includes('email')) {
-                            inputEl.value = SIGNER_INFO.email || '';
-                        } else if (nameLower.includes('phone') || placeholderLower.includes('phone')) {
-                            inputEl.value = SIGNER_INFO.phone || '';
-                        } else if (nameLower.includes('company') || placeholderLower.includes('company')) {
-                            inputEl.value = SIGNER_INFO.company || '';
-                        } else if (nameLower.includes('title') || placeholderLower.includes('title') || nameLower.includes('job') || placeholderLower.includes('job')) {
-                            inputEl.value = SIGNER_INFO.title || '';
-                        } else if (nameLower.includes('city') || placeholderLower.includes('city')) {
-                            inputEl.value = SIGNER_INFO.city || '';
-                        } else if (nameLower.includes('zip') || placeholderLower.includes('zip')) {
-                            inputEl.value = SIGNER_INFO.zip || '';
-                        } else if (nameLower.includes('country') || placeholderLower.includes('country')) {
-                            inputEl.value = SIGNER_INFO.country || '';
-                        } else if (nameLower.includes('state') || placeholderLower.includes('state')) {
-                            inputEl.value = SIGNER_INFO.state || '';
-                        } else {
-                            inputEl.value = meta.placeholder || meta.name || '';
-                        }
-                        inputEl.dispatchEvent(new Event('input', { bubbles: true }));
-                        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
+                    return;
                 }
+
+                const inputEl = activeItem.querySelector('input, textarea');
+                if (!inputEl) return;
+
+                if (meta.type === 'checkbox') {
+                    inputEl.checked = true;
+                } else {
+                    const val = getSignerValueForField(meta);
+                    if (val) inputEl.value = val;
+                }
+                inputEl.dispatchEvent(new Event('input',  { bubbles: true }));
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
             function updateRibbonText() {
                 if (!navigatorEl) return;
-                
+
                 const uncompleted = getUncompletedItems();
                 const submitBtn = document.getElementById('o_sign_submit');
                 if (submitBtn) {
@@ -1154,11 +1207,13 @@
 
                 if (!activeItem) {
                     navigatorEl.innerText = 'Click to start';
+                    updateTopButtons();
                     return;
                 }
-                
+
                 if (activeItem.id === 'o_sign_submit') {
                     navigatorEl.innerText = 'Submit';
+                    updateTopButtons();
                     return;
                 }
 
@@ -1167,6 +1222,7 @@
                 } else {
                     navigatorEl.innerText = 'Fill in';
                 }
+                updateTopButtons();
             }
 
             function goToNextSignItem() {
@@ -1216,6 +1272,84 @@
 
                     updateRibbonText();
                 }
+            }
+
+            // ─── Top toolbar button logic ────────────────────────────────
+            function updateTopButtons() {
+                const fillBtn = document.getElementById('es-top-fill-btn');
+                const nextBtn = document.getElementById('es-top-next-btn');
+                const nextLabel = document.getElementById('es-top-next-label');
+                const submitBtn = document.getElementById('o_sign_submit');
+                if (!fillBtn || !nextBtn) return;
+
+                const uncompleted = getUncompletedItems();
+                const hasTextFields = SIGN_ITEMS.some(i =>
+                    ['text', 'textarea', 'name', 'email', 'phone', 'company'].includes(i.type)
+                );
+
+                // Show Fill In button only when there are unfilled text-type fields
+                const unfilledText = uncompleted.filter(i => {
+                    const info = signItemInputs[i.id];
+                    return info && !['signature', 'initial', 'checkbox', 'radio'].includes(info.type);
+                });
+                fillBtn.style.display = unfilledText.length > 0 ? 'inline-flex' : 'none';
+
+                // Next/Start button
+                if (uncompleted.length > 0) {
+                    nextBtn.style.display = 'inline-flex';
+                    nextLabel.textContent = navigatorStarted ? 'Next Field' : 'Start Signing';
+                } else if (submitBtn && submitBtn.style.display !== 'none') {
+                    nextBtn.style.display = 'inline-flex';
+                    nextLabel.textContent = 'Submit';
+                } else {
+                    nextBtn.style.display = 'none';
+                }
+            }
+
+            function fillAllFields() {
+                // Fill EVERY editable text/textarea field with signer data from Odoo
+                SIGN_ITEMS.forEach(item => {
+                    const info = signItemInputs[item.id];
+                    if (!info) return;
+                    if (['signature', 'initial', 'checkbox', 'radio'].includes(item.type)) return;
+
+                    const inputEl = info.el.querySelector('input, textarea');
+                    if (!inputEl) return;
+
+                    const val = getSignerValueForField(item);
+                    if (val) {
+                        inputEl.value = val;
+                        inputEl.dispatchEvent(new Event('input',  { bubbles: true }));
+                        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+
+                // After filling text fields, scroll to first unfilled field (signature/initial)
+                const stillUncompleted = getUncompletedItems();
+                if (stillUncompleted.length > 0) {
+                    const firstEl = signItemInputs[stillUncompleted[0].id].el;
+                    const rect = firstEl.getBoundingClientRect();
+                    window.scrollTo({ top: rect.top + window.scrollY - window.innerHeight * 0.3, behavior: 'smooth' });
+                    if (activeItem) activeItem.classList.remove('ui-selected');
+                    activeItem = firstEl;
+                    activeItem.classList.add('ui-selected');
+                    navigatorStarted = true;
+                }
+                updateTopButtons();
+                updateRibbonText();
+            }
+
+            function topNextClick() {
+                const label = document.getElementById('es-top-next-label').textContent.trim();
+                if (label === 'Submit') {
+                    document.getElementById('o_sign_submit').click();
+                } else if (label === 'Start Signing') {
+                    // First fill all text fields, then step to first unfilled
+                    fillAllFields();
+                } else {
+                    goToNextSignItem();
+                }
+                updateTopButtons();
             }
 
             function initNavigator() {
