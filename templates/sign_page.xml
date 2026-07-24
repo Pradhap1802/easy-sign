@@ -1226,13 +1226,42 @@
                 inputEl.dispatchEvent(new Event('change', { bubbles: true }));
             }
 
+            function hasUnsignedSignatureFields() {
+                return SIGN_ITEMS.some(item => {
+                    if (CURRENT_ROLE_ID !== 0 && item.responsible_id !== CURRENT_ROLE_ID) return false;
+                    if (['signature', 'initial'].includes(item.type)) {
+                        return !signatureData[item.id];
+                    }
+                    return false;
+                });
+            }
+
+            function goToFirstUnsignedSignature() {
+                const uncompleted = getUncompletedItems();
+                let sigItem = uncompleted.find(i => ['signature', 'initial'].includes(i.type));
+                if (!sigItem) {
+                    sigItem = SIGN_ITEMS.find(i => {
+                        if (CURRENT_ROLE_ID !== 0 && i.responsible_id !== CURRENT_ROLE_ID) return false;
+                        return ['signature', 'initial'].includes(i.type) && !signatureData[i.id];
+                    });
+                }
+                if (sigItem && signItemInputs[sigItem.id]) {
+                    const info = signItemInputs[sigItem.id];
+                    selectItem(info.el);
+                    const rect = info.el.getBoundingClientRect();
+                    window.scrollTo({ top: rect.top + window.scrollY - window.innerHeight * 0.25, behavior: 'smooth' });
+                    openSignaturePad(sigItem.id);
+                }
+            }
+
             function updateRibbonText() {
                 if (!navigatorEl) return;
 
                 const uncompleted = getUncompletedItems();
+                const hasUnsignedSigs = hasUnsignedSignatureFields();
                 const submitBtn = document.getElementById('o_sign_submit');
                 if (submitBtn) {
-                    submitBtn.style.display = uncompleted.length === 0 ? 'block' : 'none';
+                    submitBtn.style.display = (uncompleted.length === 0 && !hasUnsignedSigs) ? 'block' : 'none';
                 }
 
                 if (!activeItem) {
@@ -1242,7 +1271,11 @@
                 }
 
                 if (activeItem.id === 'o_sign_submit') {
-                    navigatorEl.innerText = 'Submit';
+                    if (hasUnsignedSigs) {
+                        navigatorEl.innerText = 'Sign';
+                    } else {
+                        navigatorEl.innerText = 'Submit';
+                    }
                     updateTopButtons();
                     return;
                 }
@@ -1250,7 +1283,13 @@
                 if (isFieldFilled(activeItem)) {
                     navigatorEl.innerText = 'Next';
                 } else {
-                    navigatorEl.innerText = 'Fill in';
+                    const itemId = Object.keys(signItemInputs).find(key => signItemInputs[key].el === activeItem);
+                    const meta = SIGN_ITEMS.find(item => item.id == itemId);
+                    if (meta && ['signature', 'initial'].includes(meta.type)) {
+                        navigatorEl.innerText = 'Sign';
+                    } else {
+                        navigatorEl.innerText = 'Fill in';
+                    }
                 }
                 updateTopButtons();
             }
@@ -1285,7 +1324,7 @@
                     if (inputEl && nextItem.type !== 'checkbox') {
                         inputEl.focus();
                     }
-                } else {
+                } else if (!hasUnsignedSignatureFields()) {
                     activeItem = document.getElementById('o_sign_submit');
                     activeItem.classList.add('ui-selected');
 
@@ -1301,6 +1340,8 @@
                     navlineEl.style.top = centerViewportY + 'px';
 
                     updateRibbonText();
+                } else {
+                    goToFirstUnsignedSignature();
                 }
             }
 
@@ -1313,9 +1354,7 @@
                 if (!fillBtn || !nextBtn) return;
 
                 const uncompleted = getUncompletedItems();
-                const hasTextFields = SIGN_ITEMS.some(i =>
-                    ['text', 'textarea', 'name', 'email', 'phone', 'company'].includes(i.type)
-                );
+                const hasUnsignedSigs = hasUnsignedSignatureFields();
 
                 // Show Fill In button only when there are unfilled text-type fields
                 const unfilledText = uncompleted.filter(i => {
@@ -1324,10 +1363,18 @@
                 });
                 fillBtn.style.display = unfilledText.length > 0 ? 'inline-flex' : 'none';
 
-                // Next/Start button
+                // Next/Start/Submit button logic
                 if (uncompleted.length > 0) {
                     nextBtn.style.display = 'inline-flex';
-                    nextLabel.textContent = navigatorStarted ? 'Next Field' : 'Start Signing';
+                    const unsignedSigs = uncompleted.filter(i => ['signature', 'initial'].includes(i.type));
+                    if (unsignedSigs.length > 0) {
+                        nextLabel.textContent = navigatorStarted ? 'Sign Field' : 'Start Signing';
+                    } else {
+                        nextLabel.textContent = navigatorStarted ? 'Next Field' : 'Start Signing';
+                    }
+                } else if (hasUnsignedSigs) {
+                    nextBtn.style.display = 'inline-flex';
+                    nextLabel.textContent = 'Sign Document';
                 } else if (submitBtn && submitBtn.style.display !== 'none') {
                     nextBtn.style.display = 'inline-flex';
                     nextLabel.textContent = 'Submit';
@@ -1354,7 +1401,7 @@
                     }
                 });
 
-                // After filling text fields, scroll to first unfilled field (signature/initial)
+                // After filling text fields, scroll to first unfilled field or unsigned signature
                 const stillUncompleted = getUncompletedItems();
                 if (stillUncompleted.length > 0) {
                     const firstEl = signItemInputs[stillUncompleted[0].id].el;
@@ -1364,6 +1411,8 @@
                     activeItem = firstEl;
                     activeItem.classList.add('ui-selected');
                     navigatorStarted = true;
+                } else if (hasUnsignedSignatureFields()) {
+                    goToFirstUnsignedSignature();
                 }
                 updateTopButtons();
                 updateRibbonText();
@@ -1371,11 +1420,28 @@
 
             function topNextClick() {
                 const label = document.getElementById('es-top-next-label').textContent.trim();
+                const hasUnsignedSigs = hasUnsignedSignatureFields();
+
                 if (label === 'Submit') {
+                    if (hasUnsignedSigs) {
+                        alert('Please manually sign all required signature fields before submitting.');
+                        goToFirstUnsignedSignature();
+                        return;
+                    }
                     document.getElementById('o_sign_submit').click();
-                } else if (label === 'Start Signing') {
-                    // First fill all text fields, then step to first unfilled
+                } else if (label === 'Start Signing' || label === 'Sign Document') {
                     fillAllFields();
+                    if (hasUnsignedSigs) {
+                        goToFirstUnsignedSignature();
+                    } else {
+                        goToNextSignItem();
+                    }
+                } else if (label === 'Sign Field' || label === 'Next Field') {
+                    if (hasUnsignedSigs) {
+                        goToFirstUnsignedSignature();
+                    } else {
+                        goToNextSignItem();
+                    }
                 } else {
                     goToNextSignItem();
                 }
@@ -1400,6 +1466,8 @@
                         goToNextSignItem();
                     } else if (txt === 'Fill in') {
                         autoFillActiveField();
+                    } else if (txt === 'Sign') {
+                        goToFirstUnsignedSignature();
                     } else if (txt === 'Next') {
                         goToNextSignItem();
                     } else if (txt === 'Submit') {
@@ -1408,6 +1476,8 @@
                 });
 
                 const uncompleted = getUncompletedItems();
+                const hasUnsignedSigs = hasUnsignedSignatureFields();
+
                 if (uncompleted.length > 0) {
                     navigatorEl.style.display = 'flex';
                     navlineEl.style.display = 'block';
@@ -1420,7 +1490,7 @@
                     const centerViewportY = rect.top + rect.height / 2;
                     navigatorEl.style.top = (centerViewportY - 20) + 'px';
                     navlineEl.style.top = centerViewportY + 'px';
-                } else if (SIGN_ITEMS.length > 0) {
+                } else if (!hasUnsignedSigs && SIGN_ITEMS.length > 0) {
                     navigatorEl.style.display = 'flex';
                     navlineEl.style.display = 'block';
                     navigatorEl.innerText = 'Submit';
@@ -1430,6 +1500,11 @@
                     const centerViewportY = rect.top + rect.height / 2;
                     navigatorEl.style.top = (centerViewportY - 20) + 'px';
                     navlineEl.style.top = centerViewportY + 'px';
+                } else if (hasUnsignedSigs) {
+                    navigatorEl.style.display = 'flex';
+                    navlineEl.style.display = 'block';
+                    navigatorEl.innerText = 'Sign';
+                    goToFirstUnsignedSignature();
                 }
 
                 window.addEventListener('scroll', () => {
@@ -1460,6 +1535,11 @@
             }
 
             document.getElementById('o_sign_submit').addEventListener('click', async () => {
+                if (hasUnsignedSignatureFields()) {
+                    alert('Please manually sign all required signature fields before submitting.');
+                    goToFirstUnsignedSignature();
+                    return;
+                }
                 let validationError = false;
                 let firstErrorEl = null;
 

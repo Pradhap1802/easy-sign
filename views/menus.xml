@@ -18,14 +18,6 @@
         <!-- Configuration dropdown parent -->
         <menuitem id="menu_sign_config" name="Configuration" parent="easy_sign.menu_sign" sequence="40"/>
 
-        <!-- Roles window action & menu -->
-        <record id="action_sign_role" model="ir.actions.act_window">
-            <field name="name">Roles</field>
-            <field name="res_model">sign.item.role</field>
-            <field name="view_mode">list,form</field>
-        </record>
-        <menuitem id="menu_sign_config_roles" name="Roles" parent="easy_sign.menu_sign_config" action="action_sign_role" sequence="10"/>
-
         <!-- Field Types window action & menu -->
         <record id="action_sign_item_type" model="ir.actions.act_window">
             <field name="name">Field Types</field>

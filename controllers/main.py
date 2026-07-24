@@ -177,12 +177,35 @@ class SignController(http.Controller):
         if signers is not None:
             template.template_signer_ids.unlink()
             for s in signers:
-                request.env['sign.template.signer'].sudo().create({
-                    'template_id': template.id,
-                    'role_id': s.get('role_id'),
-                    'partner_id': s.get('partner_id') or False,
-                    'email': s.get('email') or '',
-                })
+                role_id = s.get('role_id')
+                role_name = (s.get('role_name') or '').strip()
+                if not role_id and role_name:
+                    role = request.env['sign.item.role'].sudo().search([('name', '=', role_name)], limit=1)
+                    if not role:
+                        max_role = request.env['sign.item.role'].sudo().search([], order='sequence desc', limit=1)
+                        seq = (max_role.sequence + 1) if max_role else 10
+                        role = request.env['sign.item.role'].sudo().create({
+                            'name': role_name,
+                            'sequence': seq,
+                            'default': False,
+                        })
+                    role_id = role.id
+                elif role_id and role_name:
+                    role = request.env['sign.item.role'].sudo().browse(int(role_id))
+                    if role.exists() and role.name != role_name:
+                        existing = request.env['sign.item.role'].sudo().search([('name', '=', role_name)], limit=1)
+                        if existing:
+                            role_id = existing.id
+                        else:
+                            role.sudo().write({'name': role_name})
+
+                if role_id:
+                    request.env['sign.template.signer'].sudo().create({
+                        'template_id': template.id,
+                        'role_id': int(role_id),
+                        'partner_id': int(s['partner_id']) if s.get('partner_id') else False,
+                        'email': s.get('email') or '',
+                    })
         return True
 
     @http.route('/sign/template/<int:template_id>/save_tags', type='json', auth='user')
@@ -196,7 +219,7 @@ class SignController(http.Controller):
         return True
 
     @http.route('/sign/template/<int:template_id>/save_config', type='json', auth='user')
-    def save_template_config(self, template_id, vals=None, **kwargs):
+    def save_template_config(self, template_id, vals=None, signers=None, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
         if not template.exists() or not vals:
             return False
@@ -205,6 +228,39 @@ class SignController(http.Controller):
         if 'user_id' in write_vals and write_vals['user_id'] is not False:
             write_vals['user_id'] = int(write_vals['user_id']) if write_vals['user_id'] else False
         template.sudo().write(write_vals)
+
+        if signers is not None:
+            template.template_signer_ids.unlink()
+            for s in signers:
+                role_id = s.get('role_id')
+                role_name = (s.get('role_name') or '').strip()
+                if not role_id and role_name:
+                    role = request.env['sign.item.role'].sudo().search([('name', '=', role_name)], limit=1)
+                    if not role:
+                        max_role = request.env['sign.item.role'].sudo().search([], order='sequence desc', limit=1)
+                        seq = (max_role.sequence + 1) if max_role else 10
+                        role = request.env['sign.item.role'].sudo().create({
+                            'name': role_name,
+                            'sequence': seq,
+                            'default': False,
+                        })
+                    role_id = role.id
+                elif role_id and role_name:
+                    role = request.env['sign.item.role'].sudo().browse(int(role_id))
+                    if role.exists() and role.name != role_name:
+                        existing = request.env['sign.item.role'].sudo().search([('name', '=', role_name)], limit=1)
+                        if existing:
+                            role_id = existing.id
+                        else:
+                            role.sudo().write({'name': role_name})
+
+                if role_id:
+                    request.env['sign.template.signer'].sudo().create({
+                        'template_id': template.id,
+                        'role_id': int(role_id),
+                        'partner_id': int(s['partner_id']) if s.get('partner_id') else False,
+                        'email': s.get('email') or '',
+                    })
         return True
 
     @http.route('/sign/role/get_or_create', type='json', auth='user')

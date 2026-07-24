@@ -1161,7 +1161,13 @@
                             </div>
                             <!-- Signers Tab -->
                             <div class="es-tab-content" id="tab-content-signers">
-                                <div class="es-modal-preview-signers" id="es-config-signers-list" style="max-height: 120px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <span style="font-size: 13px; font-weight: 600; color: #e2e8f0;">Dynamic Template Signers</span>
+                                    <button type="button" class="es-btn es-btn-ghost" onclick="addConfigSigner()" style="font-size: 12px; padding: 4px 12px; border: 1px dashed rgba(56,189,248,0.5); color: #38bdf8; background: rgba(56,189,248,0.1); border-radius: 6px; cursor: pointer;">
+                                        + Add Signer
+                                    </button>
+                                </div>
+                                <div id="es-config-signers-list" style="max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;">
                                     <!-- filled dynamically -->
                                 </div>
                             </div>
@@ -1331,8 +1337,104 @@ function saveTemplateTags() {
 }
 
 /* ========================================================
-   TEMPLATE CONFIGURATION MODAL
+   TEMPLATE CONFIGURATION MODAL (DYNAMIC SIGNERS)
    ======================================================== */
+let configSigners = [];
+
+function renderConfigSignersList() {
+    const listEl = document.getElementById('es-config-signers-list');
+    if (!listEl) return;
+    listEl.innerHTML = '';
+    if (configSigners.length === 0) {
+        listEl.innerHTML = '<div style="font-size:12px;color:#94a3b8;padding:16px;text-align:center;background:rgba(255,255,255,0.02);border:1px dashed rgba(255,255,255,0.1);border-radius:6px;">No signers configured. Click "+ Add Signer" above to add dynamic signers.</div>';
+        return;
+    }
+
+    configSigners.forEach(function(s, idx) {
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:6px;padding:8px 10px;';
+
+        const icon = document.createElement('span');
+        icon.style.cssText = 'font-size:14px;color:#38bdf8;flex-shrink:0;';
+        icon.textContent = '✍';
+        row.appendChild(icon);
+
+        // Dynamic Role Input
+        const roleInp = document.createElement('input');
+        roleInp.type = 'text';
+        roleInp.className = 'es-input';
+        roleInp.placeholder = 'Role (e.g. Signer 1)';
+        const roleObj = getRoleById(s.role_id);
+        roleInp.value = s.role_name || (roleObj ? roleObj.name : ('Signer ' + (idx + 1)));
+        roleInp.style.cssText = 'width:130px;font-size:12px;padding:4px 8px;background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:4px;';
+        roleInp.oninput = function() {
+            updateConfigSigner(idx, 'role_name', this.value);
+        };
+        row.appendChild(roleInp);
+
+        // Name input
+        const nameInp = document.createElement('input');
+        nameInp.type = 'text';
+        nameInp.className = 'es-input';
+        nameInp.placeholder = 'Signer Name';
+        nameInp.value = s.name || '';
+        nameInp.style.cssText = 'flex:1;font-size:12px;padding:4px 8px;background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:4px;';
+        nameInp.oninput = function() {
+            updateConfigSigner(idx, 'name', this.value);
+        };
+        row.appendChild(nameInp);
+
+        // Email input
+        const emailInp = document.createElement('input');
+        emailInp.type = 'email';
+        emailInp.className = 'es-input';
+        emailInp.placeholder = 'Signer Email';
+        emailInp.value = s.email || '';
+        emailInp.style.cssText = 'flex:1;font-size:12px;padding:4px 8px;background:#1e293b;color:#f8fafc;border:1px solid #334155;border-radius:4px;';
+        emailInp.oninput = function() {
+            updateConfigSigner(idx, 'email', this.value);
+        };
+        row.appendChild(emailInp);
+
+        // Remove button
+        const rmBtn = document.createElement('button');
+        rmBtn.type = 'button';
+        rmBtn.style.cssText = 'background:transparent;border:none;color:#ef4444;font-size:16px;cursor:pointer;padding:2px 6px;line-height:1;flex-shrink:0;';
+        rmBtn.textContent = '✕';
+        rmBtn.title = 'Remove Signer';
+        rmBtn.onclick = function() {
+            removeConfigSigner(idx);
+        };
+        row.appendChild(rmBtn);
+
+        listEl.appendChild(row);
+    });
+}
+
+function updateConfigSigner(idx, field, val) {
+    if (configSigners[idx]) {
+        configSigners[idx][field] = val;
+    }
+}
+
+function addConfigSigner() {
+    const roleName = 'Signer ' + (configSigners.length + 1);
+    configSigners.push({
+        role_id: false,
+        role_name: roleName,
+        name: '',
+        email: ''
+    });
+    renderConfigSignersList();
+}
+window.addConfigSigner = addConfigSigner;
+
+function removeConfigSigner(idx) {
+    configSigners.splice(idx, 1);
+    renderConfigSignersList();
+}
+window.removeConfigSigner = removeConfigSigner;
+
 function openConfigModal(e) {
     if (e) e.stopPropagation();
     
@@ -1380,26 +1482,46 @@ function openConfigModal(e) {
         }
     }
 
-    // Fill Signers tab list (collect from sidebar rows)
-    const signersListEl = document.getElementById('es-config-signers-list');
-    if (signersListEl) {
-        signersListEl.innerHTML = '';
-        const signers = collectSigners();
-        if (signers.length === 0) {
-            signersListEl.innerHTML = '<div style="font-size:12px;color:#64748b;">No signers configured in sidebar yet.</div>';
-        } else {
-            signersListEl.innerHTML = signers.map(function(s) {
-                const role = getRoleById(s.role_id);
-                const roleName = role ? role.name : ('Signer');
-                return '<div class="es-modal-signer-item">' +
-                    '<span>&#9997;</span>' +
-                    '<strong>' + (s.name || s.email) + '</strong>' +
-                    '<span style="color:#64748b;margin-left:4px;">(' + roleName + ')</span>' +
-                    '<span style="color:#475569;margin-left:8px;">&lt;' + s.email + '&gt;</span>' +
-                '</div>';
-            }).join('');
-        }
+    // Fill Signers array from sidebar DOM rows or server data
+    configSigners = [];
+    const sidebarList = document.getElementById('es-signers-list');
+    if (sidebarList) {
+        const rows = sidebarList.querySelectorAll('.es-signer-row');
+        rows.forEach(function(row) {
+            const idx = row.id.replace('signer-row-', '');
+            const nameEl = document.getElementById('signer-name-' + idx);
+            const emailEl = document.getElementById('signer-email-' + idx);
+            const roleEl = document.getElementById('signer-role-' + idx);
+            
+            const email = emailEl ? emailEl.value.trim() : '';
+            const name = nameEl ? nameEl.value.trim() : '';
+            const roleId = roleEl ? parseInt(roleEl.value, 10) : false;
+            const roleObj = getRoleById(roleId);
+            const roleName = roleObj ? roleObj.name : '';
+            
+            if (roleId || email || name || roleName) {
+                configSigners.push({
+                    role_id: roleId,
+                    role_name: roleName,
+                    name: name,
+                    email: email
+                });
+            }
+        });
     }
+
+    if (configSigners.length === 0 && TEMPLATE_SIGNERS && TEMPLATE_SIGNERS.length > 0) {
+        configSigners = TEMPLATE_SIGNERS.map(function(s) {
+            return {
+                role_id: s.role_id,
+                role_name: s.role_name || (getRoleById(s.role_id) ? getRoleById(s.role_id).name : ''),
+                name: s.partner_name || s.name || '',
+                email: s.email || ''
+            };
+        });
+    }
+
+    renderConfigSignersList();
 
     // Default to Communication tab
     switchConfigTab('comm');
@@ -1455,13 +1577,22 @@ function saveConfigModal() {
         user_id: ownerId ? parseInt(ownerId, 10) : false
     };
 
+    const signersPayload = configSigners.map(function(s) {
+        return {
+            role_id: s.role_id ? parseInt(s.role_id, 10) : false,
+            role_name: s.role_name || (getRoleById(s.role_id) ? getRoleById(s.role_id).name : ''),
+            name: s.name || '',
+            email: s.email || ''
+        };
+    });
+
     fetch('/sign/template/' + TEMPLATE_ID + '/save_config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             jsonrpc: '2.0',
             method: 'call',
-            params: { vals: payload }
+            params: { vals: payload, signers: signersPayload }
         })
     }).then(function(r) { return r.json(); }).then(function(result) {
         if (result.result) {
@@ -1476,8 +1607,9 @@ function saveConfigModal() {
             const ownerObj = USERS.find(function(u) { return u.id === payload.user_id; });
             templateConfig.user_name = ownerObj ? ownerObj.name : '';
 
-            showToast('Configuration saved successfully!', 'success');
+            showToast('Configuration and signers saved successfully!', 'success');
             closeConfigModal();
+            setTimeout(function() { location.reload(); }, 600);
         } else {
             showToast('Failed to save configuration', 'error');
         }
