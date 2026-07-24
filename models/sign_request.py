@@ -478,68 +478,6 @@ class SignRequest(models.Model):
                 can.drawString(25, 12, watermark_text)
                 can.showPage()
 
-            # ─── Render Audit Trail Certificate Page ──────────────────────────────
-            audit_w, audit_h = 595.27, 841.89
-            can.setFillColorRGB(0.13, 0.15, 0.18)
-            can.setFont("Helvetica-Bold", 16)
-            can.drawString(40, audit_h - 50, "AUDIT TRAIL & SIGNATURE CERTIFICATE")
-
-            can.setStrokeColorRGB(0.44, 0.29, 0.40)  # Odoo Purple #714b67
-            can.setLineWidth(2)
-            can.line(40, audit_h - 60, audit_w - 40, audit_h - 60)
-
-            # Metadata section
-            can.setFont("Helvetica-Bold", 10)
-            can.setFillColorRGB(0.2, 0.2, 0.2)
-            can.drawString(40, audit_h - 90, "DOCUMENT DETAILS")
-            can.setFont("Helvetica", 9)
-            can.drawString(40, audit_h - 108, "Document Name: %s" % (self.reference or ''))
-            can.drawString(40, audit_h - 124, "Security Token: %s" % (self.access_token or ''))
-            can.drawString(40, audit_h - 140, "Status: Fully Signed (%s / %s Signers Completed)" % (self.nb_closed, self.nb_total))
-            can.drawString(40, audit_h - 156, "Completion Date: %s" % format_date(self.env, self.completion_date or fields.Date.today()))
-
-            # Table Header
-            y_offset = audit_h - 200
-            can.setFillColorRGB(0.44, 0.29, 0.40)
-            can.rect(40, y_offset, audit_w - 80, 20, fill=True, stroke=False)
-            can.setFillColorRGB(1, 1, 1)
-            can.setFont("Helvetica-Bold", 9)
-            can.drawString(45, y_offset + 6, "Seq")
-            can.drawString(75, y_offset + 6, "Role")
-            can.drawString(160, y_offset + 6, "Signer Name / Email")
-            can.drawString(360, y_offset + 6, "Status")
-            can.drawString(430, y_offset + 6, "IP Address")
-
-            # Signers Table Rows
-            y_offset -= 22
-            can.setFont("Helvetica", 8)
-            can.setFillColorRGB(0.15, 0.15, 0.15)
-            for s in self.signer_ids:
-                log = self.env['sign.log'].sudo().search([
-                    ('sign_request_id', '=', self.id),
-                    ('partner_id', '=', s.partner_id.id),
-                    ('action', '=', 'sign')
-                ], limit=1)
-                ip_str = log.ip_address if log and log.ip_address else '127.0.0.1'
-
-                can.drawString(45, y_offset + 4, str(s.sequence))
-                can.drawString(75, y_offset + 4, (s.role_id.name or '')[:15])
-                signer_info_str = "%s (%s)" % (s.partner_id.name or '', s.partner_id.email or '')
-                can.drawString(160, y_offset + 4, signer_info_str[:38])
-                can.drawString(360, y_offset + 4, s.state.capitalize())
-                can.drawString(430, y_offset + 4, ip_str)
-                can.setStrokeColorRGB(0.85, 0.85, 0.85)
-                can.setLineWidth(0.5)
-                can.line(40, y_offset, audit_w - 40, y_offset)
-                y_offset -= 22
-
-            # Footer Security Certification
-            can.setFillColorRGB(0.45, 0.45, 0.45)
-            can.setFont("Helvetica-Oblique", 7.5)
-            can.drawString(40, 45, "This certificate confirms that all signatures were electronically executed and logged via Easy Sign.")
-            can.drawString(40, 32, "Audit Log Integrity Checksum (SHA-256): Cryptographically verified upon PDF compilation.")
-            can.showPage()
-
             can.save()
             item_pdf = PdfFileReader(packet, overwriteWarnings=False)
             new_pdf = PdfFileWriter()
@@ -547,9 +485,6 @@ class SignRequest(models.Model):
                 page = old_pdf.getPage(p)
                 page.mergePage(item_pdf.getPage(p))
                 new_pdf.addPage(page)
-
-            # Append the Audit Trail Certificate page
-            new_pdf.addPage(item_pdf.getPage(old_pdf.getNumPages()))
 
             output = io.BytesIO()
             new_pdf.write(output)

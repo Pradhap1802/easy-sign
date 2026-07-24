@@ -505,7 +505,10 @@ class SignController(http.Controller):
     @http.route('/sign/download/<int:request_id>/<string:access_token>/completed', type='http', auth='public', multilang=False)
     def download_completed(self, request_id, access_token, **kwargs):
         sign_request, _signer = self._resolve_sign_access(request_id, access_token)
-        if not sign_request or not sign_request.completed_document:
+        if not sign_request:
+            return request.not_found()
+        sign_request.sudo()._generate_completed_document()
+        if not sign_request.completed_document:
             return request.not_found()
         return request.make_response(
             base64.b64decode(sign_request.completed_document),
