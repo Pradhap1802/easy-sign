@@ -1,10 +1,13 @@
-# -*- coding: utf-8 -*-
 import base64
+import datetime
 import io
+import logging
 import os
 import uuid
 import time
 import hashlib
+
+_logger = logging.getLogger(__name__)
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -77,6 +80,7 @@ class SignRequest(models.Model):
     start_sign = fields.Boolean(string="Signature Started", compute="_compute_progress", compute_sudo=True)
     active = fields.Boolean(default=True, string="Active", copy=False)
     completion_date = fields.Date(string="Completion Date", compute="_compute_progress", compute_sudo=True)
+    last_reminder_date = fields.Date(string="Last Reminder Date")
     sign_log_ids = fields.One2many('sign.log', 'sign_request_id', string="Logs", help="Activity logs linked to this request")
     tag_ids = fields.Many2many('sign.tag', 'sign_request_tag_rel', 'request_id', 'tag_id', string="Tags")
 
@@ -222,6 +226,7 @@ class SignRequest(models.Model):
                 'action': 'send',
             })
 
+        self.last_reminder_date = fields.Date.today()
         names = ', '.join(active_signers.mapped('partner_id.name'))
         return {
             'type': 'ir.actions.client',
@@ -233,6 +238,22 @@ class SignRequest(models.Model):
                 'sticky': False,
             }
         }
+
+    @api.model
+    def _cron_send_auto_reminders(self):
+        today = fields.Date.today()
+        three_days_ago = today - datetime.timedelta(days=3)
+        pending_requests = self.search([
+            ('state', '=', 'sent'),
+            '|', ('last_reminder_date', '=', False), ('last_reminder_date', '<=', three_days_ago)
+        ])
+        for req in pending_requests:
+            try:
+                req.action_send_reminder()
+            except UserError:
+                pass
+            except Exception as e:
+                _logger.error("Error sending auto reminder for request %s: %s", req.id, e)
 
     def _send_signer_email(self, signer):
         self.ensure_one()

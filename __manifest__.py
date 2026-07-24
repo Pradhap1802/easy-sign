@@ -7,9 +7,26 @@
     'sequence': 105,
     'summary': "Send documents to sign online and handle filled copies",
     'description': """
-Sign and complete your documents easily. Customize your documents with text and signature fields and send them to your recipients.
-Let your customers follow the signature process easily.
+Easy Sign - Electronic Signature & Document Management
+========================================================
+Sign and complete your documents easily in Odoo 18. Customize your PDF documents with text, initial, and signature fields and send them to your recipients.
+
+Key Features:
+-------------
+* Visual Drag & Drop PDF Template Field Editor
+* Sequential Multi-Signer Workflow Engine
+* Audit Trail Certificate with Cryptographic SHA-256 Checksum Hash
+* Real-Time Client Validation & Auto-Fill from Partner Records
+* 1-Click Saved Profile Signatures
+* Automated Daily Cron Reminders & Manual Send Reminder Action
+* Page-Level Document Watermarking
     """,
+    'author': 'ProcessDrive',
+    'website': 'https://www.processdrive.com',
+    'license': 'OPL-1',
+    'price': 100.00,
+    'currency': 'USD',
+    'images': ['static/description/banner.png'],
     'depends': ['mail', 'attachment_indexation', 'portal'],
     'data': [
         'security/security.xml',
@@ -31,7 +48,6 @@ Let your customers follow the signature process easily.
     ],
     'application': True,
     'installable': True,
-    'license': 'LGPL-3',
     'assets': {
         'web.assets_backend': [
             'easy_sign/static/src/scss/sign_common.scss',

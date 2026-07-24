@@ -14,34 +14,82 @@ _logger = logging.getLogger(__name__)
 
 class SignController(http.Controller):
 
-    def _render(self, template, values=None):
-        if values is None:
-            values = {}
-        return request.render(template, values)
+    def _resolve_sign_access(self, request_id=None, access_token=None):
+        """Resolve a sign request (and optional signer) from public URL tokens."""
+        if not access_token:
+            return request.env['sign.request'].browse(), request.env['sign.request.signer'].browse()
 
-    @http.route('/sign/template/<int:template_id>/pdf', type='http', auth='user', website=False)
-    def sign_template_pdf(self, template_id, **kwargs):
-        template = request.env['sign.template'].sudo().browse(template_id)
-        if not template or not template.datas:
-            return request.not_found()
-        datas = template.sudo().datas
-        if not datas:
-            return request.not_found()
-        pdf_bytes = base64.b64decode(datas)
+        Signer = request.env['sign.request.signer'].sudo()
+        SignRequest = request.env['sign.request'].sudo()
+
+        signer = Signer.browse()
+        if request_id:
+            signer = Signer.search([
+                ('access_token', '=', access_token),
+                ('sign_request_id', '=', request_id),
+            ], limit=1)
+        if not signer:
+            signer = Signer.search([('access_token', '=', access_token)], limit=1)
+
+        if signer:
+            return signer.sign_request_id, signer
+
+        domain = [('access_token', '=', access_token)]
+        if request_id:
+            domain.append(('id', '=', request_id))
+        sign_request = SignRequest.search(domain, limit=1)
+        if not sign_request:
+            sign_request = SignRequest.search([('access_token', '=', access_token)], limit=1)
+        return sign_request, Signer.browse()
+
+    def _make_pdf_response(self, pdf_bytes, filename='document.pdf'):
         return request.make_response(
             pdf_bytes,
             headers=[
                 ('Content-Type', 'application/pdf'),
-                ('Content-Disposition', 'inline; filename="%s"' % (template.name or 'document.pdf')),
+                ('Content-Disposition', 'inline; filename="%s"' % filename),
                 ('X-Frame-Options', 'SAMEORIGIN'),
                 ('Cache-Control', 'no-cache, no-store, must-revalidate'),
-            ]
+            ],
         )
 
-    @http.route('/sign/template/<int:template_id>/edit', type='http', auth='user')
+    @http.route('/sign/template/<int:template_id>/pdf', type='http', auth='user', website=False)
+    def sign_template_pdf(self, template_id, **kwargs):
+        template = request.env['sign.template'].sudo().browse(template_id)
+        if not template.exists() or not template.datas:
+            return request.not_found()
+        pdf_bytes = base64.b64decode(template.datas)
+        return self._make_pdf_response(pdf_bytes, template.name or 'document.pdf')
+
+    @http.route([
+        '/sign/document/<int:request_id>/<string:access_token>/pdf',
+        '/sign/<int:request_id>/<string:access_token>/pdf',
+        '/sign/document/<string:access_token>/pdf',
+        '/sign/<string:access_token>/pdf',
+    ], type='http', auth='public', website=False, multilang=False)
+    def sign_document_pdf(self, request_id=None, access_token=None, **kwargs):
+        if not access_token and isinstance(request_id, str):
+            access_token = request_id
+            request_id = None
+
+        sign_request, signer = self._resolve_sign_access(request_id, access_token)
+        if not sign_request:
+            return request.not_found()
+        if signer and signer.state == 'draft':
+            return request.not_found()
+        if sign_request.state in ('signed', 'canceled', 'expired'):
+            return request.not_found()
+
+        template = sign_request.template_id.sudo()
+        if not template.exists() or not template.datas:
+            return request.not_found()
+        pdf_bytes = base64.b64decode(template.datas)
+        return self._make_pdf_response(pdf_bytes, sign_request.reference or template.name or 'document.pdf')
+
+    @http.route('/sign/template/<int:template_id>/edit', type='http', auth='user', website=True, multilang=False)
     def sign_template_edit(self, template_id, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template:
+        if not template.exists():
             return request.not_found()
         sign_item_types = request.env['sign.item.type'].sudo().search_read([], ['id', 'name', 'item_type', 'default_width', 'default_height', 'is_mandatory'])
         sign_roles = request.env['sign.item.role'].sudo().search_read([], ['id', 'name', 'color'])
@@ -79,7 +127,7 @@ class SignController(http.Controller):
             pdf_b64_str = raw_datas.decode('utf-8') if isinstance(raw_datas, bytes) else str(raw_datas)
         else:
             pdf_b64_str = ''
-        return self._render('easy_sign.template_editor', {
+        return request.render('easy_sign.template_editor', {
             'template': template,
             'sign_item_types': sign_item_types,
             'sign_roles': sign_roles,
@@ -99,7 +147,7 @@ class SignController(http.Controller):
     @http.route('/sign/template/<int:template_id>/items', type='json', auth='user')
     def get_template_items(self, template_id, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template:
+        if not template.exists():
             return []
         return template.sign_item_ids.read([
             'id', 'type_id', 'required', 'responsible_id', 'name', 'page', 'posX', 'posY', 'width', 'height', 'alignment', 'placeholder'
@@ -108,7 +156,7 @@ class SignController(http.Controller):
     @http.route('/sign/template/<int:template_id>/save', type='json', auth='user')
     def save_template_items(self, template_id, items, signers=None, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template:
+        if not template.exists():
             return False
         # Delete existing items not in the list
         existing_ids = [item['id'] for item in items if item.get('id') and item['id'] > 0]
@@ -140,7 +188,7 @@ class SignController(http.Controller):
     @http.route('/sign/template/<int:template_id>/save_tags', type='json', auth='user')
     def save_template_tags(self, template_id, tag_ids=None, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template:
+        if not template.exists():
             return False
         if tag_ids is None:
             tag_ids = []
@@ -150,7 +198,7 @@ class SignController(http.Controller):
     @http.route('/sign/template/<int:template_id>/save_config', type='json', auth='user')
     def save_template_config(self, template_id, vals=None, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template or not vals:
+        if not template.exists() or not vals:
             return False
         allowed_fields = ['auth_method', 'validity_days', 'cc_emails', 'redirect_url', 'default_message', 'user_id']
         write_vals = {k: v for k, v in vals.items() if k in allowed_fields}
@@ -175,7 +223,7 @@ class SignController(http.Controller):
     @http.route('/sign/template/<int:template_id>/send', type='json', auth='user')
     def send_template_for_signing(self, template_id, signers=None, reference='', subject='', **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template:
+        if not template.exists():
             return {'error': 'Template not found'}
         if not template.sign_item_ids:
             return {'error': 'Please save at least one field on the template before sending.'}
@@ -215,39 +263,37 @@ class SignController(http.Controller):
             'url': '/odoo/sign-requests/%d' % sign_request.id,
         }
 
-    @http.route('/sign/document/<int:request_id>/<access_token>', type='http', auth='public')
-    def sign_document_public(self, request_id, access_token, **kwargs):
-        signer = request.env['sign.request.signer'].sudo().search([
-            ('access_token', '=', access_token),
-            ('sign_request_id', '=', request_id)
-        ], limit=1)
+    @http.route([
+        '/sign/document/<int:request_id>/<string:access_token>',
+        '/sign/<int:request_id>/<string:access_token>',
+        '/sign/document/<string:access_token>',
+        '/sign/<string:access_token>'
+    ], type='http', auth='public', website=True, multilang=False)
+    def sign_document_public(self, request_id=None, access_token=None, **kwargs):
+        if not access_token and isinstance(request_id, str):
+            access_token = request_id
+            request_id = None
+
+        sign_request, signer = self._resolve_sign_access(request_id, access_token)
+        if not sign_request:
+            return request.not_found()
 
         if signer:
-            sign_request = signer.sign_request_id
-            # Signer already signed
-            if signer.state == 'signed':
-                return self._render('easy_sign.sign_already_signed', {})
-            # Overall request is no longer open
-            if sign_request.state != 'sent':
-                return self._render('easy_sign.sign_already_signed', {})
-            # Signer is draft = not yet their turn in the sequence
+            if signer.state == 'signed' or sign_request.state in ('signed', 'canceled'):
+                return request.render('easy_sign.sign_already_signed', {})
             if signer.state == 'draft':
-                return self._render('easy_sign.sign_not_yet_turn', {
+                return request.render('easy_sign.sign_not_yet_turn', {
                     'sign_request': sign_request,
-                    'signer': signer,
                 })
             partner = signer.partner_id
             current_role_id = signer.role_id.id
         else:
-            # Fallback: match against request-level access_token (single signer / no signer flow)
-            sign_request = request.env['sign.request'].sudo().search([
-                ('access_token', '=', access_token),
-                ('id', '=', request_id)
-            ], limit=1)
-            if not sign_request:
-                return request.not_found()
-            if sign_request.state != 'sent':
-                return self._render('easy_sign.sign_already_signed', {})
+            if sign_request.state in ('signed', 'canceled'):
+                return request.render('easy_sign.sign_already_signed', {})
+            if sign_request.signer_ids and sign_request.signer_ids.filtered(lambda s: s.state == 'sent'):
+                return request.render('easy_sign.sign_not_yet_turn', {
+                    'sign_request': sign_request,
+                })
 
             partner = None
             if not request.env.user._is_public():
@@ -271,14 +317,14 @@ class SignController(http.Controller):
                     'partner_id': False,
                     'user_id': False,
                 })
-            return self._render('easy_sign.sign_request_expired_template', {
+            return request.render('easy_sign.sign_request_expired_template', {
                 'validity_date': sign_request.validity_date.strftime('%Y-%m-%d') if sign_request.validity_date else ''
             })
 
         request.env['sign.log'].sudo().create({
             'sign_request_id': sign_request.id,
             'action': 'view',
-            'ip_address': request.httprequest.remote_addr,
+            'ip_address': request.httprequest.environ.get('REMOTE_ADDR'),
         })
 
         signer_vals = {
@@ -342,9 +388,9 @@ class SignController(http.Controller):
         signers_list = []
         for s in sign_request.signer_ids:
             signers_list.append({
-                'name': s.partner_id.name if s.partner_id else '',
+                'name': s.partner_id.name,
                 'state': s.state,
-                'role_name': s.role_id.name if s.role_id else '',
+                'role_name': s.role_id.name,
             })
 
         show_back_button = not request.env.user._is_public() and not request.env.user.share
@@ -359,26 +405,15 @@ class SignController(http.Controller):
             'signers': signers_list,
             'show_back_button': show_back_button,
         }
-        return self._render('easy_sign.sign_page', values)
+        return request.render('easy_sign.sign_page', values)
 
-    @http.route('/sign/submit/<int:request_id>/<access_token>', type='http', auth='public', csrf=False, methods=['POST'])
+    @http.route('/sign/submit/<int:request_id>/<string:access_token>', type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
     def sign_submit(self, request_id, access_token, **kwargs):
-        signer = request.env['sign.request.signer'].sudo().search([
-            ('access_token', '=', access_token),
-            ('sign_request_id', '=', request_id)
-        ], limit=1)
-        
-        if signer:
-            sign_request = signer.sign_request_id
-        else:
-            sign_request = request.env['sign.request'].sudo().search([
-                ('access_token', '=', access_token),
-                ('id', '=', request_id)
-            ], limit=1)
-            signer = False
-
+        sign_request, signer = self._resolve_sign_access(request_id, access_token)
         if not sign_request or sign_request.state != 'sent':
             return json.dumps({'success': False})
+        if signer and signer.state != 'sent':
+            return json.dumps({'success': False, 'error': 'It is not your turn to sign this document yet.'})
 
         from odoo.fields import Date
         if sign_request.state == 'expired' or (sign_request.validity_date and sign_request.validity_date < Date.today()):
@@ -396,19 +431,16 @@ class SignController(http.Controller):
             data = json.loads(kwargs.get('data', '{}'))
             for k, v in data.items():
                 signature_values[k] = v
-            sign_request._sign_with_signer(signature_values, signer, ip_address=request.httprequest.remote_addr)
+            sign_request._sign_with_signer(signature_values, signer)
             return json.dumps({'success': True})
         except Exception as e:
             _logger.error(e)
             return json.dumps({'success': False})
 
-    @http.route('/sign/download/<int:request_id>/<access_token>/completed', type='http', auth='public')
+    @http.route('/sign/download/<int:request_id>/<string:access_token>/completed', type='http', auth='public', multilang=False)
     def download_completed(self, request_id, access_token, **kwargs):
-        sign_request = request.env['sign.request'].sudo().search([
-            ('id', '=', request_id),
-            ('access_token', '=', access_token)
-        ], limit=1)
-        if not sign_request or sign_request.state != 'signed' or not sign_request.completed_document:
+        sign_request, _signer = self._resolve_sign_access(request_id, access_token)
+        if not sign_request or not sign_request.completed_document:
             return request.not_found()
         return request.make_response(
             base64.b64decode(sign_request.completed_document),
@@ -421,7 +453,7 @@ class SignController(http.Controller):
     @http.route('/sign/template/<int:template_id>/share/get_or_create', type='json', auth='user')
     def share_get_or_create(self, template_id, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template:
+        if not template.exists():
             return {'error': 'Template not found'}
         if not template.share_token:
             import uuid
@@ -437,7 +469,7 @@ class SignController(http.Controller):
     @http.route('/sign/template/<int:template_id>/share/update', type='json', auth='user')
     def share_update(self, template_id, valid_until=None, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template:
+        if not template.exists():
             return {'error': 'Template not found'}
         vals = {}
         if valid_until is not None:
@@ -448,7 +480,7 @@ class SignController(http.Controller):
     @http.route('/sign/template/<int:template_id>/share/stop', type='json', auth='user')
     def share_stop(self, template_id, **kwargs):
         template = request.env['sign.template'].sudo().browse(template_id)
-        if not template:
+        if not template.exists():
             return {'error': 'Template not found'}
         template.sudo().write({
             'share_token': False,
@@ -456,41 +488,41 @@ class SignController(http.Controller):
         })
         return {'success': True}
 
-    @http.route('/sign/share/<int:template_id>/<share_token>', type='http', auth='public')
+    @http.route('/sign/share/<int:template_id>/<string:share_token>', type='http', auth='public', website=True, multilang=False)
     def share_template_page(self, template_id, share_token, **kwargs):
         template = request.env['sign.template'].sudo().search([
             ('id', '=', template_id),
-            ('share_token', '=', share_token)
+            ('share_token', '=', share_token),
         ], limit=1)
         if not template:
             return request.not_found()
             
         from odoo.fields import Date
         if template.valid_until and template.valid_until < Date.today():
-            return self._render('easy_sign.sign_expired_template', {'template': template})
+            return request.render('easy_sign.sign_expired_template', {'template': template})
             
         roles = template.sign_item_ids.mapped('responsible_id')
         if not roles:
             default_role = request.env['sign.item.role'].sudo().search([('name', '=', 'Signer 1')], limit=1)
             roles = default_role
             
-        return self._render('easy_sign.sign_share_template', {
+        return request.render('easy_sign.sign_share_template', {
             'template': template,
             'roles': roles,
         })
 
-    @http.route('/sign/share/<int:template_id>/<share_token>/submit', type='http', auth='public', methods=['POST'], csrf=False)
+    @http.route('/sign/share/<int:template_id>/<string:share_token>/submit', type='http', auth='public', methods=['POST'], website=True, csrf=True, multilang=False)
     def share_template_submit(self, template_id, share_token, **kwargs):
         template = request.env['sign.template'].sudo().search([
             ('id', '=', template_id),
-            ('share_token', '=', share_token)
+            ('share_token', '=', share_token),
         ], limit=1)
         if not template:
             return request.not_found()
             
         from odoo.fields import Date
         if template.valid_until and template.valid_until < Date.today():
-            return self._render('easy_sign.sign_expired_template', {'template': template})
+            return request.render('easy_sign.sign_expired_template', {'template': template})
             
         roles = template.sign_item_ids.mapped('responsible_id')
         if not roles:

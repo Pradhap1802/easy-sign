@@ -578,26 +578,34 @@
 
                 // ── 2. Get PDF bytes from server-injected base64 ────────────
                 let pdfData;
-                if (typeof PDF_B64 !== 'undefined' && PDF_B64) {
+                if (typeof PDF_B64 !== 'undefined' && PDF_B64 && PDF_B64.trim().length > 0) {
                     try {
-                        const binary = atob(PDF_B64);
+                        const cleanB64 = PDF_B64.replace(/[\r\n\s]/g, '');
+                        const binary = atob(cleanB64);
                         const bytes = new Uint8Array(binary.length);
                         for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
                         pdfData = bytes.buffer;
                     } catch (e) {
-                        showError('Failed to decode embedded PDF: ' + e.message);
-                        return;
+                        console.warn('[easy_sign sign_page] Base64 decode failed:', e);
+                        pdfData = null;
                     }
-                } else {
-                    // Fallback: fetch
+                }
+                
+                if (!pdfData && pdfUrl) {
+                    // Fallback: fetch from server
                     try {
                         const resp = await fetch(pdfUrl, { credentials: 'same-origin' });
                         if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
                         pdfData = await resp.arrayBuffer();
                     } catch (e) {
-                        showError('Could not load PDF: ' + e.message);
+                        showError('Could not load PDF document. Please ensure a PDF file is attached to the document template.');
                         return;
                     }
+                }
+
+                if (!pdfData) {
+                    showError('No PDF document attached to this signature request.');
+                    return;
                 }
 
                 // ── 3. Parse PDF ─────────────────────────────────────────
@@ -807,7 +815,11 @@
                         
                         <!-- Tabs -->
                         <div class="es-signature-modal-tabs">
-                            <button type="button" class="es-signature-tab-btn active" onclick="switchSignatureTab('auto')">
+                            ${SIGNER_INFO && SIGNER_INFO.saved_signature ? `
+                            <button type="button" class="es-signature-tab-btn active" onclick="switchSignatureTab('saved')">
+                                <span class="tab-icon">⭐</span> Saved
+                            </button>` : ''}
+                            <button type="button" class="es-signature-tab-btn ${!(SIGNER_INFO && SIGNER_INFO.saved_signature) ? 'active' : ''}" onclick="switchSignatureTab('auto')">
                                 <span class="tab-icon">⌨</span> Auto
                             </button>
                             <button type="button" class="es-signature-tab-btn" onclick="switchSignatureTab('draw')">
@@ -819,8 +831,19 @@
                         </div>
                         
                         <div class="es-signature-modal-body">
+                            ${SIGNER_INFO && SIGNER_INFO.saved_signature ? `
+                            <!-- Tab: Saved Signature -->
+                            <div class="es-signature-tab-content active" id="tab-content-saved">
+                                <div style="text-align:center; padding: 15px;">
+                                    <p style="color:#cbd5e1; font-size:13px; margin-bottom:12px;">Use your saved electronic signature from your partner profile:</p>
+                                    <div style="background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:12px; display:inline-block; max-width:100%;">
+                                        <img src="${SIGNER_INFO.saved_signature}" style="max-height:80px; object-fit:contain; display:block; margin:auto;"/>
+                                    </div>
+                                </div>
+                            </div>` : ''}
+
                             <!-- Tab 1: Auto -->
-                            <div class="es-signature-tab-content active" id="tab-content-auto">
+                            <div class="es-signature-tab-content ${!(SIGNER_INFO && SIGNER_INFO.saved_signature) ? 'active' : ''}" id="tab-content-auto">
                                 <div class="es-auto-input-group">
                                     <input type="text" class="es-auto-input" id="es-signer-name-input" value="${defaultText.replace(/"/g, '&quot;')}" placeholder="Type your name..." oninput="updateAutoSignature()"/>
                                     <select class="es-auto-font-select" id="es-signer-font-select" onchange="updateAutoSignature()">
@@ -848,7 +871,7 @@
                             <div class="es-signature-tab-content" id="tab-content-upload">
                                 <div class="es-upload-dropzone" id="es-upload-dropzone" onclick="triggerSignatureUpload()">
                                     <span class="upload-icon">📁</span>
-                                    <span class="upload-text">Drag & drop your signature image here, or <strong>browse</strong></span>
+                                    <span class="upload-text">Drag &amp; drop your signature image here, or <strong>browse</strong></span>
                                     <input type="file" id="es-signature-file-input" style="display:none;" accept="image/*" onchange="handleSignatureUpload(event)"/>
                                     <img id="es-upload-preview" class="es-upload-preview-img" style="display:none;"/>
                                 </div>
@@ -859,14 +882,14 @@
                             <span class="es-modal-agreement-text">By clicking Adopt and Sign, I agree that this signature/initials will be as valid as my handwritten signature.</span>
                             <div class="es-modal-footer-buttons">
                                 <button type="button" class="btn-secondary" onclick="closeSignaturePad()">Cancel</button>
-                                <button type="button" class="btn-primary" style="margin-top:0;" onclick="adoptSignature(${itemId})">Adopt & Sign</button>
+                                <button type="button" class="btn-primary" style="margin-top:0;" onclick="adoptSignature(${itemId})">Adopt &amp; Sign</button>
                             </div>
                         </div>
                     </div>
                 `;
                 document.body.appendChild(modal);
                 
-                activeSignatureTab = 'auto';
+                activeSignatureTab = (SIGNER_INFO && SIGNER_INFO.saved_signature) ? 'saved' : 'auto';
                 uploadedImageBase64 = null;
                 updateAutoSignature();
 
@@ -1033,7 +1056,14 @@
             function adoptSignature(itemId) {
                 let dataUrl = null;
                 
-                if (activeSignatureTab === 'auto') {
+                if (activeSignatureTab === 'saved') {
+                    if (SIGNER_INFO && SIGNER_INFO.saved_signature) {
+                        dataUrl = SIGNER_INFO.saved_signature;
+                    } else {
+                        alert('No saved signature found.');
+                        return;
+                    }
+                } else if (activeSignatureTab === 'auto') {
                     const nameInput = document.getElementById('es-signer-name-input');
                     const fontSelect = document.getElementById('es-signer-font-select');
                     const name = nameInput ? nameInput.value.trim() : '';
@@ -1430,6 +1460,69 @@
             }
 
             document.getElementById('o_sign_submit').addEventListener('click', async () => {
+                let validationError = false;
+                let firstErrorEl = null;
+
+                Object.keys(signItemInputs).forEach(key => {
+                    const item = signItemInputs[key];
+                    const meta = SIGN_ITEMS.find(i => i.id == key);
+                    if (CURRENT_ROLE_ID !== 0 && meta && meta.responsible_id !== CURRENT_ROLE_ID) return;
+
+                    const inputEl = item.el.querySelector('input, textarea');
+                    const val = inputEl ? inputEl.value.trim() : '';
+
+                    if (meta && meta.required) {
+                        if (['signature', 'initial'].includes(item.type)) {
+                            if (!signatureData[key]) {
+                                item.el.style.border = '2px solid #ef4444';
+                                item.el.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+                                if (!validationError) { validationError = true; firstErrorEl = item.el; }
+                            } else {
+                                item.el.style.border = '';
+                                item.el.style.boxShadow = '';
+                            }
+                        } else if (item.type === 'checkbox') {
+                            const chk = item.el.querySelector('input');
+                            if (!chk || !chk.checked) {
+                                item.el.style.border = '2px solid #ef4444';
+                                if (!validationError) { validationError = true; firstErrorEl = item.el; }
+                            } else {
+                                item.el.style.border = '';
+                            }
+                        } else if (val === '') {
+                            item.el.style.border = '2px solid #ef4444';
+                            item.el.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+                            if (!validationError) { validationError = true; firstErrorEl = item.el; }
+                        } else {
+                            item.el.style.border = '';
+                            item.el.style.boxShadow = '';
+                        }
+                    }
+
+                    const fieldName = ((meta && meta.name) || '').toLowerCase();
+                    if (val !== '' && (meta.type === 'email' || fieldName.includes('email') || fieldName.includes('mail'))) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(val)) {
+                            item.el.style.border = '2px solid #ef4444';
+                            item.el.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+                            if (!validationError) {
+                                validationError = true;
+                                firstErrorEl = item.el;
+                                alert('Please enter a valid email address.');
+                            }
+                        }
+                    }
+                });
+
+                if (validationError) {
+                    if (firstErrorEl) {
+                        firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        alert('Please complete all required fields correctly before submitting.');
+                    }
+                    return;
+                }
+
                 const values = {};
                 Object.keys(signItemInputs).forEach(key => {
                     const item = signItemInputs[key];
@@ -1453,7 +1546,7 @@
                 }
             });
 
-            initPDFIframe('/sign/template/' + TEMPLATE_ID + '/pdf');
+            initPDFIframe('/sign/document/' + REQUEST_ID + '/' + ACCESS_TOKEN + '/pdf');
 ]]>
             </script>
                 </body>
