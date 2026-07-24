@@ -17,30 +17,37 @@ class SignController(http.Controller):
     def _resolve_sign_access(self, request_id=None, access_token=None):
         """Resolve a sign request (and optional signer) from public URL tokens."""
         if not access_token:
-            return request.env['sign.request'].browse(), request.env['sign.request.signer'].browse()
+            return request.env['sign.request'].sudo().browse(), request.env['sign.request.signer'].sudo().browse()
 
         Signer = request.env['sign.request.signer'].sudo()
         SignRequest = request.env['sign.request'].sudo()
 
-        signer = Signer.browse()
+        req_id_int = False
         if request_id:
+            try:
+                req_id_int = int(request_id)
+            except (ValueError, TypeError):
+                req_id_int = False
+
+        signer = Signer.browse()
+        if req_id_int:
             signer = Signer.search([
                 ('access_token', '=', access_token),
-                ('sign_request_id', '=', request_id),
+                ('sign_request_id', '=', req_id_int),
             ], limit=1)
         if not signer:
             signer = Signer.search([('access_token', '=', access_token)], limit=1)
 
         if signer:
-            return signer.sign_request_id, signer
+            return signer.sign_request_id.sudo(), signer.sudo()
 
         domain = [('access_token', '=', access_token)]
-        if request_id:
-            domain.append(('id', '=', request_id))
+        if req_id_int:
+            domain.append(('id', '=', req_id_int))
         sign_request = SignRequest.search(domain, limit=1)
         if not sign_request:
             sign_request = SignRequest.search([('access_token', '=', access_token)], limit=1)
-        return sign_request, Signer.browse()
+        return sign_request.sudo(), Signer.browse()
 
     def _make_pdf_response(self, pdf_bytes, filename='document.pdf'):
         return request.make_response(
@@ -324,49 +331,51 @@ class SignController(http.Controller):
         '/sign/<int:request_id>/<string:access_token>',
         '/sign/document/<string:access_token>',
         '/sign/<string:access_token>'
-    ], type='http', auth='public', website=True, multilang=False)
+    ], type='http', auth='public', website=False, multilang=False)
     def sign_document_public(self, request_id=None, access_token=None, **kwargs):
         if not access_token and isinstance(request_id, str):
             access_token = request_id
             request_id = None
 
         sign_request, signer = self._resolve_sign_access(request_id, access_token)
-        if not sign_request:
+        if not sign_request or not sign_request.exists():
             return request.not_found()
 
+        sign_request = sign_request.sudo()
         if signer:
+            signer = signer.sudo()
             if signer.state == 'signed' or sign_request.state in ('signed', 'canceled'):
-                return request.render('easy_sign.sign_already_signed', {})
+                return request.render('easy_sign.sign_already_signed', {'sign_request': sign_request})
             if signer.state == 'draft':
                 return request.render('easy_sign.sign_not_yet_turn', {
                     'sign_request': sign_request,
                 })
-            partner = signer.partner_id
-            current_role_id = signer.role_id.id
+            partner = signer.partner_id.sudo() if signer.partner_id else None
+            current_role_id = signer.role_id.id if signer.role_id else 0
         else:
             if sign_request.state in ('signed', 'canceled'):
-                return request.render('easy_sign.sign_already_signed', {})
-            if sign_request.signer_ids and sign_request.signer_ids.filtered(lambda s: s.state == 'sent'):
+                return request.render('easy_sign.sign_already_signed', {'sign_request': sign_request})
+            if sign_request.signer_ids and sign_request.signer_ids.sudo().filtered(lambda s: s.state == 'sent'):
                 return request.render('easy_sign.sign_not_yet_turn', {
                     'sign_request': sign_request,
                 })
 
             partner = None
             if not request.env.user._is_public():
-                partner = request.env.user.partner_id
+                partner = request.env.user.partner_id.sudo()
             else:
                 last_log = request.env['sign.log'].sudo().search([
                     ('sign_request_id', '=', sign_request.id),
                     ('action', '=', 'send')
                 ], order='id desc', limit=1)
                 if last_log and last_log.partner_id:
-                    partner = last_log.partner_id
+                    partner = last_log.partner_id.sudo()
             current_role_id = 0
 
         from odoo.fields import Date
         if sign_request.state == 'expired' or (sign_request.validity_date and sign_request.validity_date < Date.today()):
             if sign_request.state != 'expired':
-                sign_request.write({'state': 'expired'})
+                sign_request.sudo().write({'state': 'expired'})
                 request.env['sign.log'].sudo().create({
                     'sign_request_id': sign_request.id,
                     'action': 'expire',
@@ -453,7 +462,7 @@ class SignController(http.Controller):
         values = {
             'sign_request': sign_request,
             'access_token': access_token,
-            'signer_info_json': json.dumps(signer_vals),
+            'signer_info_json': Markup(json.dumps(signer_vals)),
             'pdf_b64_json': Markup(json.dumps(pdf_b64)),
             'sign_items_json': Markup(json.dumps(sign_items_data)),
             'current_role_id': current_role_id,
@@ -544,7 +553,7 @@ class SignController(http.Controller):
         })
         return {'success': True}
 
-    @http.route('/sign/share/<int:template_id>/<string:share_token>', type='http', auth='public', website=True, multilang=False)
+    @http.route('/sign/share/<int:template_id>/<string:share_token>', type='http', auth='public', website=False, multilang=False)
     def share_template_page(self, template_id, share_token, **kwargs):
         template = request.env['sign.template'].sudo().search([
             ('id', '=', template_id),
@@ -567,7 +576,7 @@ class SignController(http.Controller):
             'roles': roles,
         })
 
-    @http.route('/sign/share/<int:template_id>/<string:share_token>/submit', type='http', auth='public', methods=['POST'], website=True, csrf=True, multilang=False)
+    @http.route('/sign/share/<int:template_id>/<string:share_token>/submit', type='http', auth='public', methods=['POST'], website=False, csrf=True, multilang=False)
     def share_template_submit(self, template_id, share_token, **kwargs):
         template = request.env['sign.template'].sudo().search([
             ('id', '=', template_id),

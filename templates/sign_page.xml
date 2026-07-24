@@ -514,7 +514,7 @@
                     <div id="es-pdf-pages" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;"></div>
                 </div>
                 <div style="text-align: center; margin-bottom: 40px; margin-top: 20px;">
-                    <button id="o_sign_submit" class="btn-primary" style="display: none; width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: #00a09d; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">Validate &amp; Send Completed Document</button>
+                    <button id="o_sign_submit" class="btn-primary" style="display: block; width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #00a09d 0%, #007a78 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer; border: none; border-radius: 8px; color: white;">Start Signing</button>
                 </div>
             </div>
             <script>
@@ -522,7 +522,7 @@
             const TEMPLATE_ID = ]]><t t-esc="sign_request.template_id.id"/><![CDATA[;
             const REQUEST_ID = ]]><t t-esc="sign_request.id"/><![CDATA[;
             const ACCESS_TOKEN = ']]><t t-esc="access_token"/><![CDATA[';
-            const SIGNER_INFO = ]]><t t-raw="signer_info_json"/><![CDATA[;
+            const SIGNER_INFO = ]]><t t-out="signer_info_json"/><![CDATA[;
             const SIGN_ITEMS = ]]><t t-out="sign_items_json"/><![CDATA[;
             const PDF_B64 = ]]><t t-out="pdf_b64_json"/><![CDATA[;
             const CURRENT_ROLE_ID = ]]><t t-esc="current_role_id"/><![CDATA[;
@@ -1261,7 +1261,14 @@
                 const hasUnsignedSigs = hasUnsignedSignatureFields();
                 const submitBtn = document.getElementById('o_sign_submit');
                 if (submitBtn) {
-                    submitBtn.style.display = (uncompleted.length === 0 && !hasUnsignedSigs) ? 'block' : 'none';
+                    submitBtn.style.display = 'block';
+                    if (hasUnsignedSigs || uncompleted.length > 0) {
+                        submitBtn.textContent = 'Start Signing';
+                        submitBtn.style.background = 'linear-gradient(135deg, #00a09d 0%, #007a78 100%)';
+                    } else {
+                        submitBtn.textContent = 'Validate & Send Completed Document';
+                        submitBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)';
+                    }
                 }
 
                 if (!activeItem) {
@@ -1364,22 +1371,11 @@
                 fillBtn.style.display = unfilledText.length > 0 ? 'inline-flex' : 'none';
 
                 // Next/Start/Submit button logic
-                if (uncompleted.length > 0) {
-                    nextBtn.style.display = 'inline-flex';
-                    const unsignedSigs = uncompleted.filter(i => ['signature', 'initial'].includes(i.type));
-                    if (unsignedSigs.length > 0) {
-                        nextLabel.textContent = navigatorStarted ? 'Sign Field' : 'Start Signing';
-                    } else {
-                        nextLabel.textContent = navigatorStarted ? 'Next Field' : 'Start Signing';
-                    }
-                } else if (hasUnsignedSigs) {
-                    nextBtn.style.display = 'inline-flex';
-                    nextLabel.textContent = 'Sign Document';
-                } else if (submitBtn && submitBtn.style.display !== 'none') {
-                    nextBtn.style.display = 'inline-flex';
-                    nextLabel.textContent = 'Submit';
+                nextBtn.style.display = 'inline-flex';
+                if (hasUnsignedSigs || uncompleted.length > 0) {
+                    nextLabel.textContent = navigatorStarted ? 'Sign Field' : 'Start Signing';
                 } else {
-                    nextBtn.style.display = 'none';
+                    nextLabel.textContent = 'Submit';
                 }
             }
 
@@ -1421,26 +1417,23 @@
             function topNextClick() {
                 const label = document.getElementById('es-top-next-label').textContent.trim();
                 const hasUnsignedSigs = hasUnsignedSignatureFields();
+                const uncompleted = getUncompletedItems();
 
                 if (label === 'Submit') {
-                    if (hasUnsignedSigs) {
-                        alert('Please manually sign all required signature fields before submitting.');
+                    if (hasUnsignedSigs || uncompleted.length > 0) {
+                        fillAllFields();
                         goToFirstUnsignedSignature();
                         return;
                     }
                     document.getElementById('o_sign_submit').click();
-                } else if (label === 'Start Signing' || label === 'Sign Document') {
+                } else if (label === 'Start Signing' || label === 'Sign Document' || label === 'Sign Field' || label === 'Next Field') {
                     fillAllFields();
                     if (hasUnsignedSigs) {
                         goToFirstUnsignedSignature();
-                    } else {
+                    } else if (uncompleted.length > 0) {
                         goToNextSignItem();
-                    }
-                } else if (label === 'Sign Field' || label === 'Next Field') {
-                    if (hasUnsignedSigs) {
-                        goToFirstUnsignedSignature();
                     } else {
-                        goToNextSignItem();
+                        updateTopButtons();
                     }
                 } else {
                     goToNextSignItem();
@@ -1462,8 +1455,13 @@
 
                 navigatorEl.addEventListener('click', () => {
                     const txt = navigatorEl.innerText;
-                    if (txt === 'Click to start') {
-                        goToNextSignItem();
+                    if (txt === 'Click to start' || txt === 'Start Signing') {
+                        fillAllFields();
+                        if (hasUnsignedSignatureFields()) {
+                            goToFirstUnsignedSignature();
+                        } else {
+                            goToNextSignItem();
+                        }
                     } else if (txt === 'Fill in') {
                         autoFillActiveField();
                     } else if (txt === 'Sign') {
@@ -1490,7 +1488,12 @@
                     const centerViewportY = rect.top + rect.height / 2;
                     navigatorEl.style.top = (centerViewportY - 20) + 'px';
                     navlineEl.style.top = centerViewportY + 'px';
-                } else if (!hasUnsignedSigs && SIGN_ITEMS.length > 0) {
+                } else if (hasUnsignedSigs) {
+                    navigatorEl.style.display = 'flex';
+                    navlineEl.style.display = 'block';
+                    navigatorEl.innerText = 'Start Signing';
+                    goToFirstUnsignedSignature();
+                } else if (SIGN_ITEMS.length > 0) {
                     navigatorEl.style.display = 'flex';
                     navlineEl.style.display = 'block';
                     navigatorEl.innerText = 'Submit';
@@ -1500,11 +1503,6 @@
                     const centerViewportY = rect.top + rect.height / 2;
                     navigatorEl.style.top = (centerViewportY - 20) + 'px';
                     navlineEl.style.top = centerViewportY + 'px';
-                } else if (hasUnsignedSigs) {
-                    navigatorEl.style.display = 'flex';
-                    navlineEl.style.display = 'block';
-                    navigatorEl.innerText = 'Sign';
-                    goToFirstUnsignedSignature();
                 }
 
                 window.addEventListener('scroll', () => {
@@ -1535,8 +1533,8 @@
             }
 
             document.getElementById('o_sign_submit').addEventListener('click', async () => {
-                if (hasUnsignedSignatureFields()) {
-                    alert('Please manually sign all required signature fields before submitting.');
+                if (hasUnsignedSignatureFields() || getUncompletedItems().length > 0) {
+                    fillAllFields();
                     goToFirstUnsignedSignature();
                     return;
                 }
