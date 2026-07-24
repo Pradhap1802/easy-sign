@@ -107,15 +107,23 @@
                     overflow: hidden;
                 }
 
-                /* ===== SIDEBAR ===== */
+                /* ===== SIDEBAR / NAV BAR ===== */
+                :root {
+                    --es-sidebar-width: 280px;
+                }
                 .es-sidebar {
-                    width: 260px;
+                    width: var(--es-sidebar-width, 280px);
+                    min-width: 180px;
+                    max-width: 550px;
                     flex-shrink: 0;
                     background: rgba(17,20,29,0.98);
                     border-right: 1px solid rgba(255,255,255,0.07);
                     display: flex;
                     flex-direction: column;
-                    overflow: hidden;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    position: relative;
+                    transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
                 }
                 .es-sidebar-section {
                     padding: 16px;
@@ -446,12 +454,14 @@
                 .es-empty-hint-icon { font-size: 32px; }
                 .es-empty-hint-text { font-size: 13px; color: #94a3b8; text-align: center; }
 
-                /* ===== SCROLLBAR ===== */
+                /* ===== SCROLLBAR FOR NAVBAR / SIDEBAR ===== */
                 .es-viewer::-webkit-scrollbar { width: 6px; }
                 .es-viewer::-webkit-scrollbar-track { background: transparent; }
                 .es-viewer::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-                .es-sidebar::-webkit-scrollbar, #es-signers-list::-webkit-scrollbar { width: 4px; }
-                .es-sidebar::-webkit-scrollbar-thumb, #es-signers-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+                .es-sidebar::-webkit-scrollbar, .es-sidebar-scroll::-webkit-scrollbar, #es-signers-list::-webkit-scrollbar { width: 6px; }
+                .es-sidebar::-webkit-scrollbar-track, .es-sidebar-scroll::-webkit-scrollbar-track, #es-signers-list::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
+                .es-sidebar::-webkit-scrollbar-thumb, .es-sidebar-scroll::-webkit-scrollbar-thumb, #es-signers-list::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
+                .es-sidebar::-webkit-scrollbar-thumb:hover, .es-sidebar-scroll::-webkit-scrollbar-thumb:hover, #es-signers-list::-webkit-scrollbar-thumb:hover { background: rgba(99, 102, 241, 0.6); }
                 .es-props-panel::-webkit-scrollbar { width: 4px; }
                 .es-props-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
 
@@ -927,8 +937,10 @@
 
             <!-- MAIN LAYOUT -->
             <div class="es-main">
-                <!-- SIDEBAR -->
+                <!-- SIDEBAR / NAV BAR -->
                 <div class="es-sidebar">
+                    <!-- Resizer drag handle -->
+                    <div id="es-sidebar-resizer" title="Drag to resize navbar" style="position:absolute; top:0; right:0; width:6px; height:100%; cursor:ew-resize; z-index:30; background:transparent; transition:background 0.15s;" onmouseover="this.style.background='rgba(99,102,241,0.5)'" onmouseout="this.style.background='transparent'"></div>
                     <div id="es-field-palette" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
                         <!-- Signers Section -->
                         <div class="es-signers-section" id="es-signers-section" style="flex:1; display:flex; flex-direction:column; overflow:hidden; border-top:none;">
@@ -1620,13 +1632,58 @@ function saveConfigModal() {
 }
 window.saveConfigModal = saveConfigModal;
 
+/* ========================================================
+   NAV BAR DYNAMIC DRAG-RESIZE HANDLER
+   ======================================================== */
+let sidebarWidth = 280;
+
+function initSidebarResize() {
+    const sidebar = document.querySelector('.es-sidebar');
+    const handle = document.getElementById('es-sidebar-resizer');
+    if (!sidebar || !handle) return;
+
+    let isResizing = false;
+    let startX = 0;
+    let startWidth = 0;
+
+    handle.addEventListener('mousedown', function(e) {
+        isResizing = true;
+        startX = e.clientX;
+        startWidth = sidebar.getBoundingClientRect().width;
+        sidebar.style.transition = 'none'; // Instant responsive dragging
+        handle.style.background = 'rgba(99, 102, 241, 0.7)';
+        document.body.style.cursor = 'ew-resize';
+        document.body.style.userSelect = 'none';
+        e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', function(e) {
+        if (!isResizing) return;
+        const newWidth = Math.min(Math.max(startWidth + (e.clientX - startX), 180), 550);
+        sidebarWidth = newWidth;
+        document.documentElement.style.setProperty('--es-sidebar-width', newWidth + 'px');
+    });
+
+    window.addEventListener('mouseup', function() {
+        if (isResizing) {
+            isResizing = false;
+            sidebar.style.transition = 'width 0.15s cubic-bezier(0.4, 0, 0.2, 1)';
+            handle.style.background = 'transparent';
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+}
+
 // Initialize on page load
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         renderTagBadges();
+        initSidebarResize();
     });
 } else {
     renderTagBadges();
+    initSidebarResize();
 }
 
 /* ========================================================
