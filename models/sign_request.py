@@ -309,6 +309,7 @@ class SignRequest(models.Model):
                             attachment_ids=[attachment.id]
                         )
                         self._send_cc_emails(attachment)
+                        self._send_completed_email(attachment)
 
 
     def _sign(self, signature_values):
@@ -358,6 +359,7 @@ class SignRequest(models.Model):
                         attachment_ids=[attachment.id]
                     )
                     self._send_cc_emails(attachment)
+                    self._send_completed_email(attachment)
 
     def _send_cc_emails(self, attachment):
         self.ensure_one()
@@ -385,6 +387,52 @@ class SignRequest(models.Model):
             {'email_to': ','.join(cc_list), 'subject': subject, 'attachment_ids': [attachment.id]},
             force_send=True,
         )
+
+    def _send_completed_email(self, attachment):
+        self.ensure_one()
+        base_url = self.get_base_url()
+        link = "%s/sign/document/%s/%s" % (base_url, self.id, self.access_token)
+        subject = _('Document Signed: %s') % self.reference
+        
+        emails_sent = set()
+        
+        # Add the creator/owner to receive the completed document
+        creator_email = self.create_uid.partner_id.email if self.create_uid.partner_id else False
+        if creator_email:
+            emails_sent.add(creator_email)
+            body = self.env['ir.qweb']._render('easy_sign.sign_template_mail_completed', {
+                'record': self,
+                'recipient_name': self.create_uid.partner_id.name,
+                'link': link,
+            }, minimal_qcontext=True)
+            self._message_send_mail(
+                body,
+                'mail.mail_notification_light',
+                {'record_name': self.reference},
+                {'model_description': _('Signature')},
+                {'email_to': creator_email, 'subject': subject, 'attachment_ids': [attachment.id]},
+                force_send=True,
+            )
+
+        # Add all signers
+        for signer in self.signer_ids:
+            email = signer.partner_id.email if signer.partner_id else False
+            if not email or email in emails_sent:
+                continue
+            emails_sent.add(email)
+            body = self.env['ir.qweb']._render('easy_sign.sign_template_mail_completed', {
+                'record': self,
+                'recipient_name': signer.partner_id.name,
+                'link': link,
+            }, minimal_qcontext=True)
+            self._message_send_mail(
+                body,
+                'mail.mail_notification_light',
+                {'record_name': self.reference},
+                {'model_description': _('Signature')},
+                {'email_to': email, 'subject': subject, 'attachment_ids': [attachment.id]},
+                force_send=True,
+            )
 
 
     def _refuse(self, refuser, refusal_reason):

@@ -622,13 +622,22 @@ class SignController(http.Controller):
         sign_request.sudo()._generate_completed_document()
         if not sign_request.completed_document:
             return request.not_found()
-        return request.make_response(
-            base64.b64decode(sign_request.completed_document),
-            headers=[
-                ('Content-Type', 'application/pdf'),
-                ('Content-Disposition', content_disposition('%s.pdf' % sign_request.reference)),
-            ]
-        )
+        pdf_bytes = base64.b64decode(sign_request.completed_document)
+        filename = '%s.pdf' % sign_request.reference if sign_request.reference else 'signed_document.pdf'
+        
+        # If the user explicitly wants to download, we set disposition to attachment
+        if kwargs.get('download'):
+            from odoo.http import content_disposition
+            return request.make_response(
+                pdf_bytes,
+                headers=[
+                    ('Content-Type', 'application/pdf'),
+                    ('Content-Disposition', content_disposition(filename)),
+                ]
+            )
+            
+        # Otherwise, render inline for the iframe preview
+        return self._make_pdf_response(pdf_bytes, filename)
 
     @http.route('/sign/template/<int:template_id>/share/get_or_create', type='json', auth='user')
     def share_get_or_create(self, template_id, **kwargs):

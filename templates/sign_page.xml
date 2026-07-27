@@ -1777,9 +1777,21 @@
                     color: #333;
                 }
             </style>
-            <div class="container">
-                <h1>Document Already Signed</h1>
-                <p>This document has already been signed or processed.</p>
+            <div class="container" style="max-width: 900px; width: 90%;">
+                <h1>Document Fully Signed</h1>
+                <p>This document has been fully signed and processed.</p>
+                
+                <div style="margin: 20px 0;">
+                    <a t-attf-href="/sign/download/{{sign_request.id}}/{{sign_request.access_token}}/completed?download=1" 
+                       class="btn btn-primary" 
+                       style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; margin-bottom: 20px;">
+                        <i class="fa fa-download"></i> Download Signed Document
+                    </a>
+                </div>
+                
+                <div style="border: 1px solid #ccc; border-radius: 4px; overflow: hidden; height: 80vh;">
+                    <iframe t-attf-src="/sign/download/{{sign_request.id}}/{{sign_request.access_token}}/completed" width="100%" height="100%" style="border: none;"></iframe>
+                </div>
             </div>
         </t>
     </template>
