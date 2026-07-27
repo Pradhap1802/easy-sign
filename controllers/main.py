@@ -386,6 +386,16 @@ class SignController(http.Controller):
                 'validity_date': sign_request.validity_date.strftime('%Y-%m-%d') if sign_request.validity_date else ''
             })
 
+        if sign_request.template_id.auth_method == 'extra' and signer:
+            session_key = 'sign_otp_verified_%s_%s' % (sign_request.id, signer.id)
+            if not request.session.get(session_key, False):
+                return request.render('easy_sign.sign_otp_verification', {
+                    'sign_request': sign_request,
+                    'access_token': access_token,
+                    'signer_email': signer.email or (signer.partner_id.email if signer.partner_id else ''),
+                })
+
+
         request.env['sign.log'].sudo().create({
             'sign_request_id': sign_request.id,
             'action': 'view',
@@ -472,6 +482,50 @@ class SignController(http.Controller):
         }
         return request.render('easy_sign.sign_page', values)
 
+    @http.route('/sign/send_otp/<int:request_id>/<string:access_token>', type='json', auth='public')
+    def sign_send_otp(self, request_id, access_token, **kwargs):
+        sign_request, signer = self._resolve_sign_access(request_id, access_token)
+        if not sign_request or not signer:
+            return {'success': False, 'error': 'Invalid request'}
+        
+        import random, string
+        otp_code = ''.join(random.choices(string.digits, k=6))
+        
+        from datetime import timedelta
+        import odoo.fields as fields
+        signer.sudo().write({
+            'otp': otp_code,
+            'otp_expiration': fields.Datetime.now() + timedelta(minutes=10)
+        })
+        
+        email = signer.email or (signer.partner_id.email if signer.partner_id else '')
+        body = _("Your OTP code for signing the document %(doc)s is: <b>%(otp)s</b>. It is valid for 10 minutes.") % {'doc': sign_request.reference, 'otp': otp_code}
+        sign_request.sudo()._message_send_mail(
+            body,
+            'mail.mail_notification_light',
+            {'record_name': sign_request.reference},
+            {'model_description': _('Signature')},
+            {'email_to': email, 'subject': _("OTP Verification")},
+            force_send=True
+        )
+        return {'success': True}
+
+    @http.route('/sign/verify_otp/<int:request_id>/<string:access_token>', type='json', auth='public')
+    def sign_verify_otp(self, request_id, access_token, otp=None, **kwargs):
+        sign_request, signer = self._resolve_sign_access(request_id, access_token)
+        if not sign_request or not signer or not otp:
+            return {'success': False, 'error': 'Invalid request'}
+        
+        from odoo.fields import Datetime
+        if not signer.otp or signer.otp != otp.strip():
+            return {'success': False, 'error': 'Invalid OTP code'}
+        if signer.otp_expiration and signer.otp_expiration < Datetime.now():
+            return {'success': False, 'error': 'OTP code has expired'}
+            
+        session_key = 'sign_otp_verified_%s_%s' % (sign_request.id, signer.id)
+        request.session[session_key] = True
+        return {'success': True}
+
     @http.route('/sign/submit/<int:request_id>/<string:access_token>', type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
     def sign_submit(self, request_id, access_token, **kwargs):
         sign_request, signer = self._resolve_sign_access(request_id, access_token)
@@ -501,6 +555,65 @@ class SignController(http.Controller):
         except Exception as e:
             _logger.error(e)
             return json.dumps({'success': False})
+
+    @http.route('/sign/refuse/<int:request_id>/<string:access_token>', type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
+    def sign_refuse(self, request_id, access_token, **kwargs):
+        sign_request, signer = self._resolve_sign_access(request_id, access_token)
+        if not sign_request or sign_request.state != 'sent':
+            return json.dumps({'success': False})
+        if signer and signer.state != 'sent':
+            return json.dumps({'success': False, 'error': 'It is not your turn to sign this document yet.'})
+
+        reason = kwargs.get('reason', '')
+        try:
+            sign_request._refuse(signer, reason)
+            return json.dumps({'success': True})
+        except Exception as e:
+            _logger.error(e)
+            return json.dumps({'success': False})
+
+    @http.route('/sign/delegate/<int:request_id>/<string:access_token>', type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
+    def sign_delegate(self, request_id, access_token, **kwargs):
+        sign_request, signer = self._resolve_sign_access(request_id, access_token)
+        if not sign_request or sign_request.state != 'sent':
+            return json.dumps({'success': False})
+        if not signer or signer.state != 'sent':
+            return json.dumps({'success': False, 'error': 'It is not your turn to sign this document yet.'})
+
+        new_name = kwargs.get('new_name', '').strip()
+        new_email = kwargs.get('new_email', '').strip()
+        message = kwargs.get('message', '').strip()
+
+        if not new_email or not new_name:
+            return json.dumps({'success': False, 'error': 'Name and Email are required.'})
+
+        partner = request.env['res.partner'].sudo().search([('email', '=', new_email)], limit=1)
+        if not partner:
+            partner = request.env['res.partner'].sudo().create({
+                'name': new_name,
+                'email': new_email
+            })
+
+        old_partner_name = signer.partner_id.name
+        signer.write({
+            'partner_id': partner.id,
+            'email': partner.email,
+        })
+        
+        body = _("Signature request delegated from %s to %s.") % (old_partner_name, partner.name)
+        if message:
+            body += _(" Message: %s") % message
+        sign_request.message_post(body=body)
+
+        request.env['sign.log'].sudo().create({
+            'sign_request_id': sign_request.id,
+            'partner_id': partner.id,
+            'action': 'delegate',
+            'ip_address': request.httprequest.environ.get('REMOTE_ADDR'),
+        })
+        
+        sign_request.sudo()._send_signer_email(signer)
+        return json.dumps({'success': True})
 
     @http.route('/sign/download/<int:request_id>/<string:access_token>/completed', type='http', auth='public', multilang=False)
     def download_completed(self, request_id, access_token, **kwargs):

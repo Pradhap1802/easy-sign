@@ -60,6 +60,7 @@ class SignRequest(models.Model):
         string="Valid Until",
         default=lambda self: fields.Date.today() + timedelta(days=60)
     )
+    cc_emails = fields.Char(string="CC")
     
     @api.onchange('document')
     def _onchange_document(self):
@@ -122,6 +123,10 @@ class SignRequest(models.Model):
                     'datas': vals.get('document'),
                 })
                 vals['template_id'] = template.id
+            if vals.get('template_id') and not vals.get('cc_emails'):
+                template = self.env['sign.template'].browse(vals['template_id'])
+                if template.exists() and template.cc_emails:
+                    vals['cc_emails'] = template.cc_emails
         sign_requests = super().create(vals_list)
         for sign_request in sign_requests:
             self.env['sign.log'].sudo().create({'sign_request_id': sign_request.id, 'action': 'create'})
@@ -295,8 +300,15 @@ class SignRequest(models.Model):
                 next_signer = sorted(sent_unsigned, key=lambda s: s.sequence)[0]
                 self._send_signer_email(next_signer)
             elif all(s.state == 'signed' for s in self.signer_ids) or not self.signer_ids:
-                self.write({'state': 'signed'})
-                self._generate_completed_document()
+                if self.state != 'signed':
+                    self.write({'state': 'signed'})
+                    attachment = self._generate_completed_document()
+                    if attachment:
+                        self.message_post(
+                            body=_("All signers have completed signing. The final document is attached."),
+                            attachment_ids=[attachment.id]
+                        )
+                        self._send_cc_emails(attachment)
 
 
     def _sign(self, signature_values):
@@ -331,18 +343,61 @@ class SignRequest(models.Model):
             'ip_address': ip_address or False,
         })
         
+        self.message_post(body=_("Signer %s has completed signing.") % partner.name)
+        
         if signer:
             signer.write({'state': 'signed'})
             self.action_send_next_signature_request()
         else:
-            self.write({'state': 'signed'})
-            self._generate_completed_document()
+            if self.state != 'signed':
+                self.write({'state': 'signed'})
+                attachment = self._generate_completed_document()
+                if attachment:
+                    self.message_post(
+                        body=_("All signers have completed signing. The final document is attached."),
+                        attachment_ids=[attachment.id]
+                    )
+                    self._send_cc_emails(attachment)
+
+    def _send_cc_emails(self, attachment):
+        self.ensure_one()
+        if not self.cc_emails:
+            return
+        cc_list = [email.strip() for email in self.cc_emails.split(',') if email.strip()]
+        if not cc_list:
+            return
+        
+        base_url = self.get_base_url()
+        link = "%s/sign/document/%s/%s" % (base_url, self.id, self.access_token)
+        subject = _('Completed Signature Request: %s') % self.reference
+        body = self.env['ir.qweb']._render('easy_sign.sign_template_mail', {
+            'record': self,
+            'recipient': self.env.user.partner_id,
+            'link': link,
+            'subject': subject,
+        }, minimal_qcontext=True)
+        
+        self._message_send_mail(
+            body,
+            'mail.mail_notification_light',
+            {'record_name': self.reference},
+            {'model_description': _('Signature')},
+            {'email_to': ','.join(cc_list), 'subject': subject, 'attachment_ids': [attachment.id]},
+            force_send=True,
+        )
+
 
     def _refuse(self, refuser, refusal_reason):
         self.ensure_one()
         if self.state != 'sent':
             raise UserError(_("This sign request cannot be refused"))
         self.write({'state': 'canceled'})
+        if refuser:
+            refuser.write({'state': 'canceled'})
+            partner_name = refuser.partner_id.name
+        else:
+            partner_name = self.env.user.name
+        self.message_post(body=_("Signature request refused by %s. Reason: %s") % (partner_name, refusal_reason))
 
     def _message_send_mail(self, body, template_xmlid, record_name, model_description, email_values, **kwargs):
         self.ensure_one()
@@ -495,13 +550,14 @@ class SignRequest(models.Model):
 
             self.completed_document = base64.b64encode(raw_bytes)
             output.close()
-        self.env['ir.attachment'].create({
+        attachment = self.env['ir.attachment'].create({
             'name': "%s.pdf" % self.reference if self.reference.split('.')[-1] != 'pdf' else self.reference,
             'datas': self.completed_document,
             'type': 'binary',
             'res_model': self._name,
             'res_id': self.id,
         })
+        return attachment
 
     @api.model
     def _cron_check_expired(self):
@@ -540,3 +596,6 @@ class SignRequestSigner(models.Model):
     ], default='draft', required=True)
     access_token = fields.Char('Security Token', required=True, default=_default_access_token, readonly=True, copy=False)
     sequence = fields.Integer(string="Sequence", default=10)
+    otp = fields.Char(string="OTP Code", copy=False)
+    otp_expiration = fields.Datetime(string="OTP Expiration", copy=False)
+

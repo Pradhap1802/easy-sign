@@ -9,6 +9,7 @@ class SignSendRequestWizard(models.TransientModel):
     template_id = fields.Many2one('sign.template', string="Template", required=True, default=lambda self: self.env.context.get('active_id', None))
     reference = fields.Char(string="Document Name", default="New Signature Request")
     subject = fields.Char(string="Email Subject")
+    cc_emails = fields.Char(string="CC")
     signer_ids = fields.One2many('sign.send.request.signer', 'wizard_id', string="Signers")
 
     @api.model
@@ -17,6 +18,8 @@ class SignSendRequestWizard(models.TransientModel):
         active_id = self.env.context.get('active_id')
         if active_id and self.env.context.get('active_model') == 'sign.template':
             template = self.env['sign.template'].browse(active_id)
+            if 'cc_emails' in fields_list and not res.get('cc_emails'):
+                res['cc_emails'] = template.cc_emails
             
             signer_vals = []
             if template.template_signer_ids:
@@ -46,6 +49,7 @@ class SignSendRequestWizard(models.TransientModel):
             'template_id': self.template_id.id,
             'reference': self.reference,
             'subject': self.subject,
+            'cc_emails': self.cc_emails,
         }
         sign_request = self.env['sign.request'].create(request_vals)
         
@@ -94,6 +98,7 @@ class SignRequestSendWizard(models.TransientModel):
     request_id = fields.Many2one('sign.request', string="Sign Request", required=True)
     partner_id = fields.Many2one('res.partner', string="Recipient")
     subject = fields.Char(string="Subject", required=True)
+    cc_emails = fields.Char(string="CC")
     signer_ids = fields.One2many('sign.request.send.wizard.signer', 'wizard_id', string="Recipients")
 
     @api.model
@@ -104,6 +109,8 @@ class SignRequestSendWizard(models.TransientModel):
             request_rec = self.env['sign.request'].browse(request_id)
             if 'subject' in fields_list and not res.get('subject'):
                 res['subject'] = request_rec.subject or (_('Signature Request: %s') % request_rec.reference)
+            if 'cc_emails' in fields_list and not res.get('cc_emails'):
+                res['cc_emails'] = request_rec.cc_emails
 
             signer_vals = []
             if request_rec.signer_ids:
@@ -124,6 +131,8 @@ class SignRequestSendWizard(models.TransientModel):
         self.ensure_one()
         if self.subject and self.request_id.subject != self.subject:
             self.request_id.write({'subject': self.subject})
+        if self.cc_emails and self.request_id.cc_emails != self.cc_emails:
+            self.request_id.write({'cc_emails': self.cc_emails})
 
         if self.signer_ids:
             for w_signer in self.signer_ids:

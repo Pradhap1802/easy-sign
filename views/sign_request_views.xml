@@ -25,6 +25,7 @@
                                 <field name="document_filename" invisible="1"/>
                                 <field name="template_id"/>
                                 <field name="subject"/>
+                                <field name="cc_emails"/>
                                 <field name="active" invisible="1"/>
                             </group>
                             <group string="Info">

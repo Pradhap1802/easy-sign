@@ -10,6 +10,7 @@
                         <field name="template_id"/>
                         <field name="reference"/>
                         <field name="subject"/>
+                        <field name="cc_emails"/>
                     </group>
                     <notebook invisible="not template_id">
                         <page string="Signers" name="signers">
@@ -45,6 +46,7 @@
                     <group>
                         <field name="request_id" invisible="1"/>
                         <field name="subject"/>
+                        <field name="cc_emails"/>
                     </group>
                     <notebook>
                         <page string="Recipients" name="recipients">
