@@ -15,6 +15,7 @@ class SignLog(models.Model):
         ('cancel', 'Cancel'),
         ('decline', 'Decline'),
         ('expire', 'Expire'),
+        ('delegate', 'Delegate'),
     ], string='Action', required=True)
     partner_id = fields.Many2one('res.partner', string='Partner', default=lambda self: self.env.user.partner_id)
     user_id = fields.Many2one('res.users', string='User')

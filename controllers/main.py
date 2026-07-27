@@ -597,7 +597,6 @@ class SignController(http.Controller):
         old_partner_name = signer.partner_id.name
         signer.write({
             'partner_id': partner.id,
-            'email': partner.email,
         })
         
         body = _("Signature request delegated from %s to %s.") % (old_partner_name, partner.name)
