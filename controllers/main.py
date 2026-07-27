@@ -392,7 +392,7 @@ class SignController(http.Controller):
                 return request.render('easy_sign.sign_otp_verification', {
                     'sign_request': sign_request,
                     'access_token': access_token,
-                    'signer_email': signer.email or (signer.partner_id.email if signer.partner_id else ''),
+                    'signer_email': signer.partner_id.email if signer.partner_id else '',
                 })
 
 
@@ -498,7 +498,7 @@ class SignController(http.Controller):
             'otp_expiration': fields.Datetime.now() + timedelta(minutes=10)
         })
         
-        email = signer.email or (signer.partner_id.email if signer.partner_id else '')
+        email = signer.partner_id.email if signer.partner_id else ''
         body = _("Your OTP code for signing the document %(doc)s is: <b>%(otp)s</b>. It is valid for 10 minutes.") % {'doc': sign_request.reference, 'otp': otp_code}
         sign_request.sudo()._message_send_mail(
             body,
