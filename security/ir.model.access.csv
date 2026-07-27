@@ -17,12 +17,3 @@ easy_sign.access_sign_template_sign_now_wizard,access.sign.template.sign.now.wiz
 easy_sign.access_sign_template_sign_now_signer,access.sign.template.sign.now.signer,easy_sign.model_sign_template_sign_now_signer,base.group_user,1,1,1,1
 easy_sign.access_sign_tag,access.sign.tag,easy_sign.model_sign_tag,base.group_user,1,1,1,1
 easy_sign.access_sign_request_send_wizard_signer,access.sign.request.send.wizard.signer,easy_sign.model_sign_request_send_wizard_signer,base.group_user,1,1,1,1
-easy_sign.access_sign_template_public,access.sign.template.public,easy_sign.model_sign_template,,1,0,0,0
-easy_sign.access_sign_item_public,access.sign.item.public,easy_sign.model_sign_item,,1,0,0,0
-easy_sign.access_sign_item_type_public,access.sign.item.type.public,easy_sign.model_sign_item_type,,1,0,0,0
-easy_sign.access_sign_item_role_public,access.sign.item.role.public,easy_sign.model_sign_item_role,,1,0,0,0
-easy_sign.access_sign_request_public,access.sign.request.public,easy_sign.model_sign_request,,1,0,0,0
-easy_sign.access_sign_request_signer_public,access.sign.request.signer.public,easy_sign.model_sign_request_signer,,1,0,0,0
-easy_sign.access_sign_request_item_value_public,access.sign.request.item.value.public,easy_sign.model_sign_request_item_value,,1,0,0,0
-easy_sign.access_sign_log_public,access.sign.log.public,easy_sign.model_sign_log,,1,0,0,0
-easy_sign.access_sign_tag_public,access.sign.tag.public,easy_sign.model_sign_tag,,1,0,0,0
