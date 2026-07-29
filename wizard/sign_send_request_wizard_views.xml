@@ -15,9 +15,10 @@
                     <notebook invisible="not template_id">
                         <page string="Signers" name="signers">
                             <field name="signer_ids">
-                                <list editable="bottom" create="0" delete="0">
-                                    <field name="role_id" readonly="1" force_save="1"/>
-                                    <field name="partner_id"/>
+                                <list editable="bottom">
+                                    <field name="role_id" force_save="1"/>
+                                    <field name="partner_id" required="0"/>
+                                    <field name="name"/>
                                     <field name="email"/>
                                 </list>
                             </field>
@@ -34,43 +35,6 @@
         <record id="action_sign_send_request" model="ir.actions.act_window">
             <field name="name">Send Signature Request</field>
             <field name="res_model">sign.send.request.wizard</field>
-            <field name="view_mode">form</field>
-            <field name="target">new</field>
-        </record>
-
-        <record id="view_sign_request_send_wizard" model="ir.ui.view">
-            <field name="name">sign.request.send.wizard.form</field>
-            <field name="model">sign.request.send.wizard</field>
-            <field name="arch" type="xml">
-                <form string="Send Signature Request">
-                    <group>
-                        <field name="request_id" invisible="1"/>
-                        <field name="subject"/>
-                        <field name="cc_emails"/>
-                    </group>
-                    <notebook>
-                        <page string="Recipients" name="recipients">
-                            <field name="signer_ids">
-                                <list editable="bottom" create="0" delete="0">
-                                    <field name="role_id" readonly="1" force_save="1"/>
-                                    <field name="partner_id"/>
-                                    <field name="email"/>
-                                    <field name="state" readonly="1" force_save="1"/>
-                                </list>
-                            </field>
-                        </page>
-                    </notebook>
-                    <footer>
-                        <button name="send_mail" string="Send Email" type="object" class="oe_highlight"/>
-                        <button string="Cancel" class="oe_link" special="cancel"/>
-                    </footer>
-                </form>
-            </field>
-        </record>
-
-        <record id="action_sign_request_send_wizard" model="ir.actions.act_window">
-            <field name="name">Send Signature Request</field>
-            <field name="res_model">sign.request.send.wizard</field>
             <field name="view_mode">form</field>
             <field name="target">new</field>
         </record>

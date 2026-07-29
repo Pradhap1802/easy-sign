@@ -14,87 +14,87 @@
                 /* ===== RESET &amp; BASE ===== */
                 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
                 body {
-                    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-                    background: #0f1117;
-                    color: #e2e8f0;
-                    height: 100vh;
-                    overflow: hidden;
-                    display: flex;
-                    flex-direction: column;
+                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+                background: #0f1117;
+                color: #e2e8f0;
+                height: 100vh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
                 }
 
                 /* ===== HEADER ===== */
                 .es-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 0 24px;
-                    height: 58px;
-                    background: rgba(15,17,23,0.95);
-                    border-bottom: 1px solid rgba(255,255,255,0.08);
-                    flex-shrink: 0;
-                    backdrop-filter: blur(12px);
-                    z-index: 100;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 24px;
+                height: 58px;
+                background: rgba(15,17,23,0.95);
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                flex-shrink: 0;
+                backdrop-filter: blur(12px);
+                z-index: 100;
                 }
                 .es-header-left { display: flex; align-items: center; gap: 14px; }
                 .es-logo {
-                    width: 32px; height: 32px;
-                    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                    border-radius: 8px;
-                    display: flex; align-items: center; justify-content: center;
-                    font-size: 16px; font-weight: 700; color: white;
-                    flex-shrink: 0;
+                width: 32px; height: 32px;
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                border-radius: 8px;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 16px; font-weight: 700; color: white;
+                flex-shrink: 0;
                 }
                 .es-title {
-                    font-size: 15px; font-weight: 600;
-                    color: #f1f5f9;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    max-width: 320px;
+                font-size: 15px; font-weight: 600;
+                color: #f1f5f9;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 320px;
                 }
                 .es-subtitle { font-size: 12px; color: #64748b; margin-top: 1px; }
                 .es-header-actions { display: flex; gap: 10px; align-items: center; }
                 .es-btn {
-                    padding: 8px 18px;
-                    border-radius: 8px;
-                    font-size: 13px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    border: none;
-                    transition: all 0.18s ease;
-                    display: inline-flex; align-items: center; gap: 6px;
+                padding: 8px 18px;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                transition: all 0.18s ease;
+                display: inline-flex; align-items: center; gap: 6px;
                 }
                 .es-btn-ghost {
-                    background: transparent;
-                    color: #94a3b8;
-                    border: 1px solid rgba(255,255,255,0.1);
+                background: transparent;
+                color: #94a3b8;
+                border: 1px solid rgba(255,255,255,0.1);
                 }
                 .es-btn-ghost:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
                 .es-btn-danger {
-                    background: rgba(239,68,68,0.12);
-                    color: #f87171;
-                    border: 1px solid rgba(239,68,68,0.2);
+                background: rgba(239,68,68,0.12);
+                color: #f87171;
+                border: 1px solid rgba(239,68,68,0.2);
                 }
                 .es-btn-danger:hover { background: rgba(239,68,68,0.22); }
                 .es-btn-primary {
-                    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-                    color: white;
-                    border: none;
-                    box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+                background: linear-gradient(135deg, #6366f1, #8b5cf6);
+                color: white;
+                border: none;
+                box-shadow: 0 4px 14px rgba(99,102,241,0.35);
                 }
                 .es-btn-primary:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 6px 20px rgba(99,102,241,0.45);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(99,102,241,0.45);
                 }
                 .es-btn-primary:active { transform: translateY(0); }
                 .es-btn-primary:disabled {
-                    opacity: 0.5; cursor: not-allowed; transform: none;
-                    box-shadow: none;
+                opacity: 0.5; cursor: not-allowed; transform: none;
+                box-shadow: none;
                 }
                 .es-save-status {
-                    font-size: 12px; color: #64748b;
-                    display: flex; align-items: center; gap: 5px;
+                font-size: 12px; color: #64748b;
+                display: flex; align-items: center; gap: 5px;
                 }
                 .es-save-status.saved { color: #34d399; }
                 .es-save-status.saving { color: #fbbf24; }
@@ -102,81 +102,81 @@
 
                 /* ===== MAIN LAYOUT ===== */
                 .es-main {
-                    display: flex;
-                    flex: 1;
-                    overflow: hidden;
+                display: flex;
+                flex: 1;
+                overflow: hidden;
                 }
 
                 /* ===== SIDEBAR / NAV BAR ===== */
                 :root {
-                    --es-sidebar-width: 280px;
+                --es-sidebar-width: 280px;
                 }
                 .es-sidebar {
-                    width: var(--es-sidebar-width, 280px);
-                    min-width: 180px;
-                    max-width: 550px;
-                    flex-shrink: 0;
-                    background: rgba(17,20,29,0.98);
-                    border-right: 1px solid rgba(255,255,255,0.07);
-                    display: flex;
-                    flex-direction: column;
-                    overflow-y: auto;
-                    overflow-x: hidden;
-                    position: relative;
-                    transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+                width: var(--es-sidebar-width, 280px);
+                min-width: 180px;
+                max-width: 550px;
+                flex-shrink: 0;
+                background: rgba(17,20,29,0.98);
+                border-right: 1px solid rgba(255,255,255,0.07);
+                display: flex;
+                flex-direction: column;
+                overflow-y: auto;
+                overflow-x: hidden;
+                position: relative;
+                transition: width 0.15s cubic-bezier(0.4, 0, 0.2, 1);
                 }
                 .es-sidebar-section {
-                    padding: 16px;
-                    border-bottom: 1px solid rgba(255,255,255,0.06);
+                padding: 16px;
+                border-bottom: 1px solid rgba(255,255,255,0.06);
                 }
                 .es-sidebar-title {
-                    font-size: 10px;
-                    font-weight: 700;
-                    letter-spacing: 0.08em;
-                    text-transform: uppercase;
-                    color: #475569;
-                    margin-bottom: 12px;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: #475569;
+                margin-bottom: 12px;
                 }
                 .es-field-cards {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
                 }
                 .es-field-card {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    padding: 10px 12px;
-                    border-radius: 10px;
-                    border: 1px solid transparent;
-                    cursor: grab;
-                    transition: all 0.18s ease;
-                    background: rgba(255,255,255,0.03);
-                    user-select: none;
-                    -webkit-user-select: none;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 10px 12px;
+                border-radius: 10px;
+                border: 1px solid transparent;
+                cursor: grab;
+                transition: all 0.18s ease;
+                background: rgba(255,255,255,0.03);
+                user-select: none;
+                -webkit-user-select: none;
                 }
                 .es-field-card:hover {
-                    background: rgba(255,255,255,0.07);
-                    border-color: rgba(255,255,255,0.1);
-                    transform: translateX(3px);
+                background: rgba(255,255,255,0.07);
+                border-color: rgba(255,255,255,0.1);
+                transform: translateX(3px);
                 }
                 .es-field-card:active { cursor: grabbing; transform: scale(0.97); }
                 .es-field-card.dragging { opacity: 0.4; }
                 .es-field-icon {
-                    width: 34px; height: 34px;
-                    border-radius: 8px;
-                    display: flex; align-items: center; justify-content: center;
-                    font-size: 16px;
-                    flex-shrink: 0;
+                width: 34px; height: 34px;
+                border-radius: 8px;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 16px;
+                flex-shrink: 0;
                 }
                 .es-field-info { flex: 1; min-width: 0; }
                 .es-field-name { font-size: 13px; font-weight: 600; color: #e2e8f0; }
                 .es-field-desc { font-size: 11px; color: #64748b; margin-top: 1px; }
                 .es-drag-hint {
-                    font-size: 11px; color: #334155;
-                    text-align: center;
-                    padding: 8px 16px;
-                    display: flex; align-items: center; gap: 6px; justify-content: center;
+                font-size: 11px; color: #334155;
+                text-align: center;
+                padding: 8px 16px;
+                display: flex; align-items: center; gap: 6px; justify-content: center;
                 }
 
                 /* Field type colors */
@@ -188,225 +188,225 @@
 
                 /* ===== PROPERTIES PANEL ===== */
                 .es-props-panel {
-                    flex: 1;
-                    overflow-y: auto;
-                    padding: 16px;
-                    display: none;
-                    flex-direction: column;
-                    gap: 14px;
+                flex: 1;
+                overflow-y: auto;
+                padding: 16px;
+                display: none;
+                flex-direction: column;
+                gap: 14px;
                 }
                 .es-props-panel.visible { display: flex; }
                 .es-props-header {
-                    display: flex; align-items: center; justify-content: space-between;
-                    margin-bottom: 4px;
+                display: flex; align-items: center; justify-content: space-between;
+                margin-bottom: 4px;
                 }
                 .es-props-title { font-size: 13px; font-weight: 700; color: #e2e8f0; }
                 .es-props-close {
-                    width: 24px; height: 24px;
-                    border-radius: 6px;
-                    border: none;
-                    background: rgba(255,255,255,0.07);
-                    color: #94a3b8;
-                    cursor: pointer;
-                    font-size: 14px;
-                    display: flex; align-items: center; justify-content: center;
-                    transition: all 0.15s;
+                width: 24px; height: 24px;
+                border-radius: 6px;
+                border: none;
+                background: rgba(255,255,255,0.07);
+                color: #94a3b8;
+                cursor: pointer;
+                font-size: 14px;
+                display: flex; align-items: center; justify-content: center;
+                transition: all 0.15s;
                 }
                 .es-props-close:hover { background: rgba(239,68,68,0.2); color: #f87171; }
                 .es-form-group { display: flex; flex-direction: column; gap: 6px; }
                 .es-label {
-                    font-size: 11px; font-weight: 600;
-                    color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
+                font-size: 11px; font-weight: 600;
+                color: #64748b; text-transform: uppercase; letter-spacing: 0.05em;
                 }
                 .es-select, .es-input {
-                    width: 100%;
-                    padding: 8px 10px;
-                    background: rgba(255,255,255,0.05);
-                    border: 1px solid rgba(255,255,255,0.1);
-                    border-radius: 8px;
-                    color: #e2e8f0;
-                    font-size: 13px;
-                    outline: none;
-                    transition: border-color 0.18s;
-                    -webkit-appearance: none;
-                    appearance: none;
+                width: 100%;
+                padding: 8px 10px;
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 8px;
+                color: #e2e8f0;
+                font-size: 13px;
+                outline: none;
+                transition: border-color 0.18s;
+                -webkit-appearance: none;
+                appearance: none;
                 }
                 .es-select:focus, .es-input:focus { border-color: #6366f1; }
                 .es-select option { background: #1e2130; color: #e2e8f0; }
                 .es-checkbox-row {
-                    display: flex; align-items: center; gap: 8px;
-                    padding: 8px 10px;
-                    background: rgba(255,255,255,0.03);
-                    border-radius: 8px;
-                    cursor: pointer;
+                display: flex; align-items: center; gap: 8px;
+                padding: 8px 10px;
+                background: rgba(255,255,255,0.03);
+                border-radius: 8px;
+                cursor: pointer;
                 }
                 .es-checkbox-row input[type="checkbox"] { accent-color: #6366f1; width: 15px; height: 15px; }
                 .es-checkbox-label { font-size: 13px; color: #cbd5e1; }
                 .es-props-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0; }
                 .es-props-delete {
-                    width: 100%;
-                    padding: 9px;
-                    background: rgba(239,68,68,0.1);
-                    color: #f87171;
-                    border: 1px solid rgba(239,68,68,0.2);
-                    border-radius: 8px;
-                    font-size: 13px; font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.18s;
-                    display: flex; align-items: center; justify-content: center; gap: 6px;
+                width: 100%;
+                padding: 9px;
+                background: rgba(239,68,68,0.1);
+                color: #f87171;
+                border: 1px solid rgba(239,68,68,0.2);
+                border-radius: 8px;
+                font-size: 13px; font-weight: 600;
+                cursor: pointer;
+                transition: all 0.18s;
+                display: flex; align-items: center; justify-content: center; gap: 6px;
                 }
                 .es-props-delete:hover { background: rgba(239,68,68,0.22); }
                 .es-pos-info {
-                    background: rgba(255,255,255,0.03);
-                    border-radius: 8px;
-                    padding: 8px 10px;
-                    font-size: 11px;
-                    color: #475569;
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 4px;
+                background: rgba(255,255,255,0.03);
+                border-radius: 8px;
+                padding: 8px 10px;
+                font-size: 11px;
+                color: #475569;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
                 }
                 .es-pos-info span { color: #94a3b8; }
 
                 /* ===== PDF VIEWER ===== */
                 .es-viewer {
-                    flex: 1;
-                    overflow-y: auto;
-                    overflow-x: hidden;
-                    background: #1a1d27;
-                    padding: 24px;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    gap: 20px;
+                flex: 1;
+                overflow-y: auto;
+                overflow-x: hidden;
+                background: #1a1d27;
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
                 }
                 .es-page-wrapper {
-                    position: relative;
-                    display: inline-block;
-                    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-                    border-radius: 4px;
-                    border: 2px solid transparent;
-                    transition: border-color 0.18s;
-                    max-width: 900px;
-                    width: 100%;
+                position: relative;
+                display: inline-block;
+                box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+                border-radius: 4px;
+                border: 2px solid transparent;
+                transition: border-color 0.18s;
+                max-width: 900px;
+                width: 100%;
                 }
                 .es-page-wrapper.drag-over {
-                    border-color: #6366f1 !important;
-                    box-shadow: 0 0 0 3px rgba(99,102,241,0.25), 0 8px 40px rgba(0,0,0,0.5);
+                border-color: #6366f1 !important;
+                box-shadow: 0 0 0 3px rgba(99,102,241,0.25), 0 8px 40px rgba(0,0,0,0.5);
                 }
                 .es-page-wrapper canvas {
-                    display: block;
-                    width: 100%;
-                    border-radius: 2px;
+                display: block;
+                width: 100%;
+                border-radius: 2px;
                 }
                 .es-page-label {
-                    text-align: center;
-                    font-size: 11px;
-                    color: #475569;
-                    margin-top: 6px;
-                    letter-spacing: 0.04em;
+                text-align: center;
+                font-size: 11px;
+                color: #475569;
+                margin-top: 6px;
+                letter-spacing: 0.04em;
                 }
 
                 /* ===== LOADING ===== */
                 .es-loading {
-                    display: flex; flex-direction: column;
-                    align-items: center; justify-content: center;
-                    gap: 14px; height: 300px;
+                display: flex; flex-direction: column;
+                align-items: center; justify-content: center;
+                gap: 14px; height: 300px;
                 }
                 .es-spinner {
-                    width: 40px; height: 40px;
-                    border: 3px solid rgba(99,102,241,0.2);
-                    border-top-color: #6366f1;
-                    border-radius: 50%;
-                    animation: spin 0.8s linear infinite;
+                width: 40px; height: 40px;
+                border: 3px solid rgba(99,102,241,0.2);
+                border-top-color: #6366f1;
+                border-radius: 50%;
+                animation: spin 0.8s linear infinite;
                 }
                 @keyframes spin { to { transform: rotate(360deg); } }
                 .es-loading-text { color: #64748b; font-size: 14px; }
 
                 /* ===== PLACED FIELD ITEMS ===== */
                 .sign-field-item {
-                    position: absolute;
-                    cursor: move;
-                    z-index: 20;
-                    border-radius: 4px;
-                    border: 2px solid;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: box-shadow 0.15s;
-                    overflow: visible;
+                position: absolute;
+                cursor: move;
+                z-index: 20;
+                border-radius: 4px;
+                border: 2px solid;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: box-shadow 0.15s;
+                overflow: visible;
                 }
                 .sign-field-item:hover { z-index: 30; }
                 .sign-field-item.selected {
-                    z-index: 40;
-                    box-shadow: 0 0 0 3px rgba(99,102,241,0.5) !important;
+                z-index: 40;
+                box-shadow: 0 0 0 3px rgba(99,102,241,0.5) !important;
                 }
                 .sign-field-label {
-                    font-size: 10px;
-                    font-weight: 700;
-                    letter-spacing: 0.04em;
-                    text-transform: uppercase;
-                    white-space: nowrap;
-                    overflow: hidden;
-                    text-overflow: ellipsis;
-                    padding: 0 4px;
-                    pointer-events: none;
-                    opacity: 0.85;
-                    max-width: 100%;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                padding: 0 4px;
+                pointer-events: none;
+                opacity: 0.85;
+                max-width: 100%;
                 }
                 .sign-field-badge {
-                    position: absolute;
-                    top: -8px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    font-size: 9px;
-                    font-weight: 700;
-                    padding: 1px 5px;
-                    border-radius: 4px;
-                    white-space: nowrap;
-                    pointer-events: none;
-                    letter-spacing: 0.04em;
-                    text-transform: uppercase;
+                position: absolute;
+                top: -8px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 9px;
+                font-weight: 700;
+                padding: 1px 5px;
+                border-radius: 4px;
+                white-space: nowrap;
+                pointer-events: none;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
                 }
                 .sign-field-delete {
-                    position: absolute;
-                    top: -10px;
-                    right: -10px;
-                    width: 20px; height: 20px;
-                    border-radius: 50%;
-                    background: #ef4444;
-                    color: white;
-                    border: 2px solid #0f1117;
-                    font-size: 11px;
-                    display: flex; align-items: center; justify-content: center;
-                    cursor: pointer;
-                    z-index: 50;
-                    opacity: 0;
-                    transition: opacity 0.15s, transform 0.15s;
-                    line-height: 1;
-                    font-weight: 700;
+                position: absolute;
+                top: -10px;
+                right: -10px;
+                width: 20px; height: 20px;
+                border-radius: 50%;
+                background: #ef4444;
+                color: white;
+                border: 2px solid #0f1117;
+                font-size: 11px;
+                display: flex; align-items: center; justify-content: center;
+                cursor: pointer;
+                z-index: 50;
+                opacity: 0;
+                transition: opacity 0.15s, transform 0.15s;
+                line-height: 1;
+                font-weight: 700;
                 }
                 .sign-field-item:hover .sign-field-delete,
                 .sign-field-item.selected .sign-field-delete {
-                    opacity: 1;
+                opacity: 1;
                 }
                 .sign-field-delete:hover { transform: scale(1.2); background: #dc2626; }
                 .sign-field-resize {
-                    position: absolute;
-                    bottom: -5px;
-                    right: -5px;
-                    width: 12px; height: 12px;
-                    background: white;
-                    border: 2px solid #6366f1;
-                    border-radius: 2px;
-                    cursor: se-resize;
-                    z-index: 50;
-                    opacity: 0;
-                    transition: opacity 0.15s;
+                position: absolute;
+                bottom: -5px;
+                right: -5px;
+                width: 12px; height: 12px;
+                background: white;
+                border: 2px solid #6366f1;
+                border-radius: 2px;
+                cursor: se-resize;
+                z-index: 50;
+                opacity: 0;
+                transition: opacity 0.15s;
                 }
                 .sign-field-item:hover .sign-field-resize,
                 .sign-field-item.selected .sign-field-resize {
-                    opacity: 1;
+                opacity: 1;
                 }
 
                 /* Field type specific colors */
@@ -424,19 +424,19 @@
 
                 /* ===== TOAST ===== */
                 .es-toast {
-                    position: fixed;
-                    bottom: 28px;
-                    left: 50%;
-                    transform: translateX(-50%) translateY(80px);
-                    padding: 12px 22px;
-                    border-radius: 10px;
-                    font-size: 13px; font-weight: 600;
-                    z-index: 9999;
-                    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
-                    opacity: 0;
-                    pointer-events: none;
-                    display: flex; align-items: center; gap: 8px;
-                    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+                position: fixed;
+                bottom: 28px;
+                left: 50%;
+                transform: translateX(-50%) translateY(80px);
+                padding: 12px 22px;
+                border-radius: 10px;
+                font-size: 13px; font-weight: 600;
+                z-index: 9999;
+                transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+                opacity: 0;
+                pointer-events: none;
+                display: flex; align-items: center; gap: 8px;
+                box-shadow: 0 8px 30px rgba(0,0,0,0.4);
                 }
                 .es-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
                 .es-toast.success { background: #064e3b; color: #34d399; border: 1px solid rgba(52,211,153,0.3); }
@@ -444,12 +444,12 @@
 
                 /* ===== EMPTY STATE ===== */
                 .es-empty-hint {
-                    position: absolute;
-                    inset: 0;
-                    display: flex; align-items: center; justify-content: center;
-                    pointer-events: none;
-                    flex-direction: column; gap: 8px;
-                    opacity: 0.35;
+                position: absolute;
+                inset: 0;
+                display: flex; align-items: center; justify-content: center;
+                pointer-events: none;
+                flex-direction: column; gap: 8px;
+                opacity: 0.35;
                 }
                 .es-empty-hint-icon { font-size: 32px; }
                 .es-empty-hint-text { font-size: 13px; color: #94a3b8; text-align: center; }
@@ -467,405 +467,405 @@
 
                 /* ===== FIELD COUNT BADGE ===== */
                 .es-field-count {
-                    display: inline-flex; align-items: center; justify-content: center;
-                    background: rgba(99,102,241,0.2);
-                    color: #818cf8;
-                    font-size: 10px; font-weight: 700;
-                    min-width: 18px; height: 18px;
-                    padding: 0 5px;
-                    border-radius: 9px;
-                    margin-left: auto;
+                display: inline-flex; align-items: center; justify-content: center;
+                background: rgba(99,102,241,0.2);
+                color: #818cf8;
+                font-size: 10px; font-weight: 700;
+                min-width: 18px; height: 18px;
+                padding: 0 5px;
+                border-radius: 9px;
+                margin-left: auto;
                 }
 
                 .es-sidebar-scroll {
-                    overflow-y: auto;
-                    flex: 1;
-                    display: flex;
-                    flex-direction: column;
+                overflow-y: auto;
+                flex: 1;
+                display: flex;
+                flex-direction: column;
                 }
 
                 /* Role color dot */
                 .es-role-dot {
-                    width: 8px; height: 8px;
-                    border-radius: 50%;
-                    flex-shrink: 0;
-                    display: inline-block;
+                width: 8px; height: 8px;
+                border-radius: 50%;
+                flex-shrink: 0;
+                display: inline-block;
                 }
 
                 /* ===== SIGNERS SECTION ===== */
                 .es-signers-section {
-                    border-top: 1px solid rgba(255,255,255,0.06);
-                    padding: 14px 16px;
-                    flex-shrink: 0;
+                border-top: 1px solid rgba(255,255,255,0.06);
+                padding: 14px 16px;
+                flex-shrink: 0;
                 }
                 .es-signers-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin-bottom: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 10px;
                 }
                 .es-signers-count {
-                    font-size: 11px;
-                    background: rgba(99,102,241,0.18);
-                    color: #818cf8;
-                    border-radius: 20px;
-                    padding: 2px 8px;
-                    font-weight: 700;
-                    min-width: 22px;
-                    text-align: center;
+                font-size: 11px;
+                background: rgba(99,102,241,0.18);
+                color: #818cf8;
+                border-radius: 20px;
+                padding: 2px 8px;
+                font-weight: 700;
+                min-width: 22px;
+                text-align: center;
                 }
                 .es-btn-add-signer {
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                    padding: 5px 11px;
-                    border-radius: 7px;
-                    font-size: 11px;
-                    font-weight: 600;
-                    background: rgba(99,102,241,0.15);
-                    border: 1px solid rgba(99,102,241,0.3);
-                    color: #818cf8;
-                    cursor: pointer;
-                    transition: background 0.15s, border-color 0.15s;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+                padding: 5px 11px;
+                border-radius: 7px;
+                font-size: 11px;
+                font-weight: 600;
+                background: rgba(99,102,241,0.15);
+                border: 1px solid rgba(99,102,241,0.3);
+                color: #818cf8;
+                cursor: pointer;
+                transition: background 0.15s, border-color 0.15s;
                 }
                 .es-btn-add-signer:hover {
-                    background: rgba(99,102,241,0.25);
-                    border-color: rgba(99,102,241,0.5);
+                background: rgba(99,102,241,0.25);
+                border-color: rgba(99,102,241,0.5);
                 }
                 .es-signer-row {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
-                    padding: 10px;
-                    border-radius: 10px;
-                    background: rgba(255,255,255,0.03);
-                    border: 1px solid rgba(255,255,255,0.06);
-                    margin-bottom: 6px;
-                    transition: border-color 0.15s;
-                    position: relative;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                padding: 10px;
+                border-radius: 10px;
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.06);
+                margin-bottom: 6px;
+                transition: border-color 0.15s;
+                position: relative;
                 }
                 .es-signer-row:focus-within {
-                    border-color: rgba(99,102,241,0.4);
-                    background: rgba(99,102,241,0.05);
+                border-color: rgba(99,102,241,0.4);
+                background: rgba(99,102,241,0.05);
                 }
                 .es-signer-row-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
                 }
                 .es-signer-num {
-                    font-size: 10px;
-                    font-weight: 700;
-                    letter-spacing: 0.05em;
-                    text-transform: uppercase;
-                    color: #64748b;
+                font-size: 10px;
+                font-weight: 700;
+                letter-spacing: 0.05em;
+                text-transform: uppercase;
+                color: #64748b;
                 }
                 .es-signer-remove {
-                    width: 20px; height: 20px;
-                    display: flex; align-items: center; justify-content: center;
-                    border-radius: 5px;
-                    border: none;
-                    background: rgba(239,68,68,0.1);
-                    color: #f87171;
-                    font-size: 13px;
-                    cursor: pointer;
-                    line-height: 1;
-                    transition: background 0.15s;
-                    padding: 0;
+                width: 20px; height: 20px;
+                display: flex; align-items: center; justify-content: center;
+                border-radius: 5px;
+                border: none;
+                background: rgba(239,68,68,0.1);
+                color: #f87171;
+                font-size: 13px;
+                cursor: pointer;
+                line-height: 1;
+                transition: background 0.15s;
+                padding: 0;
                 }
                 .es-signer-remove:hover { background: rgba(239,68,68,0.25); }
                 .es-signer-inputs {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 4px;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
                 }
                 .es-signer-input {
-                    width: 100%;
-                    padding: 6px 9px;
-                    background: rgba(255,255,255,0.05);
-                    border: 1px solid rgba(255,255,255,0.08);
-                    border-radius: 7px;
-                    color: #e2e8f0;
-                    font-size: 12px;
-                    outline: none;
-                    transition: border-color 0.15s;
-                    box-sizing: border-box;
+                width: 100%;
+                padding: 6px 9px;
+                background: rgba(255,255,255,0.05);
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 7px;
+                color: #e2e8f0;
+                font-size: 12px;
+                outline: none;
+                transition: border-color 0.15s;
+                box-sizing: border-box;
                 }
                 .es-signer-input:focus { border-color: #6366f1; }
                 .es-signer-input::placeholder { color: #475569; }
                 .es-signer-select {
-                    width: 100%;
-                    padding: 6px 9px;
-                    background: #141625;
-                    border: 1px solid rgba(255,255,255,0.08);
-                    border-radius: 7px;
-                    color: #94a3b8;
-                    font-size: 12px;
-                    outline: none;
-                    transition: border-color 0.15s;
-                    box-sizing: border-box;
-                    cursor: pointer;
+                width: 100%;
+                padding: 6px 9px;
+                background: #141625;
+                border: 1px solid rgba(255,255,255,0.08);
+                border-radius: 7px;
+                color: #94a3b8;
+                font-size: 12px;
+                outline: none;
+                transition: border-color 0.15s;
+                box-sizing: border-box;
+                cursor: pointer;
                 }
                 .es-signer-select:focus { border-color: #6366f1; }
                 .es-no-signers-hint {
-                    font-size: 11px;
-                    color: #334155;
-                    text-align: center;
-                    padding: 10px 0;
+                font-size: 11px;
+                color: #334155;
+                text-align: center;
+                padding: 10px 0;
                 }
                 /* Per-signer mini field cards */
                 .es-signer-fields {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 8px;
-                    margin-top: 8px;
-                    padding-top: 8px;
-                    border-top: 1px solid rgba(255,255,255,0.05);
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                margin-top: 8px;
+                padding-top: 8px;
+                border-top: 1px solid rgba(255,255,255,0.05);
                 }
                 .es-signer-field-card {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    padding: 8px 10px;
-                    border-radius: 6px;
-                    border: 1px solid;
-                    cursor: grab;
-                    transition: all 0.15s ease;
-                    user-select: none;
-                    font-size: 12px;
-                    font-weight: 500;
-                    text-align: left;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 10px;
+                border-radius: 6px;
+                border: 1px solid;
+                cursor: grab;
+                transition: all 0.15s ease;
+                user-select: none;
+                font-size: 12px;
+                font-weight: 500;
+                text-align: left;
                 }
                 .es-signer-field-card:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
                 }
                 .es-signer-field-card:active { cursor: grabbing; }
                 .es-signer-field-card.dragging { opacity: 0.5; }
                 .es-sfc-icon { font-size: 14px; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
                 .es-sfc-label { font-size: 11px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase; opacity: 0.9; }
                 .es-signer-field-add-btn {
-                    padding: 8px;
-                    border-radius: 6px;
-                    font-size: 11px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.15s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 4px;
+                padding: 8px;
+                border-radius: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.15s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 4px;
                 }
                 .es-signer-field-add-btn:hover {
-                    background: rgba(255,255,255,0.05);
+                background: rgba(255,255,255,0.05);
                 }
                 .es-btn-send {
-                    background: linear-gradient(135deg, #059669, #10b981);
-                    color: white;
-                    border: none;
-                    box-shadow: 0 4px 14px rgba(16,185,129,0.3);
+                background: linear-gradient(135deg, #059669, #10b981);
+                color: white;
+                border: none;
+                box-shadow: 0 4px 14px rgba(16,185,129,0.3);
                 }
                 .es-btn-send:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 6px 20px rgba(16,185,129,0.4);
+                transform: translateY(-1px);
+                box-shadow: 0 6px 20px rgba(16,185,129,0.4);
                 }
                 .es-btn-send:active { transform: translateY(0); }
                 .es-btn-send:disabled { opacity:0.5; cursor:not-allowed; transform:none; box-shadow:none; }
 
                 /* ===== SEND MODAL ===== */
                 .es-modal-overlay {
-                    position: fixed; inset: 0;
-                    background: rgba(0,0,0,0.65);
-                    backdrop-filter: blur(4px);
-                    z-index: 500;
-                    display: flex; align-items: center; justify-content: center;
-                    opacity: 0; pointer-events: none;
-                    transition: opacity 0.22s;
+                position: fixed; inset: 0;
+                background: rgba(0,0,0,0.65);
+                backdrop-filter: blur(4px);
+                z-index: 500;
+                display: flex; align-items: center; justify-content: center;
+                opacity: 0; pointer-events: none;
+                transition: opacity 0.22s;
                 }
                 .es-modal-overlay.open {
-                    opacity: 1; pointer-events: all;
+                opacity: 1; pointer-events: all;
                 }
                 .es-modal {
-                    background: #1a1d2e;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    border-radius: 16px;
-                    padding: 28px;
-                    width: 420px;
-                    max-width: 90vw;
-                    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
-                    transform: scale(0.96) translateY(10px);
-                    transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
+                background: #1a1d2e;
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 16px;
+                padding: 28px;
+                width: 420px;
+                max-width: 90vw;
+                box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+                transform: scale(0.96) translateY(10px);
+                transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
                 }
                 .es-modal-overlay.open .es-modal {
-                    transform: scale(1) translateY(0);
+                transform: scale(1) translateY(0);
                 }
                 .es-modal-title {
-                    font-size: 17px; font-weight: 700; color: #f1f5f9;
-                    margin-bottom: 20px;
-                    display: flex; align-items: center; gap: 10px;
+                font-size: 17px; font-weight: 700; color: #f1f5f9;
+                margin-bottom: 20px;
+                display: flex; align-items: center; gap: 10px;
                 }
                 .es-modal-icon {
-                    width: 36px; height: 36px;
-                    background: linear-gradient(135deg, #059669, #10b981);
-                    border-radius: 10px;
-                    display: flex; align-items: center; justify-content: center;
-                    font-size: 18px; flex-shrink: 0;
+                width: 36px; height: 36px;
+                background: linear-gradient(135deg, #059669, #10b981);
+                border-radius: 10px;
+                display: flex; align-items: center; justify-content: center;
+                font-size: 18px; flex-shrink: 0;
                 }
                 .es-modal-body { display: flex; flex-direction: column; gap: 14px; }
                 .es-modal-footer {
-                    display: flex; gap: 10px; justify-content: flex-end;
-                    margin-top: 22px;
+                display: flex; gap: 10px; justify-content: flex-end;
+                margin-top: 22px;
                 }
                 .es-modal-preview-signers {
-                    background: rgba(255,255,255,0.04);
-                    border-radius: 10px;
-                    padding: 10px 12px;
-                    display: flex; flex-direction: column; gap: 6px;
-                    max-height: 150px;
-                    overflow-y: auto;
-                    border: 1px solid rgba(255,255,255,0.07);
+                background: rgba(255,255,255,0.04);
+                border-radius: 10px;
+                padding: 10px 12px;
+                display: flex; flex-direction: column; gap: 6px;
+                max-height: 150px;
+                overflow-y: auto;
+                border: 1px solid rgba(255,255,255,0.07);
                 }
                 .es-modal-signer-item {
-                    display: flex; align-items: center; gap: 8px;
-                    font-size: 12px; color: #94a3b8;
+                display: flex; align-items: center; gap: 8px;
+                font-size: 12px; color: #94a3b8;
                 }
                 .es-modal-signer-item strong { color: #e2e8f0; }
                 /* Odoo-like Header Styles */
                 .es-header {
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 0 24px;
-                    height: 64px;
-                    background: #1e1e2d;
-                    border-bottom: 1px solid rgba(255,255,255,0.08);
-                    flex-shrink: 0;
-                    z-index: 100;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 0 24px;
+                height: 64px;
+                background: #1e1e2d;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                flex-shrink: 0;
+                z-index: 100;
                 }
                 .es-header-left {
-                    display: flex;
-                    align-items: center;
-                    gap: 16px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
                 }
                 .es-header-buttons {
-                    display: flex;
-                    gap: 8px;
-                    align-items: center;
+                display: flex;
+                gap: 8px;
+                align-items: center;
                 }
                 .es-btn-primary-odoo {
-                    background: #71639e;
-                    color: #ffffff;
-                    font-weight: 500;
-                    font-size: 13px;
-                    padding: 8px 16px;
-                    border-radius: 6px;
-                    border: 1px solid transparent;
-                    cursor: pointer;
-                    transition: all 0.15s;
+                background: #71639e;
+                color: #ffffff;
+                font-weight: 500;
+                font-size: 13px;
+                padding: 8px 16px;
+                border-radius: 6px;
+                border: 1px solid transparent;
+                cursor: pointer;
+                transition: all 0.15s;
                 }
                 .es-btn-primary-odoo:hover {
-                    background: #5c5082;
+                background: #5c5082;
                 }
                 .es-btn-secondary-odoo {
-                    background: transparent;
-                    color: #94a3b8;
-                    border: 1px solid rgba(255,255,255,0.1);
-                    font-weight: 500;
-                    font-size: 13px;
-                    padding: 8px 16px;
-                    border-radius: 6px;
-                    cursor: pointer;
-                    transition: all 0.15s;
+                background: transparent;
+                color: #94a3b8;
+                border: 1px solid rgba(255,255,255,0.1);
+                font-weight: 500;
+                font-size: 13px;
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                transition: all 0.15s;
                 }
                 .es-btn-secondary-odoo:hover {
-                    background: rgba(255,255,255,0.05);
-                    color: #e2e8f0;
+                background: rgba(255,255,255,0.05);
+                color: #e2e8f0;
                 }
                 .es-header-divider {
-                    width: 1px;
-                    height: 24px;
-                    background: rgba(255,255,255,0.1);
+                width: 1px;
+                height: 24px;
+                background: rgba(255,255,255,0.1);
                 }
                 .es-template-title-container {
-                    display: flex;
-                    flex-direction: column;
+                display: flex;
+                flex-direction: column;
                 }
                 .es-template-breadcrumb {
-                    font-size: 11px;
-                    color: #10b981;
-                    font-weight: 600;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
+                font-size: 11px;
+                color: #10b981;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
                 }
                 .es-template-name-row {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    margin-top: 2px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                margin-top: 2px;
                 }
                 .es-template-name-title {
-                    font-size: 15px;
-                    font-weight: 600;
-                    color: #f1f5f9;
+                font-size: 15px;
+                font-weight: 600;
+                color: #f1f5f9;
                 }
                 .es-template-gear-btn {
-                    background: transparent;
-                    border: none;
-                    color: #94a3b8;
-                    cursor: pointer;
-                    font-size: 14px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    transition: color 0.15s;
+                background: transparent;
+                border: none;
+                color: #94a3b8;
+                cursor: pointer;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: color 0.15s;
                 }
                 .es-template-gear-btn:hover {
-                    color: #f1f5f9;
+                color: #f1f5f9;
                 }
                 .es-cloud-save-status {
-                    color: #10b981;
-                    font-size: 14px;
-                    display: flex;
-                    align-items: center;
-                    cursor: default;
+                color: #10b981;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                cursor: default;
                 }
 
                 /* CONFIG MODAL STYLES */
                 .es-config-grid {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 20px;
-                    margin-bottom: 20px;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 20px;
                 }
                 .es-tabs-header {
-                    display: flex;
-                    border-bottom: 1px solid rgba(255,255,255,0.08);
-                    margin-bottom: 15px;
-                    gap: 20px;
+                display: flex;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+                margin-bottom: 15px;
+                gap: 20px;
                 }
                 .es-tab-btn {
-                    background: transparent;
-                    border: none;
-                    color: #94a3b8;
-                    padding: 8px 4px;
-                    font-size: 13px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    border-bottom: 2px solid transparent;
-                    transition: all 0.15s;
+                background: transparent;
+                border: none;
+                color: #94a3b8;
+                padding: 8px 4px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                border-bottom: 2px solid transparent;
+                transition: all 0.15s;
                 }
                 .es-tab-btn:hover {
-                    color: #cbd5e1;
+                color: #cbd5e1;
                 }
                 .es-tab-btn.active {
-                    color: #71639e;
-                    border-bottom-color: #71639e;
+                color: #71639e;
+                border-bottom-color: #71639e;
                 }
                 .es-tab-content {
-                    display: none;
+                display: none;
                 }
                 .es-tab-content.active {
-                    display: block;
+                display: block;
                 }
             </style>
 
@@ -949,6 +949,9 @@
                                 <button class="es-btn-add-signer" onclick="addSignerRow()" title="Add another signer" style="background:transparent; border:none; color:#10b981; font-weight:600; font-size:13px; cursor:pointer;">
                                     Add
                                 </button>
+                            </div>
+                            <div style="padding: 10px 16px 0 16px;">
+                                <input type="text" id="es-navbar-search" placeholder="Search fields..." onkeyup="filterNavbarFields(this.value)" style="width: 100%; padding: 8px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: #f1f5f9; font-size: 12px; outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='rgba(99,102,241,0.5)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"/>
                             </div>
                             <div id="es-signers-list" style="margin-top:10px; flex:1; overflow-y:auto;">
                                 <div class="es-no-signers-hint" id="es-no-signers-hint">
@@ -1702,83 +1705,9 @@ let isEditMode = false;
 // pageWrappers — pageNum → { wrapper: canvas-container div }
 let pageWrappers = {}; // pageNum → { wrapper }
 
-function setEditMode(mode) {
-    isEditMode = mode;
-    updateEditModeUI();
-}
 
-function updateEditModeUI() {
-    const btnSave = document.getElementById('es-btn-save');
-    const btnDiscard = document.getElementById('es-btn-discard');
-    const btnEdit = document.getElementById('es-btn-edit');
-    const status = document.getElementById('es-save-status');
-    const btnSend = document.getElementById('es-btn-send');
-    const btnShare = document.getElementById('es-btn-share');
-    
-    if (isEditMode) {
-        if (btnSave) btnSave.style.display = '';
-        if (btnDiscard) btnDiscard.style.display = '';
-        if (btnEdit) btnEdit.style.display = 'none';
-        if (status) status.style.display = '';
-        if (btnSend) btnSend.disabled = true;
-        if (btnShare) btnShare.disabled = true;
-    } else {
-        if (btnSave) btnSave.style.display = 'none';
-        if (btnDiscard) btnDiscard.style.display = 'none';
-        if (btnEdit) btnEdit.style.display = '';
-        if (status) status.style.display = 'none';
-        if (btnSend) btnSend.disabled = false;
-        if (btnShare) btnShare.disabled = false;
-    }
-    
-    const btnAddSigner = document.querySelector('.es-btn-add-signer');
-    if (btnAddSigner) {
-        btnAddSigner.style.display = isEditMode ? '' : 'none';
-    }
-    
-    const list = document.getElementById('es-signers-list');
-    if (list) {
-        const rows = list.querySelectorAll('.es-signer-row');
-        rows.forEach(row => {
-            const idx = row.id.replace('signer-row-', '');
-            
-            const nameEl = document.getElementById('signer-name-' + idx);
-            const emailEl = document.getElementById('signer-email-' + idx);
-            const roleEl = document.getElementById('signer-role-' + idx);
-            
-            if (nameEl) nameEl.disabled = !isEditMode;
-            if (emailEl) emailEl.disabled = !isEditMode;
-            if (roleEl) roleEl.disabled = !isEditMode;
-            
-            const btnRemove = row.querySelector('.es-signer-remove');
-            if (btnRemove) {
-                btnRemove.style.display = isEditMode ? '' : 'none';
-            }
-            
-            const dragHint = row.querySelector('.es-drag-hint');
-            if (dragHint) {
-                dragHint.style.display = isEditMode ? '' : 'none';
-            }
-            
-            const fieldCards = row.querySelectorAll('.es-signer-field-card');
-            fieldCards.forEach(card => {
-                if (isEditMode) {
-                    card.setAttribute('draggable', 'true');
-                    card.style.opacity = '1';
-                    card.style.pointerEvents = 'auto';
-                    card.style.cursor = 'grab';
-                } else {
-                    card.setAttribute('draggable', 'false');
-                    card.style.opacity = '0.35';
-                    card.style.pointerEvents = 'none';
-                    card.style.cursor = 'default';
-                }
-            });
-        });
-    }
-    
-    deselectAll();
-}
+
+
 
 /* ========================================================
    TYPE/ROLE HELPERS
@@ -2068,14 +1997,7 @@ async function initPDFIframe(pdfUrl) {
  * Re-inject sign-field overlays that may have been removed.
  * (No-op for canvas approach — overlays are stable DOM elements.)
  */
-function refreshSignFieldOverlays() {
-    signItems.forEach(item => {
-        const existing = document.getElementById(`sfi-${item._id}`);
-        if (!existing) {
-            placeFieldOnPage(item);
-        }
-    });
-}
+
 
 /* ========================================================
    PLACE A FIELD OVERLAY ON ITS PAGE
@@ -2622,23 +2544,7 @@ function showToast(msg, type = 'success') {
    BOOT
    ======================================================== */
 // Populate sign items from server
-function parseSignItems(raw) {
-    return raw.map(it => ({
-        _id: it.id, // real DB id as _id for existing items
-        id: it.id,
-        type_id: it.type_id,
-        type: it.type_id ? it.type_id[1] : 'text', // [id, item_type] pair? Let's resolve below
-        page: it.page,
-        posX: it.posX,
-        posY: it.posY,
-        width: it.width,
-        height: it.height,
-        required: it.required,
-        responsible_id: it.responsible_id,
-        name: it.name || '',
-        placeholder: it.placeholder || '',
-    }));
-}
+
 
 // Resolve item_type string from type_id
 function resolveItemType(item) {
@@ -2703,22 +2609,45 @@ function buildRoleOptions(selectedRoleId) {
     return html;
 }
 
-const ALL_FIELD_TYPES = [
-    { typeId: 1, itemType: 'signature', name: 'Signature', label: 'Signature', icon: '✍' },
-    { typeId: 2, itemType: 'initial',   name: 'Initials',  label: 'Initials',  icon: '📝' },
-    { typeId: 3, itemType: 'text',      name: 'Name',      label: 'Name',      icon: '👤', defName: 'Name', defPlaceholder: 'Name' },
-    { typeId: 3, itemType: 'text',      name: 'Email',     label: 'Email',     icon: '✉', defName: 'Email', defPlaceholder: 'Email' },
-    { typeId: 3, itemType: 'text',      name: 'Phone',     label: 'Phone',     icon: '📞', defName: 'Phone', defPlaceholder: 'Phone' },
-    { typeId: 3, itemType: 'text',      name: 'Company',   label: 'Company',   icon: '🏢', defName: 'Company', defPlaceholder: 'Company' },
-    { typeId: 3, itemType: 'text',      name: 'Text',      label: 'Text',      icon: 'A' },
-    { typeId: 4, itemType: 'textarea',  name: 'Multiline', label: 'Multiline', icon: '≡' },
-    { typeId: 5, itemType: 'checkbox',  name: 'Checkbox',  label: 'Checkbox',  icon: '☑' },
-    { typeId: 5, itemType: 'checkbox',  name: 'Radio',     label: 'Radio',     icon: '⚪', defName: 'Radio' },
-    { typeId: 3, itemType: 'text',      name: 'Selection', label: 'Selection', icon: '▼', defName: 'Selection' },
-    { typeId: 3, itemType: 'text',      name: 'Date',      label: 'Date',      icon: '📅', defName: 'Date', defPlaceholder: 'Date' },
-    { typeId: 3, itemType: 'text',      name: 'Strikethrough', label: 'Strikethrough', icon: '̶S', defName: 'Strikethrough' },
-    { typeId: 1, itemType: 'signature', name: 'Stamp',     label: 'Stamp',     icon: '🖼', defName: 'Stamp' }
-];
+function getIconForField(field) {
+    if (field.icon && field.icon !== 'A') return field.icon;
+    
+    const nameIcons = {
+        'name': '👤',
+        'email': '✉',
+        'phone': '📞',
+        'company': '🏢',
+        'date': '📅',
+        'selection': '▼',
+        'strikethrough': '̶S',
+        'stamp': '🖼',
+        'address': '🏠'
+    };
+    
+    const typeIcons = {
+        'signature': '✍',
+        'initial': '📝',
+        'textarea': '≡',
+        'checkbox': '☑',
+        'radio': '⚪',
+        'text': 'A'
+    };
+    
+    const nameLower = (field.name || '').toLowerCase();
+    if (nameIcons[nameLower]) return nameIcons[nameLower];
+    
+    return typeIcons[field.item_type] || 'A';
+}
+
+let ALL_FIELD_TYPES = SIGN_ITEM_TYPES.map(t => ({
+    typeId: t.id,
+    itemType: t.item_type,
+    name: t.name,
+    label: t.name,
+    icon: getIconForField(t),
+    defName: t.name,
+    defPlaceholder: t.placeholder || t.name
+}));
 
 function buildSignerFieldCards(signerIdx, color) {
     let html = '<div class="es-signer-fields" id="signer-fields-' + signerIdx + '" style="display:none;">';
@@ -2738,7 +2667,7 @@ function buildSignerFieldCards(signerIdx, color) {
             '<span class="es-sfc-label">' + t.label + '</span>' +
         '</div>';
     });
-    html += '<button class="es-signer-field-add-btn" style="grid-column: span 2; background:' + color + '10; border: 1px dashed ' + color + '44; color:' + color + ';" onclick="event.preventDefault();">+ Add Field</button>';
+    // Removed the "+ Add Field" button here as requested.
     html += '</div>';
     return html;
 }
@@ -3433,6 +3362,23 @@ buildSignersPanel()
     .then(() => toggleSignerRow(1))
     .catch(err => console.error('Error building signers panel:', err));
 initPDFIframe('/sign/template/' + TEMPLATE_ID + '/pdf');
+
+/* ========================================================
+   FILTER NAVBAR FIELDS
+   ======================================================== */
+function filterNavbarFields(query) {
+    query = query.toLowerCase().trim();
+    const cards = document.querySelectorAll('.es-signer-field-card');
+    cards.forEach(card => {
+        const label = (card.getAttribute('data-type-name') || '').toLowerCase();
+        if (label.includes(query)) {
+            card.style.display = 'flex';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+window.filterNavbarFields = filterNavbarFields;
 
 })();
 ]]>

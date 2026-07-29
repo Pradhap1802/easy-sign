@@ -69,6 +69,7 @@ class SignTemplateSignNowWizard(models.TransientModel):
             if sequence == 1:
                 first_signer = signer
         
+        self.env.flush_all()
         sign_request.action_send_next_signature_request()
         
         if first_signer:

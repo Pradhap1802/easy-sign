@@ -98,7 +98,7 @@ class SignController(http.Controller):
         template = request.env['sign.template'].sudo().browse(template_id)
         if not template.exists():
             return request.not_found()
-        sign_item_types = request.env['sign.item.type'].sudo().search_read([], ['id', 'name', 'item_type', 'default_width', 'default_height', 'is_mandatory'])
+        sign_item_types = request.env['sign.item.type'].sudo().search_read([], ['id', 'name', 'item_type', 'default_width', 'default_height', 'is_mandatory', 'icon', 'placeholder'])
         sign_roles = request.env['sign.item.role'].sudo().search_read([], ['id', 'name', 'color'])
         sign_items = template.sign_item_ids.read([
             'id', 'type_id', 'required', 'responsible_id', 'name', 'page', 'posX', 'posY', 'width', 'height', 'alignment', 'placeholder'
@@ -327,12 +327,14 @@ class SignController(http.Controller):
         }
 
     @http.route([
+        '/sign/document/<string:dbname>/<int:request_id>/<string:access_token>',
+        '/sign/<string:dbname>/<int:request_id>/<string:access_token>',
         '/sign/document/<int:request_id>/<string:access_token>',
         '/sign/<int:request_id>/<string:access_token>',
         '/sign/document/<string:access_token>',
         '/sign/<string:access_token>'
     ], type='http', auth='public', website=False, multilang=False)
-    def sign_document_public(self, request_id=None, access_token=None, **kwargs):
+    def sign_document_public(self, request_id=None, access_token=None, dbname=None, **kwargs):
         if not access_token and isinstance(request_id, str):
             access_token = request_id
             request_id = None
@@ -521,13 +523,15 @@ class SignController(http.Controller):
             return {'success': False, 'error': 'Invalid OTP code'}
         if signer.otp_expiration and signer.otp_expiration < Datetime.now():
             return {'success': False, 'error': 'OTP code has expired'}
-            
         session_key = 'sign_otp_verified_%s_%s' % (sign_request.id, signer.id)
         request.session[session_key] = True
         return {'success': True}
 
-    @http.route('/sign/submit/<int:request_id>/<string:access_token>', type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
-    def sign_submit(self, request_id, access_token, **kwargs):
+    @http.route([
+        '/sign/submit/<string:dbname>/<int:request_id>/<string:access_token>',
+        '/sign/submit/<int:request_id>/<string:access_token>'
+    ], type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
+    def sign_submit(self, request_id, access_token, dbname=None, **kwargs):
         sign_request, signer = self._resolve_sign_access(request_id, access_token)
         if not sign_request or sign_request.state != 'sent':
             return json.dumps({'success': False})
@@ -556,8 +560,11 @@ class SignController(http.Controller):
             _logger.error(e)
             return json.dumps({'success': False})
 
-    @http.route('/sign/refuse/<int:request_id>/<string:access_token>', type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
-    def sign_refuse(self, request_id, access_token, **kwargs):
+    @http.route([
+        '/sign/refuse/<string:dbname>/<int:request_id>/<string:access_token>',
+        '/sign/refuse/<int:request_id>/<string:access_token>'
+    ], type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
+    def sign_refuse(self, request_id, access_token, dbname=None, **kwargs):
         sign_request, signer = self._resolve_sign_access(request_id, access_token)
         if not sign_request or sign_request.state != 'sent':
             return json.dumps({'success': False})
@@ -572,8 +579,11 @@ class SignController(http.Controller):
             _logger.error(e)
             return json.dumps({'success': False})
 
-    @http.route('/sign/delegate/<int:request_id>/<string:access_token>', type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
-    def sign_delegate(self, request_id, access_token, **kwargs):
+    @http.route([
+        '/sign/delegate/<string:dbname>/<int:request_id>/<string:access_token>',
+        '/sign/delegate/<int:request_id>/<string:access_token>'
+    ], type='http', auth='public', csrf=False, methods=['POST'], multilang=False)
+    def sign_delegate(self, request_id, access_token, dbname=None, **kwargs):
         sign_request, signer = self._resolve_sign_access(request_id, access_token)
         if not sign_request or sign_request.state != 'sent':
             return json.dumps({'success': False})
@@ -614,8 +624,11 @@ class SignController(http.Controller):
         sign_request.sudo()._send_signer_email(signer)
         return json.dumps({'success': True})
 
-    @http.route('/sign/download/<int:request_id>/<string:access_token>/completed', type='http', auth='public', multilang=False)
-    def download_completed(self, request_id, access_token, **kwargs):
+    @http.route([
+        '/sign/download/<string:dbname>/<int:request_id>/<string:access_token>/completed',
+        '/sign/download/<int:request_id>/<string:access_token>/completed'
+    ], type='http', auth='public', multilang=False)
+    def download_completed(self, request_id, access_token, dbname=None, **kwargs):
         sign_request, _signer = self._resolve_sign_access(request_id, access_token)
         if not sign_request:
             return request.not_found()
@@ -649,7 +662,8 @@ class SignController(http.Controller):
             template.sudo().write({'share_token': str(uuid.uuid4())})
         
         base_url = request.env['ir.config_parameter'].sudo().get_param('web.base.url')
-        share_url = "%s/sign/share/%d/%s" % (base_url, template.id, template.share_token)
+        dbname = request.env.cr.dbname
+        share_url = "%s/sign/share/%d/%s?db=%s" % (base_url, template.id, template.share_token, dbname)
         return {
             'share_url': share_url,
             'valid_until': template.valid_until.strftime('%Y-%m-%d') if template.valid_until else ''
@@ -751,7 +765,8 @@ class SignController(http.Controller):
         sign_request.sudo().action_send_next_signature_request()
         
         if first_signer:
-            return request.redirect('/sign/document/%d/%s' % (sign_request.id, first_signer.access_token))
+            dbname = request.env.cr.dbname
+            return request.redirect('/sign/document/%d/%s?db=%s' % (sign_request.id, first_signer.access_token, dbname))
         return request.not_found()
 
     @http.route('/sign/partners/search', type='json', auth='user')

@@ -199,20 +199,6 @@ class SignRequest(models.Model):
             sign_request.write({'access_token': self._default_access_token(), 'state': 'canceled'})
         self.env['sign.log'].sudo().create([{'sign_request_id': sign_request.id, 'action': 'cancel'} for sign_request in self])
 
-    def action_open_send_wizard(self):
-        self.ensure_one()
-        return {
-            'name': _('Send Signature Request'),
-            'type': 'ir.actions.act_window',
-            'res_model': 'sign.request.send.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_request_id': self.id,
-                'default_subject': _('Signature Request: %s') % self.reference,
-            }
-        }
-
     def action_send_reminder(self):
         self.ensure_one()
         active_signers = self.signer_ids.filtered(lambda s: s.state == 'sent')
@@ -263,8 +249,9 @@ class SignRequest(models.Model):
     def _send_signer_email(self, signer):
         self.ensure_one()
         base_url = self.get_base_url()
+        dbname = self.env.cr.dbname
         lang = get_lang(self.env, signer.partner_id.lang).code if signer.partner_id.lang else 'en_US'
-        link = "%s/sign/document/%s/%s" % (base_url, self.id, signer.access_token)
+        link = "%s/sign/document/%s/%s/%s" % (base_url, dbname, self.id, signer.access_token)
         subject = self.subject or (_('Signature Request: %s') % self.reference)
         body = self.env['ir.qweb']._render('easy_sign.sign_template_mail', {
             'record': self,
@@ -272,14 +259,20 @@ class SignRequest(models.Model):
             'link': link,
             'subject': subject,
         }, lang=lang, minimal_qcontext=True)
-        self._message_send_mail(
-            body,
-            'mail.mail_notification_light',
-            {'record_name': self.reference},
-            {'model_description': _('Signature')},
-            {'email_to': signer.partner_id.email, 'subject': subject},
-            force_send=True,
-            lang=lang,
+        # Send email directly via mail.mail to preserve our exact sign link
+        mail = self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body,
+            'email_to': signer.partner_id.email,
+            'email_from': self.env.company.email or self.env.user.email or '',
+            'auto_delete': True,
+        })
+        mail.send(raise_exception=False)
+        # Log in chatter for visibility
+        self.message_post(
+            body=_("Signature request email sent to %s (%s)") % (signer.partner_id.name, signer.partner_id.email),
+            message_type='notification',
+            subtype_xmlid='mail.mt_note',
         )
         self.env['sign.log'].sudo().create({
             'sign_request_id': self.id,
@@ -370,7 +363,8 @@ class SignRequest(models.Model):
             return
         
         base_url = self.get_base_url()
-        link = "%s/sign/document/%s/%s" % (base_url, self.id, self.access_token)
+        dbname = self.env.cr.dbname
+        link = "%s/sign/document/%s/%s/%s" % (base_url, dbname, self.id, self.access_token)
         subject = _('Completed Signature Request: %s') % self.reference
         body = self.env['ir.qweb']._render('easy_sign.sign_template_mail', {
             'record': self,
@@ -379,40 +373,53 @@ class SignRequest(models.Model):
             'subject': subject,
         }, minimal_qcontext=True)
         
-        self._message_send_mail(
-            body,
-            'mail.mail_notification_light',
-            {'record_name': self.reference},
-            {'model_description': _('Signature')},
-            {'email_to': ','.join(cc_list), 'subject': subject, 'attachment_ids': [attachment.id]},
-            force_send=True,
+        # Send CC email directly via mail.mail
+        mail = self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body,
+            'email_to': ','.join(cc_list),
+            'email_from': self.env.company.email or self.env.user.email or '',
+            'attachment_ids': [(4, attachment.id)],
+            'auto_delete': True,
+        })
+        mail.send(raise_exception=False)
+        # Log in chatter
+        self.message_post(
+            body=_("Completed document sent to CC: %s") % ', '.join(cc_list),
+            attachment_ids=[attachment.id],
+            message_type='notification',
+            subtype_xmlid='mail.mt_note',
         )
 
     def _send_completed_email(self, attachment):
         self.ensure_one()
         base_url = self.get_base_url()
-        link = "%s/sign/document/%s/%s" % (base_url, self.id, self.access_token)
+        dbname = self.env.cr.dbname
+        link = "%s/sign/document/%s/%s/%s" % (base_url, dbname, self.id, self.access_token)
         subject = _('Document Signed: %s') % self.reference
         
         emails_sent = set()
+        recipients_notified = []
         
         # Add the creator/owner to receive the completed document
-        creator_email = self.create_uid.partner_id.email if self.create_uid.partner_id else False
-        if creator_email:
-            emails_sent.add(creator_email)
+        creator_partner = self.create_uid.partner_id if self.create_uid else False
+        if creator_partner and creator_partner.email:
+            emails_sent.add(creator_partner.email)
             body = self.env['ir.qweb']._render('easy_sign.sign_template_mail_completed', {
                 'record': self,
-                'recipient_name': self.create_uid.partner_id.name,
+                'recipient_name': creator_partner.name,
                 'link': link,
             }, minimal_qcontext=True)
-            self._message_send_mail(
-                body,
-                'mail.mail_notification_light',
-                {'record_name': self.reference},
-                {'model_description': _('Signature')},
-                {'email_to': creator_email, 'subject': subject, 'attachment_ids': [attachment.id]},
-                force_send=True,
-            )
+            mail = self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'body_html': body,
+                'email_to': creator_partner.email,
+                'email_from': self.env.company.email or self.env.user.email or '',
+                'attachment_ids': [(4, attachment.id)],
+                'auto_delete': True,
+            })
+            mail.send(raise_exception=False)
+            recipients_notified.append(creator_partner.name)
 
         # Add all signers
         for signer in self.signer_ids:
@@ -425,13 +432,24 @@ class SignRequest(models.Model):
                 'recipient_name': signer.partner_id.name,
                 'link': link,
             }, minimal_qcontext=True)
-            self._message_send_mail(
-                body,
-                'mail.mail_notification_light',
-                {'record_name': self.reference},
-                {'model_description': _('Signature')},
-                {'email_to': email, 'subject': subject, 'attachment_ids': [attachment.id]},
-                force_send=True,
+            mail = self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'body_html': body,
+                'email_to': email,
+                'email_from': self.env.company.email or self.env.user.email or '',
+                'attachment_ids': [(4, attachment.id)],
+                'auto_delete': True,
+            })
+            mail.send(raise_exception=False)
+            recipients_notified.append(signer.partner_id.name)
+
+        # Log in chatter
+        if recipients_notified:
+            self.message_post(
+                body=_("Completed document sent to: %s") % ', '.join(recipients_notified),
+                attachment_ids=[attachment.id],
+                message_type='notification',
+                subtype_xmlid='mail.mt_note',
             )
 
 

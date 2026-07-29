@@ -27,7 +27,7 @@ Key Features:
     'price': 100.00,
     'currency': 'USD',
     'images': ['static/description/banner.png'],
-    'depends': ['mail', 'attachment_indexation', 'portal'],
+    'depends': ['mail', 'attachment_indexation', 'portal', 'contacts'],
     'data': [
         'security/security.xml',
         'security/ir.model.access.csv',
