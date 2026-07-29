@@ -33,7 +33,6 @@ Key Features:
         'security/ir.model.access.csv',
         'data/sign_data.xml',
         'data/mail_templates.xml',
-        'wizard/sign_send_request_wizard_views.xml',
         'wizard/sign_upload_pdf_wizard_views.xml',
         'wizard/sign_template_share_views.xml',
         'wizard/sign_template_sign_now_wizard_views.xml',

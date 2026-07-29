@@ -8,7 +8,6 @@
                 <form string="Sign Template">
                     <header>
                         <button name="go_to_custom_template" string="Edit Template" type="object" class="oe_highlight"/>
-                        <button string="Send" type="action" name="easy_sign.action_sign_send_request"/>
                     </header>
                     <sheet>
                         <div class="oe_title">
@@ -94,7 +93,6 @@
                                     <!-- Right Section: Action Buttons -->
                                     <div class="d-flex gap-2 align-items-center" onclick="event.stopPropagation();">
                                         <button name="go_to_custom_template" type="object" class="btn btn-secondary btn-sm px-3 py-1 fw-bold text-white" style="background-color: #475569; border-color: #475569; font-size: 12px; border-radius: 4px;">Edit</button>
-                                        <button name="easy_sign.action_sign_send_request" type="action" class="btn btn-primary btn-sm px-3 py-1 fw-bold text-white" style="background-color: #71639e; border-color: #71639e; font-size: 12px; border-radius: 4px;">Send</button>
                                         <button name="action_sign_now_wizard" type="object" class="btn btn-primary btn-sm px-3 py-1 fw-bold text-white" style="background-color: #71639e; border-color: #71639e; font-size: 12px; border-radius: 4px;">Sign Now</button>
                                         <button name="action_share_wizard" type="object" class="btn btn-secondary btn-sm px-3 py-1 fw-bold text-white" style="background-color: #475569; border-color: #475569; font-size: 12px; border-radius: 4px;">Share</button>
                                     </div>
