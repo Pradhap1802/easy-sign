@@ -2,7 +2,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 {
     'name': 'Easy Sign',
-    'version': '18.0.1.0',
+    'version': '18.0.1.0.0',
     'category': 'Sales/Sign',
     'sequence': 105,
     'summary': "Send documents to sign online and handle filled copies",
@@ -15,7 +15,6 @@ Key Features:
 -------------
 * Visual Drag & Drop PDF Template Field Editor
 * Sequential Multi-Signer Workflow Engine
-* Audit Trail Certificate with Cryptographic SHA-256 Checksum Hash
 * Real-Time Client Validation & Auto-Fill from Partner Records
 * 1-Click Saved Profile Signatures
 * Automated Daily Cron Reminders & Manual Send Reminder Action
@@ -24,7 +23,7 @@ Key Features:
     'author': 'ProcessDrive',
     'website': 'https://www.processdrive.com',
     'license': 'OPL-1',
-    'price': 100.00,
+    'price': 160.00,
     'currency': 'USD',
     'images': ['static/description/banner.png'],
     'depends': ['mail', 'attachment_indexation', 'portal', 'contacts'],

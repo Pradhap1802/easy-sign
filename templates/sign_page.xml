@@ -771,22 +771,46 @@
                         inputEl.addEventListener('change', () => {
                             updateRibbonText();
                         });
-                    } else {
-                        container.innerHTML = '<input type="text" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px;">';
+                    } else if (item.type === 'textarea') {
+                        const placeholderText = item.placeholder || item.name || item.typeName || 'Fill in...';
+                        let defaultVal = '';
+                        if (typeof SIGNER_INFO !== 'undefined' && SIGNER_INFO) {
+                            const fnLower = (item.name || item.typeName || '').toLowerCase();
+                            if (fnLower.includes('address') || fnLower.includes('street')) defaultVal = SIGNER_INFO.address || '';
+                        }
+                        container.innerHTML = '<textarea placeholder="' + (placeholderText || '').replace(/"/g, '&quot;') + '" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px; resize: none; font-family: inherit;">' + (defaultVal || '').replace(/</g, '&lt;') + '</textarea>';
+                        const inputEl = container.querySelector('textarea');
+                        inputEl.addEventListener('focus', () => { selectItem(container); });
+                        inputEl.addEventListener('input', () => { updateRibbonText(); });
+                        inputEl.addEventListener('change', () => { updateRibbonText(); });
+                    } else if (item.type === 'date') {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        container.innerHTML = '<input type="date" value="' + todayStr + '" style="width: 100%; height: 100%; box-sizing: border-box; padding: 3px 5px; background: transparent; border: none; font-size: 13px; font-family: inherit;">';
                         const inputEl = container.querySelector('input');
-                        inputEl.addEventListener('focus', () => {
-                            selectItem(container);
-                        });
-                        inputEl.addEventListener('input', () => {
-                            updateRibbonText();
-                        });
-                        inputEl.addEventListener('change', () => {
-                            updateRibbonText();
-                        });
+                        inputEl.addEventListener('focus', () => { selectItem(container); });
+                        inputEl.addEventListener('input', () => { updateRibbonText(); });
+                        inputEl.addEventListener('change', () => { updateRibbonText(); });
+                    } else {
+                        const placeholderText = item.placeholder || item.name || item.typeName || 'Fill in...';
+                        let defaultVal = '';
+                        if (typeof SIGNER_INFO !== 'undefined' && SIGNER_INFO) {
+                            const fnLower = (item.name || item.typeName || '').toLowerCase();
+                            if (fnLower.includes('name')) defaultVal = SIGNER_INFO.name || '';
+                            else if (fnLower.includes('email')) defaultVal = SIGNER_INFO.email || '';
+                            else if (fnLower.includes('phone') || fnLower.includes('mobile')) defaultVal = SIGNER_INFO.phone || '';
+                            else if (fnLower.includes('company')) defaultVal = SIGNER_INFO.company || '';
+                            else if (fnLower.includes('address') || fnLower.includes('street')) defaultVal = SIGNER_INFO.address || '';
+                            else if (fnLower.includes('title')) defaultVal = SIGNER_INFO.title || '';
+                            else if (fnLower.includes('city')) defaultVal = SIGNER_INFO.city || '';
+                            else if (fnLower.includes('zip')) defaultVal = SIGNER_INFO.zip || '';
+                        }
+                        container.innerHTML = '<input type="text" placeholder="' + (placeholderText || '').replace(/"/g, '&quot;') + '" value="' + (defaultVal || '').replace(/"/g, '&quot;') + '" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px; font-family: inherit;">';
+                        const inputEl = container.querySelector('input');
+                        inputEl.addEventListener('focus', () => { selectItem(container); });
+                        inputEl.addEventListener('input', () => { updateRibbonText(); });
+                        inputEl.addEventListener('change', () => { updateRibbonText(); });
                         inputEl.addEventListener('keypress', (e) => {
-                            if (e.key === 'Enter') {
-                                goToNextSignItem();
-                            }
+                            if (e.key === 'Enter') { goToNextSignItem(); }
                         });
                     }
                     

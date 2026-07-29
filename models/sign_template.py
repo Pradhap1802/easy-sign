@@ -172,6 +172,7 @@ class SignItemType(models.Model):
         ('textarea', "Multiline Text"),
         ('checkbox', "Checkbox"),
         ('radio', "Radio"),
+        ('date', "Date"),
     ], required=True, string='Type', default='text')
     opt_model_id = fields.Many2one('ir.model', string="Linked to", ondelete='cascade')
     opt_field_id = fields.Many2one('ir.model.fields', string="Linked field", ondelete='cascade', domain="[('model_id', '=', opt_model_id)]")

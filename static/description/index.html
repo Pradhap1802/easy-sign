@@ -142,7 +142,7 @@
             <div style="width:auto; margin:2%; box-shadow: 0px 5px 20px -11px rgba(0,0,0,0.25);">
                 <div class="row">
                     <div class="col-lg-12 d-flex flex-column justify-content-center align-items-center">
-                        <h2 class="gradient-text" style="text-align:center; font-size:40px; font-weight:700; text-transform:uppercase; padding-bottom:50px;">✨ Features</h2>
+                        <h2 class="gradient-text" style="text-align:center; font-size:40px; font-weight:700; text-transform:uppercase; padding-bottom:50px;">✨ Core Features</h2>
                     </div>
 
                     <!-- 1. Drag & Drop Builder -->
@@ -152,7 +152,7 @@
                                 <i class="fa fa-pencil" style="color:white; font-size:20px;" aria-hidden="true"></i>
                             </div>
                             <h5 class="m-0" style="color:#000; font-weight:bold">Visual Drag &amp; Drop Editor</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Place signature, initial, name, email, phone, company, title, date, checkbox, and text fields anywhere on PDF pages.</p>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Place Signature, Initial, Text, Multiline Text, Checkbox, and Radio fields anywhere on multi-page PDF documents.</p>
                         </div>
                     </div>
 
@@ -163,84 +163,74 @@
                                 <i class="fa fa-users" style="color:white; font-size:20px;" aria-hidden="true"></i>
                             </div>
                             <h5 class="m-0" style="color:#000; font-weight:bold">Sequential Multi-Signer Flow</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Enforce role-based signing order (Signer 1 → Signer 2) with sequence protection and auto-triggered email routing.</p>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Enforce role-based turn sequence (Signer 1 → Signer 2) with automated email dispatch and sequence protection.</p>
                         </div>
                     </div>
 
-                    <!-- 3. Audit Certificate -->
+
+                    <!-- 4. Template Sharing & Public Links -->
                     <div class="col-lg-4">
                         <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
                             <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
-                                <i class="fa fa-shield" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                                <i class="fa fa-share-alt" style="color:white; font-size:20px;" aria-hidden="true"></i>
                             </div>
-                            <h5 class="m-0" style="color:#000; font-weight:bold">Audit Certificate &amp; SHA-256</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Appends a formal Audit Certificate page with signer names, emails, IP addresses, timestamps, and SHA-256 hash.</p>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Public Template Share Links</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Generate public sharing URLs with validity expiration dates for open template signature collection.</p>
                         </div>
                     </div>
 
-                    <!-- 4. 1-Click Saved Signatures -->
+                    <!-- 5. Direct Email & Chatter Integration -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-envelope" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Direct Email &amp; Chatter Tracking</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Sends custom HTML emails directly via mail.mail and logs all signature actions directly into Odoo Chatter.</p>
+                        </div>
+                    </div>
+
+                    <!-- 6. OTP Extra Security -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-lock" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">OTP One-Time Password Security</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Optional Extra Security mode requiring signers to verify a 6-digit email OTP before accessing sensitive files.</p>
+                        </div>
+                    </div>
+
+                    <!-- 7. Delegation & Refusal Flow -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-user-plus" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Signer Delegation &amp; Refusal Flow</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Allows signers to transfer signing responsibility to another partner or refuse with logged justification reasons.</p>
+                        </div>
+                    </div>
+
+                    <!-- 8. Saved Signatures & Autofill -->
                     <div class="col-lg-4">
                         <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
                             <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
                                 <i class="fa fa-star" style="color:white; font-size:20px;" aria-hidden="true"></i>
                             </div>
                             <h5 class="m-0" style="color:#000; font-weight:bold">1-Click Saved Profile Signatures</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Store user signatures on Partner records for 1-click electronic signing across all public documents.</p>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Store signatures on Partner records for 1-click electronic signing and auto-fill contact information.</p>
                         </div>
                     </div>
 
-                    <!-- 5. Real-Time Field Validation -->
-                    <div class="col-lg-4">
-                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
-                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
-                                <i class="fa fa-check-square-o" style="color:white; font-size:20px;" aria-hidden="true"></i>
-                            </div>
-                            <h5 class="m-0" style="color:#000; font-weight:bold">Real-Time Field Validation</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Enforces required inputs, email syntax regex checking, red highlight borders, and auto-scroll error alerts.</p>
-                        </div>
-                    </div>
-
-                    <!-- 6. Automated Daily Reminders -->
-                    <div class="col-lg-4">
-                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
-                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
-                                <i class="fa fa-bell" style="color:white; font-size:20px;" aria-hidden="true"></i>
-                            </div>
-                            <h5 class="m-0" style="color:#000; font-weight:bold">Automated Daily Cron Reminders</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Runs a daily background cron job and header button to re-notify pending signers of outstanding documents.</p>
-                        </div>
-                    </div>
-
-                    <!-- 7. Vector PDF Flattening -->
+                    <!-- 9. Final PDF Generation -->
                     <div class="col-lg-4">
                         <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
                             <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
                                 <i class="fa fa-file-pdf-o" style="color:white; font-size:20px;" aria-hidden="true"></i>
                             </div>
-                            <h5 class="m-0" style="color:#000; font-weight:bold">High-Precision Vector PDF Flattening</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Merges signatures, drawings, auto-generated text, and checkboxes seamlessly onto the original PDF file.</p>
-                        </div>
-                    </div>
-
-                    <!-- 8. Page Footers & Watermarks -->
-                    <div class="col-lg-4">
-                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
-                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
-                                <i class="fa fa-certificate" style="color:white; font-size:20px;" aria-hidden="true"></i>
-                            </div>
-                            <h5 class="m-0" style="color:#000; font-weight:bold">Document Watermarks &amp; Footers</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Stamps subtle reference watermarks on all completed PDF page footers for legal authentication.</p>
-                        </div>
-                    </div>
-
-                    <!-- 9. Public Access Tokens -->
-                    <div class="col-lg-4">
-                        <div class="mb-4 d-flex flex-column justify-content-center gap-3" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
-                            <div class="d-flex justify-content-center align-items-center" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
-                                <i class="fa fa-link" style="color:white; font-size:20px;" aria-hidden="true"></i>
-                            </div>
-                            <h5 class="m-0" style="color:#000; font-weight:bold">Guest Public Token Links</h5>
-                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Allows signers to review and sign documents securely on any device without requiring an Odoo user login.</p>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Completed PDF Document Generation</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Merges all completed signatures and filled form text directly into the final PDF attachment upon completion.</p>
                         </div>
                     </div>
 
@@ -296,30 +286,30 @@
                     <div class="col-lg-6 text-center workflow-box">
                         <div class="p-4" style="background:#f8f9fa; border:2px dashed #00a09d; border-radius:16px;">
                             <i class="fa fa-paper-plane-o" style="font-size:80px; color:#00a09d; margin-bottom:15px;"></i>
-                            <h4 style="font-weight:700; color:#2D3748;">Multi-Recipient Wizard</h4>
-                            <p style="color:#64728f; font-size:14px;">Map multiple recipients to template roles in 1 click.</p>
+                            <h4 style="font-weight:700; color:#2D3748;">Sequential Multi-Signer Flow</h4>
+                            <p style="color:#64728f; font-size:14px;">Automated turn-based email notifications &amp; sequence protection.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Flow 3: Audit Certificate & Flattening -->
+                <!-- Flow 3: Activity Logging & PDF Generation -->
                 <div class="row align-items-center mb-5 pb-5">
                     <div class="col-lg-6">
-                        <h3 style="color:#714b67; font-weight:700; margin-bottom:20px;">3. Audit Trail Certificate &amp; PDF Flattening</h3>
+                        <h3 style="color:#714b67; font-weight:700; margin-bottom:20px;">3. Activity Logging &amp; PDF Generation</h3>
                         <p style="color:#333; font-size:16px; line-height:28px;">
-                            Once all signers complete their signatures, Easy Sign flattens all drawn signatures and filled text values directly onto the PDF pages. It automatically appends an Audit Trail Certificate page featuring cryptographic **SHA-256 Checksum** verification.
+                            Once all signers complete their signatures, Easy Sign embeds all signatures and filled text values directly onto the PDF document and attaches it to the record. Complete audit logs tracking IP addresses and timestamps are recorded in Odoo.
                         </p>
                         <ul style="list-style:none; padding-left:0; margin-top:15px;">
-                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> ReportLab Vector PDF Flattening</li>
-                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> SHA-256 Cryptographic Hash Checksum</li>
-                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Page Footer Timestamp Watermarking</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Direct PDF Signature Embedding</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Complete Sign Log &amp; IP Address Audit</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Automatic Completion Email Attachments</li>
                         </ul>
                     </div>
                     <div class="col-lg-6 text-center workflow-box">
                         <div class="p-4" style="background:#f8f9fa; border:2px dashed #714b67; border-radius:16px;">
-                            <i class="fa fa-certificate" style="font-size:80px; color:#714b67; margin-bottom:15px;"></i>
-                            <h4 style="font-weight:700; color:#2D3748;">Audit Certificate</h4>
-                            <p style="color:#64728f; font-size:14px;">Complete signer audit log with IP tracking &amp; SHA-256 hash.</p>
+                            <i class="fa fa-file-pdf-o" style="font-size:80px; color:#714b67; margin-bottom:15px;"></i>
+                            <h4 style="font-weight:700; color:#2D3748;">Activity Log &amp; Final PDF</h4>
+                            <p style="color:#64728f; font-size:14px;">Complete signer activity log with IP tracking &amp; attached final document.</p>
                         </div>
                     </div>
                 </div>

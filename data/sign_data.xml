@@ -77,6 +77,13 @@
             <field name="default_width">0.02</field>
             <field name="default_height">0.02</field>
         </record>
+        <record id="sign_item_type_date" model="sign.item.type">
+            <field name="name">Date</field>
+            <field name="item_type">date</field>
+            <field name="tip">Date</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
 
         <record id="sign_item_role_default" model="sign.item.role">
             <field name="name">Signer 1</field>

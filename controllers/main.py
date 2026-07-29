@@ -416,12 +416,14 @@ class SignController(http.Controller):
             'state': '',
         }
         if partner:
+            street_address = ", ".join(filter(None, [partner.street, partner.street2, partner.city, partner.zip]))
             signer_vals = {
                 'name': partner.name or '',
                 'email': partner.email or '',
                 'phone': partner.phone or partner.mobile or '',
                 'company': partner.commercial_company_name or (partner.parent_id.name if partner.parent_id else '') or (partner.company_id.name if partner.company_id else ''),
                 'title': partner.function or '',
+                'address': street_address or partner.contact_address or '',
                 'city': partner.city or '',
                 'zip': partner.zip or '',
                 'country': partner.country_id.name if partner.country_id else '',
@@ -434,11 +436,14 @@ class SignController(http.Controller):
 
         sign_items_data = []
         for item in sign_request.template_id.sign_item_ids:
+            field_name = item.name or (item.type_id.name if item.type_id else '')
+            placeholder_text = item.placeholder or item.name or (item.type_id.name if item.type_id else '')
             sign_items_data.append({
                 'id': item.id,
-                'type': item.type_id.item_type,
-                'name': item.name or '',
-                'placeholder': item.placeholder or '',
+                'type': item.type_id.item_type if item.type_id else 'text',
+                'typeName': item.type_id.name if item.type_id else '',
+                'name': field_name,
+                'placeholder': placeholder_text,
                 'page': item.page,
                 'posX': item.posX,
                 'posY': item.posY,
