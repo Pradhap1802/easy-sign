@@ -1,517 +1,667 @@
-import io
 import base64
+import datetime
+import io
 import logging
-from odoo import api, fields, models
-from odoo.exceptions import UserError
+import os
+import uuid
+import time
+import hashlib
 
 _logger = logging.getLogger(__name__)
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.rl_config import TTFSearchPath
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.pdfbase.pdfmetrics import stringWidth
+from markupsafe import Markup
+from datetime import timedelta
+from PIL import UnidentifiedImageError
+
+from odoo import api, fields, models, _, Command, tools
+from odoo.tools import get_lang, is_html_empty, format_list, format_date
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools.pdf import PdfFileReader, PdfFileWriter, PdfReadError, reshape_text
+
+
+def _fix_image_transparency(image):
+    pixels = image.load()
+    for x in range(image.size[0]):
+        for y in range(image.size[1]):
+            if pixels[x, y] == (0, 0, 0, 0):
+                pixels[x, y] = (255, 255, 255, 0)
 
 
 class SignRequest(models.Model):
     _name = "sign.request"
-    _description = "Electronic Signature Request"
-    _inherit = ["mail.thread", "mail.activity.mixin"]
-    _order = "id desc"
-    _rec_name = "name"
+    _description = "Signature Request"
+    _rec_name = 'reference'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    name = fields.Char(
-        string="Reference",
-        readonly=True,
-        copy=False,
-        default="New",
-    )
-    document = fields.Binary(
-        string="Document (PDF)",
-        required=True,
-        attachment=True,
-    )
-    document_name = fields.Char(string="File Name")
-    subject = fields.Char(
-        string="Email Subject",
-        required=True,
-        default="Please sign: ",
-    )
-    message = fields.Html(
-        string="Invitation Message",
-        default="""<p>Hello,</p>
-<p>You have been requested to sign a document. Please click the button below to review and sign it.</p>
-<p>Thank you for your prompt attention to this matter.</p>""",
-    )
-    state = fields.Selection(
-        [
-            ("draft", "Draft"),
-            ("sent", "Sent"),
-            ("signed", "Fully Signed"),
-            ("expired", "Expired"),
-            ("cancelled", "Cancelled"),
-        ],
-        string="Status",
-        default="draft",
-        tracking=True,
-        readonly=True,
-    )
-    user_id = fields.Many2one(
-        "res.users",
-        string="Requested By",
-        default=lambda self: self.env.user,
-        tracking=True,
-    )
-    expiry_date = fields.Date(
-        string="Expiry Date",
-        tracking=True,
-        help="The signing link will stop working after this date.",
-    )
-    request_item_ids = fields.One2many(
-        "sign.request.item",
-        "request_id",
-        string="Signers",
-    )
-    log_ids = fields.One2many(
-        "sign.log",
-        "request_id",
-        string="Audit Log",
-    )
-    signed_document = fields.Binary(
-        string="Signed Document",
-        attachment=True,
-        copy=False,
-        readonly=True,
-    )
-    signed_document_name = fields.Char(
-        string="Signed Document Name",
-        copy=False,
-        readonly=True,
-    )
-    signers_count = fields.Integer(
-        string="Total Signers",
-        compute="_compute_signing_progress",
-        store=True,
-    )
-    signed_count = fields.Integer(
-        string="Signed",
-        compute="_compute_signing_progress",
-        store=True,
-    )
-    all_signed = fields.Boolean(
-        string="All Signed",
-        compute="_compute_signing_progress",
-        store=True,
-    )
+    def _default_access_token(self):
+        return str(uuid.uuid4())
 
-    @api.depends("request_item_ids.state")
-    def _compute_signing_progress(self):
+    template_id = fields.Many2one('sign.template', string="Template")
+    document = fields.Binary(string="Document", attachment=True)
+    document_filename = fields.Char(string="Document Filename")
+    subject = fields.Char(string="Email Subject")
+    reference = fields.Char(required=True, string="Document Name", help="This is how the document will be named in the mail", default="New Signature Request")
+    access_token = fields.Char('Security Token', required=True, default=_default_access_token, readonly=True, copy=False)
+    state = fields.Selection([
+        ("sent", "To Sign"),
+        ("signed", "Fully Signed"),
+        ("canceled", "Cancelled"),
+        ("expired", "Expired"),
+    ], default='sent', tracking=True, group_expand=True, copy=False, index=True)
+    completed_document = fields.Binary(readonly=True, string="Completed Document", attachment=True, copy=False)
+    validity_date = fields.Date(
+        string="Valid Until",
+        default=lambda self: fields.Date.today() + timedelta(days=60)
+    )
+    cc_emails = fields.Char(string="CC")
+    
+    @api.onchange('document')
+    def _onchange_document(self):
+        if self.document:
+            # Create a new template from the uploaded document
+            if not self.reference:
+                self.reference = self.document_filename or "New Signature Request"
+            template = self.env['sign.template'].create({
+                'name': self.reference,
+                'datas': self.document,
+            })
+            self.template_id = template
+    signer_ids = fields.One2many('sign.request.signer', 'sign_request_id', string="Signers")
+    nb_wait = fields.Integer(string="Sent Requests", compute="_compute_stats", store=True)
+    nb_closed = fields.Integer(string="Completed Signatures", compute="_compute_stats", store=True)
+    nb_total = fields.Integer(string="Requested Signatures", compute="_compute_stats", store=True)
+    progress = fields.Char(string="Progress", compute="_compute_progress", compute_sudo=True)
+    start_sign = fields.Boolean(string="Signature Started", compute="_compute_progress", compute_sudo=True)
+    active = fields.Boolean(default=True, string="Active", copy=False)
+    completion_date = fields.Date(string="Completion Date", compute="_compute_progress", compute_sudo=True)
+    last_reminder_date = fields.Date(string="Last Reminder Date")
+    sign_log_ids = fields.One2many('sign.log', 'sign_request_id', string="Logs", help="Activity logs linked to this request")
+    tag_ids = fields.Many2many('sign.tag', 'sign_request_tag_rel', 'request_id', 'tag_id', string="Tags")
+
+    @api.depends('state', 'signer_ids.state')
+    def _compute_stats(self):
         for rec in self:
-            items = rec.request_item_ids.filtered(
-                lambda i: i.state != "cancelled"
-            )
-            rec.signers_count = len(items)
-            rec.signed_count = len(items.filtered(lambda i: i.state == "signed"))
-            rec.all_signed = (
-                rec.signers_count > 0
-                and rec.signed_count == rec.signers_count
-            )
+            if rec.signer_ids:
+                rec.nb_total = len(rec.signer_ids)
+                rec.nb_wait = len(rec.signer_ids.filtered(lambda s: s.state in ('sent', 'draft')))
+                rec.nb_closed = len(rec.signer_ids.filtered(lambda s: s.state == 'signed'))
+            else:
+                rec.nb_total = 1
+                rec.nb_wait = 1 if rec.state == 'sent' else 0
+                rec.nb_closed = 1 if rec.state == 'signed' else 0
+
+    @api.depends('state', 'signer_ids.state')
+    def _compute_progress(self):
+        for rec in self:
+            if rec.signer_ids:
+                total = len(rec.signer_ids)
+                signed = len(rec.signer_ids.filtered(lambda s: s.state == 'signed'))
+                rec.start_sign = (signed > 0)
+                rec.progress = "%d / %d" % (signed, total)
+                rec.completion_date = fields.Date.today() if rec.state == 'signed' else None
+            else:
+                rec.start_sign = (rec.state == 'signed')
+                rec.progress = "1 / 1" if rec.state == 'signed' else "0 / 1"
+                rec.completion_date = fields.Date.today() if rec.state == 'signed' else None
 
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get("name", "New") == "New":
-                vals["name"] = self.env["ir.sequence"].next_by_code(
-                    "easy_sign.request"
-                ) or "New"
-        return super().create(vals_list)
+            if not vals.get('template_id') and not vals.get('document'):
+                raise ValidationError(_("Please either select a template or upload a document"))
+            if vals.get('document') and not vals.get('template_id'):
+                # Create a new template from the uploaded document
+                template = self.env['sign.template'].create({
+                    'name': vals.get('reference') or "New Template",
+                    'datas': vals.get('document'),
+                })
+                vals['template_id'] = template.id
+            if vals.get('template_id') and not vals.get('cc_emails'):
+                template = self.env['sign.template'].browse(vals['template_id'])
+                if template.exists() and template.cc_emails:
+                    vals['cc_emails'] = template.cc_emails
+        sign_requests = super().create(vals_list)
+        for sign_request in sign_requests:
+            self.env['sign.log'].sudo().create({'sign_request_id': sign_request.id, 'action': 'create'})
+        return sign_requests
 
-    def action_send(self):
-        """Send signing invitations to all pending signers."""
-        self.ensure_one()
-        if not self.request_item_ids:
-            raise UserError(
-                "Please add at least one signer before sending."
-            )
-        if not self.document:
-            raise UserError(
-                "Please upload a PDF document before sending."
-            )
-        active_items = self.request_item_ids.filtered(
-            lambda i: i.state in ("pending", "sent")
-        )
-        if not active_items:
-            raise UserError(
-                "All signers have already signed or declined."
-            )
-        self.write({"state": "sent"})
-        for item in active_items:
-            self._send_invitation(item)
-        return True
+    def copy_data(self, default=None):
+        return super().copy_data(default=default)
 
-    def action_cancel(self):
-        """Cancel the request and all pending signing items."""
+    def go_to_document(self):
         self.ensure_one()
-        self.write({"state": "cancelled"})
-        self.request_item_ids.filtered(
-            lambda i: i.state not in ("signed", "declined")
-        ).write({"state": "cancelled"})
-        self.env["sign.log"].create(
-            {
-                "request_id": self.id,
-                "action": "cancelled",
+        return {
+            'name': self.reference,
+            'type': 'ir.actions.client',
+            'tag': 'sign.Document',
+            'context': {
+                'id': self.id,
+                'token': self.access_token,
+                'state': self.state,
+            },
+        }
+
+    def go_to_signable_document(self):
+        self.ensure_one()
+        # Use the first active (sent) signer's token so the route matches sign.request.signer
+        active_signer = self.signer_ids.filtered(lambda s: s.state == 'sent')
+        if active_signer:
+            token = active_signer[0].access_token
+        else:
+            token = self.access_token
+        return {
+            'name': self.reference,
+            'type': 'ir.actions.act_url',
+            'url': '/sign/document/%d/%s' % (self.id, token),
+            'target': 'self',
+        }
+
+    def get_completed_document(self):
+        if not self:
+            raise UserError(_('You should select at least one document to download.'))
+        for rec in self:
+            if rec.state == 'signed':
+                rec._generate_completed_document()
+        if len(self) < 2:
+            return {
+                'name': 'Signed Document',
+                'type': 'ir.actions.act_url',
+                'url': '/sign/download/%(request_id)s/%(access_token)s/completed' % {'request_id': self.id, 'access_token': self.access_token},
             }
-        )
-        self.message_post(
-            body="Signature request has been cancelled.",
-            message_type="notification",
-        )
-        return True
 
-    def action_reset_to_draft(self):
-        """Reset the request back to draft."""
+    def go_to_edit_template(self):
         self.ensure_one()
-        self.write({"state": "draft"})
-        return True
+        if self.state in ('signed', 'canceled'):
+            raise UserError(_('You cannot edit the template of a signed or cancelled document.'))
+        if not self.template_id:
+            raise UserError(_('Please upload a document or select a template first.'))
+        return self.template_id.go_to_custom_template()
 
-    def _send_invitation(self, item):
-        """Send the signing invitation email — built directly in Python (no Jinja2 template)."""
-        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
-        sign_url = f"{base_url}/sign/view/{item.access_token}"
-        company = self.env.company
-        doc_name = self.document_name or self.name or "Document"
-        requester = self.user_id.name or company.name
+    def open_logs(self):
+        self.ensure_one()
+        return {
+            "name": _("Activity Logs"),
+            "type": "ir.actions.act_window",
+            "res_model": "sign.log",
+            'view_mode': 'list,form',
+            'domain': [('sign_request_id', '=', self.id)],
+        }
 
-        expiry_block = ""
-        if self.expiry_date:
-            expiry_block = f"""
-            <p style="margin:6px 0 0 0;font-size:12px;color:#dc2626;font-weight:600;">
-                &#9200; Expires on: <strong>{self.expiry_date}</strong>
-            </p>"""
+    def cancel(self):
+        for sign_request in self:
+            sign_request.write({'access_token': self._default_access_token(), 'state': 'canceled'})
+        self.env['sign.log'].sudo().create([{'sign_request_id': sign_request.id, 'action': 'cancel'} for sign_request in self])
 
-        message_block = ""
-        if self.message:
-            import re
-            msg = re.sub(r'<[^>]+>', '', str(self.message)).strip()
-            message_block = f"""
-        <div style="background:#fffbf0;border:1px solid #fde68a;padding:16px 20px;border-radius:10px;margin:0 0 24px 0;">
-            <p style="margin:0 0 6px 0;font-size:11px;color:#92400e;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">
-                Message from sender
-            </p>
-            <p style="margin:0;font-size:14px;color:#555;line-height:1.6;">{msg}</p>
-        </div>"""
+    def action_send_reminder(self):
+        self.ensure_one()
+        active_signers = self.signer_ids.filtered(lambda s: s.state == 'sent')
+        if not active_signers:
+            active_signers = self.signer_ids.filtered(lambda s: s.state == 'draft')
+        if not active_signers:
+            raise UserError(_("There are no pending signers to remind."))
 
-        body_html = f"""
-<div style="font-family:'Segoe UI',Arial,sans-serif;max-width:620px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 6px 30px rgba(0,0,0,.10);">
+        for signer in active_signers:
+            if signer.state == 'draft':
+                signer.write({'state': 'sent'})
+            self._send_signer_email(signer)
+            self.env['sign.log'].sudo().create({
+                'sign_request_id': self.id,
+                'partner_id': signer.partner_id.id,
+                'action': 'send',
+            })
 
-    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);padding:40px 36px;text-align:center;">
-        <div style="width:60px;height:60px;background:rgba(255,255,255,.15);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:28px;">&#9997;&#65039;</div>
-        <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">Document Signature Request</h1>
-        <p style="color:rgba(255,255,255,.65);margin:8px 0 0 0;font-size:13px;">{company.name}</p>
-    </div>
+        self.last_reminder_date = fields.Date.today()
+        names = ', '.join(active_signers.mapped('partner_id.name'))
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Reminder Email Sent'),
+                'message': _('Signature reminder sent to %s.') % names,
+                'type': 'success',
+                'sticky': False,
+            }
+        }
 
-    <div style="padding:40px 36px;">
-        <p style="font-size:16px;color:#1e293b;margin:0 0 12px 0;">
-            Dear <strong>{item.signer_name}</strong>,
-        </p>
-        <p style="font-size:14px;color:#64748b;line-height:1.7;margin:0 0 24px 0;">
-            <strong style="color:#1e293b;">{requester}</strong>
-            has requested your electronic signature on the following document:
-        </p>
+    @api.model
+    def _cron_send_auto_reminders(self):
+        today = fields.Date.today()
+        three_days_ago = today - datetime.timedelta(days=3)
+        pending_requests = self.search([
+            ('state', '=', 'sent'),
+            '|', ('last_reminder_date', '=', False), ('last_reminder_date', '<=', three_days_ago)
+        ])
+        for req in pending_requests:
+            try:
+                req.action_send_reminder()
+            except UserError:
+                pass
+            except Exception as e:
+                _logger.error("Error sending auto reminder for request %s: %s", req.id, e)
 
-        <div style="background:#f0f4ff;border:1px solid #c7d7fe;border-left:4px solid #2563eb;padding:18px 22px;border-radius:0 10px 10px 0;margin:0 0 24px 0;">
-            <p style="margin:0;font-size:15px;color:#1e293b;font-weight:700;">&#128196; {doc_name}</p>
-            <p style="margin:8px 0 0 0;font-size:12px;color:#64748b;">Reference: <strong>{self.name}</strong></p>
-            {expiry_block}
-        </div>
+    def _send_signer_email(self, signer):
+        self.ensure_one()
+        base_url = self.get_base_url()
+        dbname = self.env.cr.dbname
+        lang = get_lang(self.env, signer.partner_id.lang).code if signer.partner_id.lang else 'en_US'
+        link = "%s/sign/document/%s/%s/%s" % (base_url, dbname, self.id, signer.access_token)
+        subject = self.subject or (_('Signature Request: %s') % self.reference)
+        body = self.env['ir.qweb']._render('easy_sign.sign_template_mail', {
+            'record': self,
+            'recipient': signer.partner_id,
+            'link': link,
+            'subject': subject,
+        }, lang=lang, minimal_qcontext=True)
+        # Send email directly via mail.mail to preserve our exact sign link
+        mail = self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body,
+            'email_to': signer.partner_id.email,
+            'email_from': self.env.company.email or self.env.user.email or '',
+            'auto_delete': True,
+        })
+        mail.send(raise_exception=False)
+        # Log in chatter for visibility
+        self.message_post(
+            body=_("Signature request email sent to %s (%s)") % (signer.partner_id.name, signer.partner_id.email),
+            message_type='notification',
+            subtype_xmlid='mail.mt_note',
+        )
+        self.env['sign.log'].sudo().create({
+            'sign_request_id': self.id,
+            'partner_id': signer.partner_id.id,
+            'action': 'send',
+        })
 
-        {message_block}
+    def action_send_next_signature_request(self):
+        self.ensure_one()
+        pending_signers = self.signer_ids.filtered(lambda s: s.state == 'draft')
+        if pending_signers:
+            next_signer = sorted(pending_signers, key=lambda s: s.sequence)[0]
+            next_signer.write({'state': 'sent'})
+            self._send_signer_email(next_signer)
+        else:
+            sent_unsigned = self.signer_ids.filtered(lambda s: s.state == 'sent')
+            if sent_unsigned:
+                next_signer = sorted(sent_unsigned, key=lambda s: s.sequence)[0]
+                self._send_signer_email(next_signer)
+            elif all(s.state == 'signed' for s in self.signer_ids) or not self.signer_ids:
+                if self.state != 'signed':
+                    self.write({'state': 'signed'})
+                    attachment = self._generate_completed_document()
+                    if attachment:
+                        self.message_post(
+                            body=_("All signers have completed signing. The final document is attached."),
+                            attachment_ids=[attachment.id]
+                        )
+                        self._send_cc_emails(attachment)
+                        self._send_completed_email(attachment)
 
-        <div style="text-align:center;margin:32px 0 24px 0;">
-            <a href="{sign_url}"
-               style="display:inline-block;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#ffffff;text-decoration:none;padding:16px 48px;border-radius:10px;font-size:16px;font-weight:700;box-shadow:0 6px 20px rgba(37,99,235,.35);">
-                &#9997;&#65039; Review &amp; Sign Document
-            </a>
-        </div>
 
-        <p style="font-size:12px;color:#94a3b8;text-align:center;margin:0 0 6px 0;">
-            If the button does not work, copy this link:
-        </p>
-        <p style="font-size:11px;text-align:center;margin:0 0 30px 0;word-break:break-all;">
-            <a href="{sign_url}" style="color:#2563eb;">{sign_url}</a>
-        </p>
+    def _sign(self, signature_values):
+        self._sign_with_signer(signature_values, False)
 
-        <div style="border-top:1px solid #f1f5f9;padding-top:20px;">
-            <p style="font-size:11px;color:#94a3b8;margin:0;line-height:1.6;text-align:center;">
-                &#128274; This link is unique to you. Do not share it.<br/>
-                By signing, you agree to sign this document electronically.
-            </p>
-        </div>
-    </div>
+    def _sign_with_signer(self, signature_values, signer=False, ip_address=False):
+        self.ensure_one()
+        if self.state != 'sent':
+            raise UserError(_("This signature request has already been processed or cancelled"))
+        
+        # Save signature values
+        SignRequestItemValue = self.env['sign.request.item.value']
+        for sign_item_id, value in signature_values.items():
+            if isinstance(value, dict):
+                frame_value = value.get('frame')
+                value = value.get('value')
+            else:
+                frame_value = None
+            SignRequestItemValue.sudo().create({
+                'sign_request_id': self.id,
+                'sign_item_id': int(sign_item_id),
+                'value': value,
+                'frame_value': frame_value,
+            })
+            
+        # Log signature action
+        partner = signer.partner_id if signer else self.env.user.partner_id
+        self.env['sign.log'].sudo().create({
+            'sign_request_id': self.id,
+            'partner_id': partner.id,
+            'action': 'sign',
+            'ip_address': ip_address or False,
+        })
+        
+        self.message_post(body=_("Signer %s has completed signing.") % partner.name)
+        
+        if signer:
+            signer.write({'state': 'signed'})
+            self.action_send_next_signature_request()
+        else:
+            if self.state != 'signed':
+                self.write({'state': 'signed'})
+                attachment = self._generate_completed_document()
+                if attachment:
+                    self.message_post(
+                        body=_("All signers have completed signing. The final document is attached."),
+                        attachment_ids=[attachment.id]
+                    )
+                    self._send_cc_emails(attachment)
+                    self._send_completed_email(attachment)
 
-    <div style="background:#f8fafc;padding:20px 36px;text-align:center;border-top:1px solid #e2e8f0;">
-        <p style="margin:0;font-size:11px;color:#94a3b8;">
-            Powered by <strong style="color:#1e293b;">Easy Sign</strong> &#8212; Secure Electronic Signatures
-        </p>
-    </div>
-</div>"""
+    def _send_cc_emails(self, attachment):
+        self.ensure_one()
+        if not self.cc_emails:
+            return
+        cc_list = [email.strip() for email in self.cc_emails.split(',') if email.strip()]
+        if not cc_list:
+            return
+        
+        base_url = self.get_base_url()
+        dbname = self.env.cr.dbname
+        link = "%s/sign/document/%s/%s/%s" % (base_url, dbname, self.id, self.access_token)
+        subject = _('Completed Signature Request: %s') % self.reference
+        body = self.env['ir.qweb']._render('easy_sign.sign_template_mail', {
+            'record': self,
+            'recipient': self.env.user.partner_id,
+            'link': link,
+            'subject': subject,
+        }, minimal_qcontext=True)
+        
+        # Send CC email directly via mail.mail
+        mail = self.env['mail.mail'].sudo().create({
+            'subject': subject,
+            'body_html': body,
+            'email_to': ','.join(cc_list),
+            'email_from': self.env.company.email or self.env.user.email or '',
+            'attachment_ids': [(4, attachment.id)],
+            'auto_delete': True,
+        })
+        mail.send(raise_exception=False)
+        # Log in chatter
+        self.message_post(
+            body=_("Completed document sent to CC: %s") % ', '.join(cc_list),
+            attachment_ids=[attachment.id],
+            message_type='notification',
+            subtype_xmlid='mail.mt_note',
+        )
+
+    def _send_completed_email(self, attachment):
+        self.ensure_one()
+        base_url = self.get_base_url()
+        dbname = self.env.cr.dbname
+        link = "%s/sign/document/%s/%s/%s" % (base_url, dbname, self.id, self.access_token)
+        subject = _('Document Signed: %s') % self.reference
+        
+        emails_sent = set()
+        recipients_notified = []
+        
+        # Add the creator/owner to receive the completed document
+        creator_partner = self.create_uid.partner_id if self.create_uid else False
+        if creator_partner and creator_partner.email:
+            emails_sent.add(creator_partner.email)
+            body = self.env['ir.qweb']._render('easy_sign.sign_template_mail_completed', {
+                'record': self,
+                'recipient_name': creator_partner.name,
+                'link': link,
+            }, minimal_qcontext=True)
+            mail = self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'body_html': body,
+                'email_to': creator_partner.email,
+                'email_from': self.env.company.email or self.env.user.email or '',
+                'attachment_ids': [(4, attachment.id)],
+                'auto_delete': True,
+            })
+            mail.send(raise_exception=False)
+            recipients_notified.append(creator_partner.name)
+
+        # Add all signers
+        for signer in self.signer_ids:
+            email = signer.partner_id.email if signer.partner_id else False
+            if not email or email in emails_sent:
+                continue
+            emails_sent.add(email)
+            body = self.env['ir.qweb']._render('easy_sign.sign_template_mail_completed', {
+                'record': self,
+                'recipient_name': signer.partner_id.name,
+                'link': link,
+            }, minimal_qcontext=True)
+            mail = self.env['mail.mail'].sudo().create({
+                'subject': subject,
+                'body_html': body,
+                'email_to': email,
+                'email_from': self.env.company.email or self.env.user.email or '',
+                'attachment_ids': [(4, attachment.id)],
+                'auto_delete': True,
+            })
+            mail.send(raise_exception=False)
+            recipients_notified.append(signer.partner_id.name)
+
+        # Log in chatter
+        if recipients_notified:
+            self.message_post(
+                body=_("Completed document sent to: %s") % ', '.join(recipients_notified),
+                attachment_ids=[attachment.id],
+                message_type='notification',
+                subtype_xmlid='mail.mt_note',
+            )
+
+
+    def _refuse(self, refuser, refusal_reason):
+        self.ensure_one()
+        if self.state != 'sent':
+            raise UserError(_("This sign request cannot be refused"))
+        self.write({'state': 'canceled'})
+        if refuser:
+            refuser.write({'state': 'canceled'})
+            partner_name = refuser.partner_id.name
+        else:
+            partner_name = self.env.user.name
+        self.message_post(body=_("Signature request refused by %s. Reason: %s") % (partner_name, refusal_reason))
+
+    def _message_send_mail(self, body, template_xmlid, record_name, model_description, email_values, **kwargs):
+        self.ensure_one()
+        email_from = email_values.get('email_from')
+        if not email_from:
+            company = self.env.company
+            email_from = company.email_formatted or self.create_uid.email_formatted or self.env.user.email_formatted
+            if not email_from and company.email:
+                email_from = tools.formataddr((company.name, company.email))
+            if not email_from:
+                email_from = self.env['ir.config_parameter'].sudo().get_param('mail.default.from')
 
         mail_values = {
-            "subject": f"[SIGN] Please sign: {doc_name}",
-            "email_from": self.user_id.email_formatted or company.email or "noreply@example.com",
-            "email_to": item.signer_email,
-            "body_html": body_html,
-            "auto_delete": True,
+            'subject': email_values.get('subject', _('Signature Request')),
+            'body_html': body,
+            'email_to': email_values.get('email_to', ''),
+            'email_from': email_from,
+            'res_id': self.id,
+            'model': self._name,
         }
-        mail = self.env["mail.mail"].sudo().create(mail_values)
-        mail.send()
+        if email_values.get('attachment_ids'):
+            mail_values['attachment_ids'] = [Command.set(email_values['attachment_ids'])]
+        mail = self.env['mail.mail'].sudo().create(mail_values)
+        if kwargs.get('force_send'):
+            mail.send()
+        return mail
 
-        item.write({"state": "sent"})
-        self.env["sign.log"].sudo().create(
-            {
-                "request_id": self.id,
-                "request_item_id": item.id,
-                "action": "sent",
-            }
-        )
 
-    def _check_all_signed(self):
+    @staticmethod
+    def get_page_size(pdf_reader):
+        max_width = max_height = 0
+        for page in pdf_reader.pages:
+            media_box = page.mediaBox
+            width = media_box and media_box.getWidth()
+            height = media_box and media_box.getHeight()
+            max_width = width if width > max_width else max_width
+            max_height = height if height > max_height else max_height
+        return (max_width, max_height) if max_width and max_height else None
+
+    def _generate_completed_document(self):
         self.ensure_one()
-        # Re-read the signing progress
-        active_items = self.request_item_ids.filtered(
-            lambda i: i.state != "cancelled"
-        )
-        if not active_items:
-            return
-        signed_items = active_items.filtered(lambda i: i.state == "signed")
-        if len(signed_items) == len(active_items):
-            self._create_signed_document()
-            self.write({"state": "signed"})
-            self.message_post(
-                body="All signers have signed the document. The signed document is now available.",
-                message_type="notification",
-            )
-            # Notify the requester
-            self._notify_all_signed()
-
-    def _build_signature_overlay(self, page_w, page_h, signed_items):
-        try:
-            from reportlab.pdfgen import canvas as rl_canvas
-            from reportlab.lib.utils import ImageReader
-            from PIL import Image
-
-            buf = io.BytesIO()
-            c = rl_canvas.Canvas(buf, pagesize=(page_w, page_h))
-
-            sig_w = 160
-            sig_h = 60
-            margin_x = 40
-            margin_y = 30
-            gap = 20
-            cols = max(1, int((page_w - 2 * margin_x) / (sig_w + gap)))
-
-            for idx, item in enumerate(signed_items):
-                try:
-                    sig_bytes = base64.b64decode(item.signature)
-                    img = Image.open(io.BytesIO(sig_bytes))
-
-                    if img.mode in ('RGBA', 'LA'):
-                        bg = Image.new('RGBA', img.size, (255, 255, 255, 255))
-                        bg.paste(img, mask=img.split()[-1])
-                        img = bg.convert('RGB')
-                    else:
-                        img = img.convert('RGB')
-
-                    col = idx % cols
-                    row = idx // cols
-                    x = margin_x + col * (sig_w + gap)
-                    y = margin_y + row * (sig_h + gap + 15)
-
-                    img_reader = ImageReader(img)
-                    c.drawImage(img_reader, x, y, width=sig_w, height=sig_h,
-                                preserveAspectRatio=True, mask='auto')
-
-                    # Signer name below signature
-                    c.setFont("Helvetica", 7)
-                    c.setFillColorRGB(0.4, 0.4, 0.4)
-                    c.drawString(x, y - 10, item.signer_name or "")
-                    if item.signed_date:
-                        c.setFont("Helvetica", 6)
-                        c.drawString(x, y - 18, str(item.signed_date)[:19])
-
-                    _logger.info("Drew signature of %s at (%s,%s)", item.signer_name, x, y)
-                except Exception as ex:
-                    _logger.error("Failed to draw signature for %s: %s", item.signer_name, ex)
-
-            c.save()
-            buf.seek(0)
-            return buf.getvalue()
-        except ImportError as e:
-            _logger.error("reportlab/PIL not available for signature overlay: %s", e)
-            return None
-
-    def _create_signed_document(self):
-        self.ensure_one()
-        _logger.info("_create_signed_document called for %s", self.name)
-
-        try:
-            from odoo.tools.pdf import PdfReader, PdfWriter
-        except Exception:
+        if self.state != 'signed':
+            raise UserError(_("The completed document cannot be created because the sign request is not fully signed"))
+        if not self.template_id.sign_item_ids:
+            self.completed_document = self.template_id.datas
+        else:
             try:
-                from pypdf import PdfReader, PdfWriter
-            except ImportError:
-                try:
-                    from PyPDF2 import PdfReader, PdfWriter
-                except ImportError:
-                    _logger.warning("No PDF library available — saving original as signed document.")
-                    self.write({
-                        "signed_document": self.document,
-                        "signed_document_name": f"signed_{self.document_name or 'document.pdf'}",
-                    })
-                    return
-
-        try:
-            pdf_bytes = base64.b64decode(self.document)
-            reader = PdfReader(io.BytesIO(pdf_bytes))
-            writer = PdfWriter()
-
-            for page in reader.pages:
-                writer.add_page(page)
-
-            signed_items = self.request_item_ids.filtered(
-                lambda i: i.state == 'signed' and i.signature
+                old_pdf = PdfFileReader(io.BytesIO(base64.b64decode(self.template_id.datas)), strict=False, overwriteWarnings=False)
+            except Exception:
+                raise ValidationError(_("ERROR: Invalid PDF file!"))
+            packet = io.BytesIO()
+            can = canvas.Canvas(packet, pagesize=self.get_page_size(old_pdf))
+            itemsByPage = {}
+            for item in self.template_id.sign_item_ids:
+                if item.page not in itemsByPage:
+                    itemsByPage[item.page] = []
+                itemsByPage[item.page].append(item)
+            items_ids = self.template_id.sign_item_ids.ids
+            values_dict = self.env['sign.request.item.value'].sudo().search_read(
+                [('sign_item_id', 'in', items_ids), ('sign_request_id', '=', self.id)],
+                ['sign_item_id', 'value', 'frame_value']
             )
-            _logger.info("Found %d signed items with signatures", len(signed_items))
+            values = {}
+            for v in values_dict:
+                sign_item = v.get('sign_item_id')
+                item_id = sign_item[0] if isinstance(sign_item, (list, tuple)) else sign_item
+                if item_id:
+                    values[item_id] = {
+                        'value': v['value'],
+                        'frame': v['frame_value'],
+                    }
+            for p in range(0, old_pdf.getNumPages()):
+                page = old_pdf.getPage(p)
+                width = float(abs(page.mediaBox.getWidth()))
+                height = float(abs(page.mediaBox.getHeight()))
+                rotation = page['/Rotate'] if '/Rotate' in page else 0
+                if rotation and isinstance(rotation, int):
+                    can.rotate(rotation)
+                    if rotation == 90:
+                        width, height = height, width
+                        can.translate(0, -height)
+                    elif rotation == 180:
+                        can.translate(-width, -height)
+                    elif rotation == 270:
+                        width, height = height, width
+                        can.translate(-width, 0)
+                items = itemsByPage.get(p + 1, [])
+                for item in items:
+                    value_dict = values.get(item.id)
+                    if not value_dict:
+                        continue
+                    value = value_dict['value']
+                    frame = value_dict.get('frame')
 
-            if signed_items and len(writer.pages) > 0:
-                last_page = writer.pages[-1]
-                page_w = float(last_page.mediabox.width)
-                page_h = float(last_page.mediabox.height)
+                    item_type = item.type_id.item_type if item.type_id else 'text'
 
-                overlay_bytes = self._build_signature_overlay(page_w, page_h, signed_items)
+                    if item_type in ["signature", "initial"]:
+                        img_data = value or frame
+                        if img_data and isinstance(img_data, str) and ',' in img_data:
+                            try:
+                                image_reader = ImageReader(io.BytesIO(base64.b64decode(img_data[img_data.find(',')+1:])))
+                                _fix_image_transparency(image_reader._image)
+                                can.drawImage(image_reader, width*item.posX, height*(1-item.posY-item.height), width*item.width, height*item.height, 'auto', True)
+                            except Exception:
+                                pass
+                    elif item_type == "checkbox":
+                        can.setFont("Helvetica", max(8, height*item.height*0.8))
+                        value_text = 'X' if value in ('on', 'true', 'True', True) else ''
+                        can.drawString(width*item.posX, height*(1-item.posY-item.height*0.9), value_text)
+                    else:
+                        # Render all text/draggable input fields (text, textarea, phone, email, name, company, title, date, etc.)
+                        if value:
+                            value_str = reshape_text(str(value))
+                            can.setFillColorRGB(0, 0, 0)
+                            can.setStrokeColorRGB(0, 0, 0)
+                            font_size = max(9, min(14, int(height * item.height * 0.65)))
+                            can.setFont("Helvetica-Bold", font_size)
+                            y_pos = height * (1 - item.posY - item.height) + (height * item.height - font_size) / 2 + 2
+                            if item.alignment == "left":
+                                can.drawString(width * item.posX + 3, y_pos, value_str)
+                            elif item.alignment == "right":
+                                can.drawRightString(width * (item.posX + item.width) - 3, y_pos, value_str)
+                            else:
+                                can.drawCentredString(width * (item.posX + item.width / 2), y_pos, value_str)
 
-                if overlay_bytes:
-                    overlay_reader = PdfReader(io.BytesIO(overlay_bytes))
-                    overlay_page = overlay_reader.pages[0]
-                    if hasattr(last_page, 'merge_page'):
-                        last_page.merge_page(overlay_page)
-                    elif hasattr(last_page, 'mergePage'):
-                        last_page.mergePage(overlay_page)
-                    _logger.info("Signature overlay merged into last page of %s", self.name)
-                else:
-                    _logger.warning("No overlay generated — signatures will not appear in PDF")
+                # Draw footer watermark on original page
+                can.setFillColorRGB(0.45, 0.45, 0.45)
+                can.setFont("Helvetica", 7)
+                watermark_text = "Signed via Easy Sign | Ref: %s | Date: %s" % (
+                    self.reference,
+                    format_date(self.env, self.completion_date or fields.Date.today())
+                )
+                can.drawString(25, 12, watermark_text)
+                can.showPage()
 
-            writer.add_metadata({
-                "/Title": self.document_name or self.name,
-                "/Subject": f"Signed via Easy Sign - {self.name}",
-                "/Creator": "Easy Sign - Odoo 18",
-            })
+            can.save()
+            item_pdf = PdfFileReader(packet, overwriteWarnings=False)
+            new_pdf = PdfFileWriter()
+            for p in range(0, old_pdf.getNumPages()):
+                page = old_pdf.getPage(p)
+                page.mergePage(item_pdf.getPage(p))
+                new_pdf.addPage(page)
 
             output = io.BytesIO()
-            writer.write(output)
-            signed_bytes = output.getvalue()
-            _logger.info("Signed PDF size: %d bytes", len(signed_bytes))
+            new_pdf.write(output)
+            raw_bytes = output.getvalue()
 
-            self.write({
-                "signed_document": base64.b64encode(signed_bytes),
-                "signed_document_name": f"signed_{self.document_name or 'document.pdf'}",
+            # Compute SHA-256 hash of completed document
+            sha256_hash = hashlib.sha256(raw_bytes).hexdigest()
+
+            self.completed_document = base64.b64encode(raw_bytes)
+            output.close()
+        attachment = self.env['ir.attachment'].create({
+            'name': "%s.pdf" % self.reference if self.reference.split('.')[-1] != 'pdf' else self.reference,
+            'datas': self.completed_document,
+            'type': 'binary',
+            'res_model': self._name,
+            'res_id': self.id,
+        })
+        return attachment
+
+    @api.model
+    def _cron_check_expired(self):
+        today = fields.Date.today()
+        expired_requests = self.search([
+            ('state', '=', 'sent'),
+            ('validity_date', '<', today)
+        ])
+        for req in expired_requests:
+            req.write({'state': 'expired'})
+            self.env['sign.log'].sudo().create({
+                'sign_request_id': req.id,
+                'action': 'expire',
+                'partner_id': False,
+                'user_id': False,
             })
 
-        except Exception as e:
-            _logger.error("Error in _create_signed_document for %s: %s", self.name, e, exc_info=True)
-            self.write(
-                {
-                    "signed_document": self.document,
-                    "signed_document_name": f"signed_{self.document_name or 'document.pdf'}",
-                }
-            )
 
-    def _notify_all_signed(self):
-        """Notify the requester that all parties have signed."""
-        self.ensure_one()
-        requester = self.user_id
-        if not requester or not requester.email:
-            return
-        base_url = (
-            self.env["ir.config_parameter"]
-            .sudo()
-            .get_param("web.base.url")
-        )
-        doc_url = (
-            f"{base_url}/web#model=sign.request&id={self.id}&view_type=form"
-        )
-        signers_html = "".join(
-            f"<li>{item.signer_name} &lt;{item.signer_email}&gt; — "
-            f"Signed on {item.signed_date.strftime('%Y-%m-%d %H:%M') if item.signed_date else 'N/A'}</li>"
-            for item in self.request_item_ids.filtered(lambda i: i.state == "signed")
-        )
-        body_html = f"""
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background: #27ae60; padding: 24px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h2 style="color: #ffffff; margin: 0;">Document Fully Signed</h2>
-  </div>
-  <div style="background: #f9f9f9; padding: 32px; border-radius: 0 0 8px 8px;">
-    <p>Great news! All signers have completed signing the document
-       <strong>"{self.document_name or self.name}"</strong>.</p>
-    <p><strong>Signers:</strong></p>
-    <ul>{signers_html}</ul>
-    <div style="text-align: center; margin: 32px 0;">
-      <a href="{doc_url}" style="
-        background: #27ae60;
-        color: white;
-        padding: 14px 36px;
-        text-decoration: none;
-        border-radius: 6px;
-        font-size: 16px;
-        font-weight: bold;
-        display: inline-block;
-      ">View Signed Document</a>
-    </div>
-  </div>
-</div>
-"""
-        mail_values = {
-            "subject": f"[SIGNED] All parties signed: {self.document_name or self.name}",
-            "email_from": self.env.company.email
-            or "test@example.com",
-            "email_to": requester.email,
-            "body_html": body_html,
-            "auto_delete": True,
-        }
-        self.env["mail.mail"].sudo().create(mail_values).send()
 
-    def _notify_declined(self, item):
-        self.ensure_one()
-        requester = self.user_id
-        if not requester or not requester.email:
-            return
-        body_html = f"""
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  <div style="background: #e74c3c; padding: 24px; text-align: center; border-radius: 8px 8px 0 0;">
-    <h2 style="color: #ffffff; margin: 0;">Signing Declined</h2>
-  </div>
-  <div style="background: #f9f9f9; padding: 32px; border-radius: 0 0 8px 8px;">
-    <p><strong>{item.signer_name}</strong> ({item.signer_email}) has declined to sign
-       the document <strong>"{self.document_name or self.name}"</strong>.</p>
-    {f'<p><strong>Reason:</strong> {item.declined_reason}</p>' if item.declined_reason else ''}
-  </div>
-</div>
-"""
-        mail_values = {
-            "subject": f"[DECLINED] {item.signer_name} declined to sign: {self.document_name or self.name}",
-            "email_from": self.env.company.email
-            or "admin@example.com",
-            "email_to": requester.email,
-            "body_html": body_html,
-            "auto_delete": True,
-        }
-        self.env["mail.mail"].sudo().create(mail_values).send()
-        self.message_post(
-            body=f"{item.signer_name} has declined to sign the document."
-            + (f" Reason: {item.declined_reason}" if item.declined_reason else ""),
-            message_type="notification",
-        )
+class SignRequestSigner(models.Model):
+    _name = "sign.request.signer"
+    _description = "Sign Request Signer"
+    _order = "sequence, id"
 
-    def action_download_signed(self):
-        self.ensure_one()
-        if not self.signed_document:
-            raise UserError("The signed document is not yet available.")
-        return {
-            "type": "ir.actions.act_url",
-            "url": f"/web/content/sign.request/{self.id}/signed_document/{self.signed_document_name}?download=true",
-            "target": "self",
-        }
+    def _default_access_token(self):
+        return str(uuid.uuid4())
+
+    sign_request_id = fields.Many2one('sign.request', string="Sign Request", required=True, ondelete='cascade')
+    role_id = fields.Many2one('sign.item.role', string="Role", required=True)
+    partner_id = fields.Many2one('res.partner', string="Recipient", required=True)
+    state = fields.Selection([
+        ('draft', 'Waiting'),
+        ('sent', 'Signing'),
+        ('signed', 'Signed'),
+        ('canceled', 'Canceled')
+    ], default='draft', required=True)
+    access_token = fields.Char('Security Token', required=True, default=_default_access_token, readonly=True, copy=False)
+    sequence = fields.Integer(string="Sequence", default=10)
+    otp = fields.Char(string="OTP Code", copy=False)
+    otp_expiration = fields.Datetime(string="OTP Expiration", copy=False)
+

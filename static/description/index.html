@@ -1,246 +1,466 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Easy Sign - Electronic Signature &amp; Document Management</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"/>
+    <style>
+        :root {
+            --primary-color: #714b67;
+            --secondary-color: #00a09d;
+            --bg-white: #fff;
+            --text-color: #121212;
+            --text-color-light: #64728f;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; overflow-x: hidden; color: #333; background: #fafafa; }
+        section { overflow-x: hidden; }
+        .code-box {
+            background-color: #2d2d2d; color: #f1f1f1; border: 1px solid #ccc;
+            padding: 15px; border-radius: 8px; font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap; word-wrap: break-word; overflow-x: hidden; margin-top: 10px;
+        }
+        /* Custom Effects */
+        .feature-card {
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            background: linear-gradient(135deg, #ffffff 0%, #f4f6f9 100%);
+            border: none !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #714b67 0%, #00a09d 100%);
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+        .feature-card:hover h5, .feature-card:hover p {
+            color: #fff !important;
+        }
+        .feature-card:hover .icon-box {
+            background-color: #fff !important;
+            color: #714b67 !important;
+        }
+        .feature-card:hover .icon-box i {
+            color: #714b67 !important;
+        }
+        .workflow-box {
+            transition: transform 0.3s ease;
+        }
+        .workflow-box:hover {
+            transform: scale(1.05);
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #714b67, #00a09d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
 </head>
+
 <body>
+    <div class="container-fluid px-3 px-md-5">
 
-<!-- HERO -->
-<section class="oe_container oe_dark">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">Easy Sign — Electronic Signature</h2>
-        <h3 class="oe_slogan" style="font-size:16px;">
-            The complete self-hosted e-signature solution for Odoo 18.<br/>
-        </h3>
-<!--        <div style="text-align:center;margin-top:16px;">-->
-<!--            <span style="margin:4px;display:inline-block;padding:6px 16px;border-radius:20px;background:#28a745;color:#fff;font-size:13px;font-weight:600;">&#10003; No External API</span>-->
-<!--            <span style="margin:4px;display:inline-block;padding:6px 16px;border-radius:20px;background:#007bff;color:#fff;font-size:13px;font-weight:600;">&#128274; Self-Hosted</span>-->
-<!--            <span style="margin:4px;display:inline-block;padding:6px 16px;border-radius:20px;background:#6f42c1;color:#fff;font-size:13px;font-weight:600;">&#127760; Arabic &amp; English</span>-->
-<!--            <span style="margin:4px;display:inline-block;padding:6px 16px;border-radius:20px;background:#fd7e14;color:#fff;font-size:13px;font-weight:600;">&#128241; Mobile Ready</span>-->
-<!--        </div>-->
-    </div>
-</section>
-
-
-<!-- INTRO SCREENSHOT -->
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <div class="oe_demo oe_picture oe_screenshot">
-                <img src="screenshots/1_new_request.png" alt="New Signature Request"/>
+        <!-- Support Badges -->
+        <div class="my-5 py-3" style="border-bottom: 1px solid #e7e7e7;">
+            <div class="row justify-content-between">
+                <div class="col-4"></div>
+                <div class="col-6">
+                    <div class="row" style="margin-top:10px">
+                        <div class="my-3 d-flex align-items-center justify-content-end">
+                            <span class="me-3"><b>Supports: </b></span>
+                            <div class="text-center" style="background-color:#714b67 !important; font-size:0.8rem !important; color:#fff !important; font-weight:500 !important; padding:4px !important; margin:0 3px !important; border-radius:50px !important; min-width:120px !important">Community</div>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top:10px">
+                        <div class="d-flex align-items-center justify-content-end">
+                            <span class="me-3"><b>Availability: </b></span>
+                            <div class="text-center col" style="font-size:0.8rem !important; color:#5B899E !important; border:1px solid #5B899E; font-weight:500 !important; padding:4px !important; margin:0 3px !important; border-radius:20px !important; min-width:120px !important"><i class="fa fa-check" style="color:green"></i> On Premise</div>
+                            <div class="text-center col" style="font-size:0.8rem !important; color:#5B899E !important; border:1px solid #5B899E; font-weight:500 !important; padding:4px !important; margin:0 3px !important; border-radius:20px !important; min-width:120px !important"><i class="fa fa-check" style="color:green"></i> Odoo.sh</div>
+                            <div class="text-center col" style="border:1px solid #017E84; font-size:0.8rem !important; color:#017E84 !important; font-weight:500 !important; padding:4px !important; margin:0 3px !important; border-radius:20px !important; min-width:120px !important"><i class="fa fa-times" style="color:red"></i> Odoo Online</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="oe_span6">
-            <h3>Send Documents for Signing Directly from Odoo</h3>
-            <p>
-                Upload any PDF, add signers by name and email, and send signing invitations in one click.
-                Signers receive a unique link by email and can sign from any device — no Odoo account needed.
-            </p>
-            <p>
-                When all parties have signed, Easy Sign automatically embeds every signature into the original PDF
-                and stores the final document in Odoo.
-            </p>
-            <ul>
-                <li>Upload PDF documents and define signers</li>
-                <li>Automatic email invitations with secure unique links</li>
-                <li>Draw signatures on canvas (mouse &amp; touch)</li>
-                <li>Signatures embedded directly into the PDF</li>
-                <li>Full audit trail: IP, timestamp, signer details</li>
-                <li>Expiry dates &amp; decline with reason</li>
-            </ul>
-        </div>
-    </div>
-</section>
 
-
-<!-- NO EXTERNAL API -->
-<section class="oe_container oe_dark">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">100% Self-Hosted — Your Documents Stay on Your Server</h2>
-        <h3 class="oe_slogan" style="font-size:15px;">
-            Unlike modules that depend on DocuSign, HelloSign, or iLoveSign,<br/>
-            Easy Sign works entirely inside Odoo. No API keys. No monthly fees. No data leaving your server.
-        </h3>
-    </div>
-</section>
-
-
-<!-- EMAIL INVITATION -->
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">Professional Email Invitation</h2>
-        <h3 class="oe_slogan" style="font-size:15px;">
-            Each signer receives a branded email with a unique, secure signing link — generated automatically by Odoo
-        </h3>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_demo oe_picture oe_screenshot">
-            <img src="screenshots/email.png" alt="Email Invitation"/>
-        </div>
-    </div>
-</section>
-
-
-<!-- SIGNING PAGE -->
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">Public Signing Page</h2>
-        <h3 class="oe_slogan" style="font-size:15px;">
-            PDF document on the left, signature canvas on the right — with Arabic / English language toggle
-        </h3>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_demo oe_picture oe_screenshot">
-            <img src="screenshots/3_signing_page.png" alt="Signing Page"/>
-        </div>
-    </div>
-</section>
-
-
-<!-- SIGNED RESULT -->
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <div class="oe_demo oe_picture oe_screenshot">
-                <img src="screenshots/4_success_page.png" alt="Success Page"/>
+        <!-- Overview Section -->
+        <div class="container my-5">
+            <div class="position-relative" style="border-radius: 16px; background: #f8f8f8; padding: 40px 20px;">
+                <div class="row" style="padding: 2rem 0rem 0 !important;">
+                    <div class="col-lg-8 mx-auto gap-4 d-flex flex-column align-items-center">
+                        <p class="my-1 text-center text-uppercase" style="letter-spacing: 1px !important; color: #714b67; font-weight: bold; font-size: 18px; line-height: 30px;">
+                            Complete Electronic Signature &amp; Document Management Solution
+                        </p>
+                        <h1 class="text-center text-uppercase my-0" style="color: #121212; font-size: clamp(2rem, 5vw, 44px); font-weight: 700; line-height: normal;">
+                            ✍️ Easy Sign
+                        </h1>
+                    </div>
+                    <div class="col-lg-12 d-flex justify-content-center my-5">
+                        <img src="PD logo.png" class="img-fluid d-block mx-auto" style="max-width: 30%; height: auto; border-radius: 10px;" alt="ProcessDrive Logo"/>
+                    </div>
+                    <div class="col-md-12 text-center">
+                        <a href="mailto:odoo@processdrive.com?subject=Easy%20Sign%20Inquiry" target="_blank" style="background-color: transparent; border-radius: 35px; display: inline-block; padding: 7px 33px; border: 1px solid #714b67; color: #714b67; text-decoration: none;" class="mx-1 mb-2">
+                            <i class="fa fa-paper-plane" style="color: #714b67;" aria-hidden="true"></i>
+                            <span style="font-size: 18px; vertical-align: middle"> odoo@processdrive.com</span>
+                        </a>
+                        <a href="https://wa.me/9944180573" target="_blank" style="background-color: transparent; border-radius: 35px; display: inline-block; padding: 7px 33px; border: 1px solid #25D366; color: #25D366; text-decoration: none;" class="mx-1 mb-2">
+                            <i class="fa fa-whatsapp" style="color: #25D366;" aria-hidden="true"></i>
+                            <span style="font-size: 18px; vertical-align: middle"> 9944180573</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="oe_span6">
-            <div class="oe_demo oe_picture oe_screenshot">
-                <img src="screenshots/5_fully_signed.png" alt="Fully Signed"/>
+
+        <!-- Banner Feature Showcase Section -->
+        <section class="Banner-Showcase" style="padding: 40px 0; width: 100%;">
+            <div class="container text-center">
+                <video
+                    src="sign_flow.mp4"
+                    class="img-fluid rounded shadow-lg"
+                    style="max-width: 100%; border-radius: 16px; display: block; margin: 0 auto;"
+                    autoplay
+                    muted
+                    loop
+                    controls
+                    playsinline>
+                    Your browser does not support the video tag.
+                </video>
             </div>
-        </div>
-    </div>
-</section>
+        </section>
+
+        <!-- Complete Features Section (10 Core Features) -->
+        <section class="Features" style="padding:40px 0; width:100%;">
+            <div style="width:auto; margin:2%; box-shadow: 0px 5px 20px -11px rgba(0,0,0,0.25);">
+                <div class="row">
+                    <div class="col-lg-12 d-flex flex-column justify-content-center align-items-center">
+                        <h2 class="gradient-text" style="text-align:center; font-size:40px; font-weight:700; text-transform:uppercase; padding-bottom:50px;">✨ Core Features</h2>
+                    </div>
+
+                    <!-- 1. Drag & Drop Builder -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-pencil" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Visual Drag &amp; Drop Editor</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Place Signature, Initial, Text, Multiline Text, Checkbox, and Radio fields anywhere on multi-page PDF documents.</p>
+                        </div>
+                    </div>
+
+                    <!-- 2. Multi-Signer Flow -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-users" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Sequential Multi-Signer Flow</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Enforce role-based turn sequence (Signer 1 → Signer 2) with automated email dispatch and sequence protection.</p>
+                        </div>
+                    </div>
 
 
-<!-- SIGNED PDF -->
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">Signature Embedded into the PDF</h2>
-        <h3 class="oe_slogan" style="font-size:15px;">
-            The signed PDF is saved in Odoo and available for download — with signer name and timestamp
-        </h3>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_demo oe_picture oe_screenshot">
-            <img src="screenshots/6_signed_pdf.png" alt="Signed PDF"/>
-        </div>
-    </div>
-</section>
+                    <!-- 4. Template Sharing & Public Links -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-share-alt" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Public Template Share Links</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Generate public sharing URLs with validity expiration dates for open template signature collection.</p>
+                        </div>
+                    </div>
 
+                    <!-- 5. Direct Email & Chatter Integration -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-envelope" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Direct Email &amp; Chatter Tracking</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Sends custom HTML emails directly via mail.mail and logs all signature actions directly into Odoo Chatter.</p>
+                        </div>
+                    </div>
 
-<!-- HOW IT WORKS -->
-<section class="oe_container oe_dark">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">How It Works in 4 Steps</h2>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <h4>1. Upload &amp; Configure</h4>
-            <p>Upload your PDF, add signer names and emails, set an optional expiry date and invitation message.</p>
-        </div>
-        <div class="oe_span6">
-            <h4>2. Send Invitations</h4>
-            <p>Click Send — each signer receives a branded email with their own secure, unique signing link.</p>
-        </div>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <h4>3. Sign in the Browser</h4>
-            <p>Signer opens the link, views the full PDF, draws their signature on canvas, and clicks Sign.</p>
-        </div>
-        <div class="oe_span6">
-            <h4>4. Signed PDF Ready</h4>
-            <p>Signature is embedded into the original PDF, saved in Odoo, and the requester is notified.</p>
-        </div>
-    </div>
-</section>
+                    <!-- 6. OTP Extra Security -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-lock" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">OTP One-Time Password Security</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Optional Extra Security mode requiring signers to verify a 6-digit email OTP before accessing sensitive files.</p>
+                        </div>
+                    </div>
 
+                    <!-- 7. Delegation & Refusal Flow -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-user-plus" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Signer Delegation &amp; Refusal Flow</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Allows signers to transfer signing responsibility to another partner or refuse with logged justification reasons.</p>
+                        </div>
+                    </div>
 
-<!-- FEATURES GRID -->
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">Features</h2>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <h4>&#128196; PDF Document Upload</h4>
-            <p>Upload any PDF and add one or multiple signers. Set expiry dates and custom invitation messages.</p>
-        </div>
-        <div class="oe_span6">
-            <h4>&#128231; Automatic Email Invitations</h4>
-            <p>Each signer receives a beautiful email with a unique, secure signing link. No Odoo account needed.</p>
-        </div>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <h4>&#9997; Canvas Signature Drawing</h4>
-            <p>Signers draw their signature using mouse or finger touch on any device — desktop, tablet, or mobile.</p>
-        </div>
-        <div class="oe_span6">
-            <h4>&#128203; Signed PDF Generation</h4>
-            <p>After all parties sign, signatures are automatically embedded into the original PDF and saved in Odoo.</p>
-        </div>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <h4>&#128269; Full Audit Trail</h4>
-            <p>Every action — viewed, signed, declined — is logged with IP address, timestamp, and signer details.</p>
-        </div>
-        <div class="oe_span6">
-            <h4>&#127760; Arabic &amp; English — RTL Support</h4>
-            <p>The signing page switches instantly between Arabic (RTL) and English with a single click. Cairo font included.</p>
-        </div>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <h4>&#128197; Expiry Dates</h4>
-            <p>Set expiry dates on signing requests. Expired links are automatically invalidated.</p>
-        </div>
-        <div class="oe_span6">
-            <h4>&#10060; Decline with Reason</h4>
-            <p>Signers can decline with a written reason. The requester is notified and the audit trail updated.</p>
-        </div>
-    </div>
-</section>
+                    <!-- 8. Saved Signatures & Autofill -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-star" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">1-Click Saved Profile Signatures</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Store signatures on Partner records for 1-click electronic signing and auto-fill contact information.</p>
+                        </div>
+                    </div>
 
+                    <!-- 9. Final PDF Generation -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-file-pdf-o" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Completed PDF Document Generation</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Merges all completed signatures and filled form text directly into the final PDF attachment upon completion.</p>
+                        </div>
+                    </div>
 
-<!-- REQUEST LIST SCREENSHOT -->
-<section class="oe_container">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">Manage All Signing Requests from One Place</h2>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_demo oe_picture oe_screenshot">
-            <img src="screenshots/2_request_with_signer.png" alt="Manage Requests"/>
-        </div>
-    </div>
-</section>
+                    <!-- 10. Auto Reminders & CC Notifications -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-bell" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Auto Reminders &amp; CC Notifications</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Automatically resends pending signature reminder emails every 3 days via scheduled CRON, and distributes the completed signed document to all configured CC recipients.</p>
+                        </div>
+                    </div>
 
+                </div>
+            </div>
+        </section>
 
-<!-- TECHNICAL REQUIREMENTS -->
-<section class="oe_container oe_dark">
-    <div class="oe_row oe_spaced">
-        <h2 class="oe_slogan">Technical Requirements</h2>
-    </div>
-    <div class="oe_row oe_spaced">
-        <div class="oe_span6">
-            <ul>
-                <li>Odoo 18 Community or Enterprise</li>
-                <li>Python packages: <code>reportlab</code>, <code>Pillow</code></li>
-                <li>Depends on built-in modules: <code>mail</code>, <code>web</code></li>
-            </ul>
-        </div>
-        <div class="oe_span6">
-            <ul>
-                <li>No external API keys required</li>
-                <li>Outgoing email (SMTP) configured in Odoo</li>
-                <li>Works on Chrome, Firefox, Safari, Edge</li>
-            </ul>
-        </div>
-    </div>
-</section>
+        <!-- Operational Workflows Section -->
+        <section class="Workflows" style="padding:60px 0; background:#fff;">
+            <div class="container">
+                <div class="col-lg-12 text-center mb-5">
+                    <h2 class="gradient-text" style="font-size:40px; font-weight:700; text-transform:uppercase;">
+                        🔄 Operational Workflows
+                    </h2>
+                    <p style="color:#64728f; font-size:18px; margin-top:10px;">Comprehensive end-to-end document signing lifecycle management</p>
+                </div>
 
+                <!-- Flow 1: Template Creation -->
+                <div class="row align-items-center mb-5 pb-5">
+                    <div class="col-lg-6">
+                        <h3 style="color:#714b67; font-weight:700; margin-bottom:20px;">1. Visual PDF Template Builder</h3>
+                        <p style="color:#333; font-size:16px; line-height:28px;">
+                            Upload any PDF agreement or contract. Drag and drop signature blocks, initials, contact text boxes, and checkboxes onto the exact coordinates of the page. Assign each field to specific signer roles (Signer 1, Signer 2, etc.).
+                        </p>
+                        <ul style="list-style:none; padding-left:0; margin-top:15px;">
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Drag &amp; Drop Field Placement</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Role-based Field Assignment</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Multi-page PDF Template Support</li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-6 text-center workflow-box">
+                        <div class="p-4" style="background:#f8f9fa; border:2px dashed #714b67; border-radius:16px;">
+                            <i class="fa fa-file-pdf-o" style="font-size:80px; color:#714b67; margin-bottom:15px;"></i>
+                            <h4 style="font-weight:700; color:#2D3748;">PDF Template Editor</h4>
+                            <p style="color:#64728f; font-size:14px;">Interactive canvas editor with real-time field positioning.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow 2: Multi-Signer Request -->
+                <div class="row align-items-center mb-5 pb-5 flex-row-reverse">
+                    <div class="col-lg-6">
+                        <h3 style="color:#714b67; font-weight:700; margin-bottom:20px;">2. Sequential Signature Requests</h3>
+                        <p style="color:#333; font-size:16px; line-height:28px;">
+                            Send signature requests to single or multiple recipients. The system automatically sends an email notification to the active signer with a secure access token link, while keeping subsequent signers in a "Waiting" state until their turn.
+                        </p>
+                        <ul style="list-style:none; padding-left:0; margin-top:15px;">
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Automated Recipient Email Routing</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Secure Per-Signer Access Tokens</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> "Not Yet Your Turn" Sequence Guard</li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-6 text-center workflow-box">
+                        <div class="p-4" style="background:#f8f9fa; border:2px dashed #00a09d; border-radius:16px;">
+                            <i class="fa fa-paper-plane-o" style="font-size:80px; color:#00a09d; margin-bottom:15px;"></i>
+                            <h4 style="font-weight:700; color:#2D3748;">Sequential Multi-Signer Flow</h4>
+                            <p style="color:#64728f; font-size:14px;">Automated turn-based email notifications &amp; sequence protection.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Flow 3: Activity Logging & PDF Generation -->
+                <div class="row align-items-center mb-5 pb-5">
+                    <div class="col-lg-6">
+                        <h3 style="color:#714b67; font-weight:700; margin-bottom:20px;">3. Activity Logging &amp; PDF Generation</h3>
+                        <p style="color:#333; font-size:16px; line-height:28px;">
+                            Once all signers complete their signatures, Easy Sign embeds all signatures and filled text values directly onto the PDF document and attaches it to the record. Complete audit logs tracking IP addresses and timestamps are recorded in Odoo.
+                        </p>
+                        <ul style="list-style:none; padding-left:0; margin-top:15px;">
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Direct PDF Signature Embedding</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Complete Sign Log &amp; IP Address Audit</li>
+                            <li style="margin-bottom:10px;"><i class="fa fa-check-circle" style="color:#714b67; margin-right:10px;"></i> Automatic Completion Email Attachments</li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-6 text-center workflow-box">
+                        <div class="p-4" style="background:#f8f9fa; border:2px dashed #714b67; border-radius:16px;">
+                            <i class="fa fa-file-pdf-o" style="font-size:80px; color:#714b67; margin-bottom:15px;"></i>
+                            <h4 style="font-weight:700; color:#2D3748;">Activity Log &amp; Final PDF</h4>
+                            <p style="color:#64728f; font-size:14px;">Complete signer activity log with IP tracking &amp; attached final document.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Installation Section -->
+        <section class="one-app" style="border-radius:20px; box-shadow:0 4px 20px rgba(0,0,0,0.08); padding:40px 20px; background:#F5F5F7; width:100%; margin-top:30px;">
+            <div class="container" style="overflow:hidden; height:100%;">
+                <div class="col-lg-12 text-center mb-5">
+                    <h2 style="color:#121212; font-size:40px; font-weight:700; text-transform:uppercase; margin:0 0 15px 0;">
+                        ⚙️ Installation
+                    </h2>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12">
+                        <div class="d-flex flex-column gap-4">
+                            <div style="border:1px solid #e0e6ef; border-radius:12px; padding:20px; background:#fff; box-shadow:0 4px 10px rgba(0,0,0,0.08)">
+                                <h5 style="color:#714b67; font-weight:bold;">📁 Step 1: Copy Module</h5>
+                                <p style="color:#64728f; font-size:16px; font-weight:400;">Copy the <strong>easy_sign</strong> folder into your Odoo custom addons path.</p>
+                                <div class="code-box">/opt/odoo/custom/addons/easy_sign</div>
+                            </div>
+                            <div style="border:1px solid #e0e6ef; border-radius:12px; padding:20px; background:#fff; box-shadow:0 4px 10px rgba(0,0,0,0.08)">
+                                <h5 style="color:#714b67; font-weight:bold;">⚙️ Step 2: Install App</h5>
+                                <p style="color:#64728f; font-size:16px; font-weight:400;">Activate Developer Mode → Go to <strong>Apps</strong> → Update Apps List → Search for <strong>Easy Sign</strong> and Install.</p>
+                            </div>
+                            <div style="border:1px solid #e0e6ef; border-radius:12px; padding:20px; background:#fff; box-shadow:0 4px 10px rgba(0,0,0,0.08)">
+                                <h5 style="color:#714b67; font-weight:bold;">🚀 Step 3: Restart Odoo</h5>
+                                <p style="color:#64728f; font-size:16px; font-weight:400;">Restart your Odoo service for changes to take effect.</p>
+                                <div class="code-box">sudo systemctl restart odoo</div>
+                            </div>
+                            <div style="border:1px solid #e0e6ef; border-radius:12px; padding:20px; background:#fff; box-shadow:0 4px 10px rgba(0,0,0,0.08)">
+                                <h5 style="color:#714b67; font-weight:bold;">✅ Step 4: Start Signing</h5>
+                                <p style="color:#64728f; font-size:16px; font-weight:400;">After installation, go to <strong>Easy Sign → Templates</strong> to upload your first PDF document and start creating signature requests.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- License & Author Section -->
+        <section class="mt-5" style="padding: 40px;">
+            <div class="container" style="overflow:hidden;">
+                <div class="row mb-4">
+                    <div class="col-lg-12 text-center">
+                        <h2 style="color:#121212; font-size:28px; font-weight:700; text-transform:uppercase; margin:0 0 30px 0;">
+                            📜 License
+                        </h2>
+                    </div>
+                    <div class="col-lg-12">
+                        <div style="border:1px solid #e0e6ef; border-radius:12px; padding:12px 15px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.06)">
+                            <p style="color:#64728f; font-size:15px; font-weight:400; margin:0; text-align: center;">
+                                This module is released under the <strong>OPL-1 License</strong> (Odoo Proprietary License v1.0).
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-12 text-center">
+                        <h2 style="color:#121212; font-size:28px; font-weight:700; text-transform:uppercase; margin:0 0 30px 0;">
+                            👨‍💼 Author
+                        </h2>
+                    </div>
+                    <div class="col-lg-12">
+                        <div style="border:1px solid #e0e6ef; border-radius:12px; padding:12px 15px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,0.06)">
+                            <p style="color:#64728f; font-size:15px; font-weight:400; margin:0; text-align: center;">
+                                <strong><a href="https://processdrive.com/odoo" style="color: #714b67; text-decoration: none;">Processdrive India Pvt Ltd</a></strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Our Odoo Services Section -->
+        <section id="services" class="mt-5" style="border-radius: 16px; border: 1px solid #EBEEF2; background: var(--Neutral-N0, #FFF); padding: 60px 40px; box-shadow: 0px 5px 20px -11px rgba(0, 0, 0, 0.25); width:100%">
+            <div class="text-center mt-4">
+                <h3 class="mb-0" style="color: #000; text-align: center; font-family: Montserrat; font-size: 40px; font-style: normal; font-weight: 700; line-height: normal; text-transform: uppercase; padding-bottom: 30px;">
+                    Our Odoo Services
+                </h3>
+            </div>
+            <div class="row mt-3 g-4">
+                <div class="col-lg-3 col-sm-12 mb-3">
+                    <a href="https://processdrive.com/odoo" style="text-decoration:none">
+                        <div class="btn-lg btn-block p-4 mb-2 d-flex flex-column justify-content-center align-items-center" style="font-size:25px; font-weight:bold;background-color:#FFE2E5; margin:auto; gap: 16px; border-radius: 8px;">
+                            <div class="d-flex justify-content-center align-items-center" style="background-color:#FA5A7D; border-radius:50%; height:56px; width:56px">
+                                <i class="fa fa-cogs" style="color:white;" aria-hidden="true"></i>
+                            </div>
+                            <span style="font-size: 18px; color: var(--text-color, #121212); font-weight: 600;">Customization</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-sm-12 mb-3">
+                    <a href="https://processdrive.com/odoo" style="text-decoration:none">
+                        <div class="btn-lg btn-block p-4 mb-2 d-flex flex-column justify-content-center align-items-center" style="font-size:25px; font-weight:bold;background-color:#FFF4DE; margin:auto; gap: 16px; border-radius: 8px;">
+                            <div class="d-flex justify-content-center align-items-center" style="background-color:#FF947A; border-radius:50%; height:56px; width:56px">
+                                <i class="fa fa-wrench" style="color:white;" aria-hidden="true"></i>
+                            </div>
+                            <span style="font-size: 18px; color: var(--text-color, #121212); font-weight: 600;">Implementation</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-sm-12 mb-3">
+                    <a href="https://processdrive.com/odoo" style="text-decoration:none">
+                        <div class="btn-lg btn-block p-4 mb-2 d-flex flex-column justify-content-center align-items-center" style="font-size:25px; font-weight:bold;background-color:#DCFCE7; margin:auto; gap: 16px; border-radius: 8px;">
+                            <div class="d-flex justify-content-center align-items-center" style="background-color:#3CD856; border-radius:50%; height:56px; width:56px">
+                                <i class="fa fa-users" style="color:white;" aria-hidden="true"></i>
+                            </div>
+                            <span style="font-size: 18px; color: var(--text-color, #121212); font-weight: 600;">Support</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-lg-3 col-sm-12 mb-3">
+                    <a href="https://processdrive.com/odoo" style="text-decoration:none">
+                        <div class="btn-lg btn-block p-4 mb-2 d-flex flex-column justify-content-center align-items-center" style="font-size:25px; font-weight:bold;background-color:#F1F9FF; margin:auto; gap: 16px; border-radius: 8px;">
+                            <div class="d-flex justify-content-center align-items-center" style="background-color:#01649C; border-radius:50%; height:56px; width:56px">
+                                <i class="fa fa-building" style="color:white;" aria-hidden="true"></i>
+                            </div>
+                            <span style="font-size: 18px; color: var(--text-color, #121212); font-weight: 600;">Integration</span>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </body>
 </html>

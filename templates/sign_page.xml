@@ -1,476 +1,2401 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <template id="sign_page" name="Sign Page">
+        <t>
+            &lt;!DOCTYPE html&gt;
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Sign Document</title>
+                </head>
+                <body>
+            <style>
+                body {
+                    font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background-color: #525659;
+                    color: white;
+                }
+                .es-top-toolbar {
+                    background-color: #2c323f;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 10px 20px;
+                    border-bottom: 1px solid #1e222b;
+                    font-size: 13px;
+                }
+                .es-toolbar-left {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 4px;
+                }
+                .es-breadcrumb {
+                    color: #00a09d;
+                    text-decoration: none;
+                    font-size: 12px;
+                }
+                .es-doc-title {
+                    color: white;
+                    font-size: 15px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+                .es-toolbar-center {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    color: #adb5bd;
+                    background: #1e222b;
+                    padding: 4px 12px;
+                    border-radius: 4px;
+                    user-select: none;
+                }
+                .es-toolbar-center select {
+                    background: transparent;
+                    color: white;
+                    border: none;
+                    outline: none;
+                    appearance: none;
+                    cursor: pointer;
+                }
+                .es-toolbar-right {
+                    display: flex;
+                    align-items: center;
+                    gap: 20px;
+                }
+                .es-signer-status {
+                    display: flex;
+                    flex-direction: column;
+                    font-size: 12px;
+                }
+                .es-signer-status.active {
+                    color: #00a09d;
+                }
+                .es-signer-status.waiting {
+                    color: #adb5bd;
+                }
+                .es-signer-status span:last-child {
+                    font-style: italic;
+                    opacity: 0.8;
+                }
+                .container {
+                    max-width: 900px;
+                    margin: 20px auto;
+                    position: relative;
+                }
+                .container canvas {
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    margin-bottom: 16px;
+                }
+                h1, h2 {
+                    display: none;
+                }
+                .btn-primary {
+                    background-color: #00a09d;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    margin-top: 20px;
+                }
+                .btn-primary:hover {
+                    background-color: #008784;
+                }
+                /* Premium Signature Modal Styles */
+                .es-signature-modal-backdrop {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(15, 23, 42, 0.6);
+                    backdrop-filter: blur(8px);
+                    z-index: 2000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                    box-sizing: border-box;
+                }
+                .es-signature-modal {
+                    background: #ffffff;
+                    border-radius: 16px;
+                    width: 600px;
+                    max-width: 100%;
+                    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+                    border: 1px solid #e2e8f0;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    color: #333;
+                    animation: esModalFadeIn 0.25s ease-out;
+                }
+                @keyframes esModalFadeIn {
+                    from { opacity: 0; transform: scale(0.95) translateY(10px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                .es-signature-modal-header {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 16px 24px;
+                    border-bottom: 1px solid #f1f5f9;
+                }
+                .es-signature-modal-title {
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #0f172a;
+                    margin: 0;
+                }
+                .es-signature-modal-close {
+                    background: transparent;
+                    border: none;
+                    font-size: 24px;
+                    color: #94a3b8;
+                    cursor: pointer;
+                    line-height: 1;
+                    transition: color 0.15s;
+                    padding: 0;
+                }
+                .es-signature-modal-close:hover {
+                    color: #0f172a;
+                }
+                .es-signature-modal-tabs {
+                    display: flex;
+                    background: #f8fafc;
+                    border-bottom: 1px solid #e2e8f0;
+                    padding: 0 16px;
+                }
+                .es-signature-tab-btn {
+                    flex: 1;
+                    background: transparent;
+                    border: none;
+                    border-bottom: 2px solid transparent;
+                    padding: 14px 16px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #64748b;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                }
+                .es-signature-tab-btn:hover {
+                    color: #0f172a;
+                }
+                .es-signature-tab-btn.active {
+                    color: #714b67;
+                    border-bottom-color: #714b67;
+                }
+                .es-signature-tab-btn .tab-icon {
+                    font-size: 15px;
+                }
+                .es-signature-modal-body {
+                    padding: 24px;
+                    min-height: 240px;
+                    display: flex;
+                    flex-direction: column;
+                    box-sizing: border-box;
+                }
+                .es-signature-tab-content {
+                    display: none;
+                    flex-direction: column;
+                    flex: 1;
+                }
+                .es-signature-tab-content.active {
+                    display: flex;
+                }
+                .es-auto-input-group {
+                    display: flex;
+                    gap: 12px;
+                    margin-bottom: 16px;
+                }
+                .es-auto-input {
+                    flex: 1;
+                    padding: 10px 14px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    outline: none;
+                    transition: border-color 0.15s;
+                }
+                .es-auto-input:focus {
+                    border-color: #714b67;
+                }
+                .es-auto-font-select {
+                    padding: 10px 14px;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    outline: none;
+                    background-color: #ffffff;
+                    cursor: pointer;
+                    transition: border-color 0.15s;
+                }
+                .es-auto-font-select:focus {
+                    border-color: #714b67;
+                }
+                .es-auto-preview-container {
+                    flex: 1;
+                    background: #f8fafc;
+                    border: 2px dashed #cbd5e1;
+                    border-radius: 12px;
+                    min-height: 160px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    overflow: hidden;
+                }
+                .es-auto-preview {
+                    font-size: 38px;
+                    color: #0f172a;
+                    user-select: none;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    width: 90%;
+                    text-align: center;
+                    padding: 10px;
+                }
+                .es-draw-canvas-container {
+                    position: relative;
+                    border: 2px dashed #cbd5e1;
+                    border-radius: 12px;
+                    background: #ffffff;
+                    height: 200px;
+                    overflow: hidden;
+                }
+                #signature-pad {
+                    display: block;
+                    width: 100%;
+                    height: 100%;
+                    cursor: crosshair;
+                }
+                .es-canvas-clear-btn {
+                    position: absolute;
+                    bottom: 12px;
+                    right: 12px;
+                    background: #ffffff;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-size: 12px;
+                    font-weight: 600;
+                    color: #475569;
+                    cursor: pointer;
+                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+                    transition: all 0.15s;
+                }
+                .es-canvas-clear-btn:hover {
+                    background: #f8fafc;
+                    color: #0f172a;
+                    border-color: #94a3b8;
+                }
+                .es-upload-dropzone {
+                    flex: 1;
+                    border: 2px dashed #cbd5e1;
+                    border-radius: 12px;
+                    background: #f8fafc;
+                    min-height: 200px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    cursor: pointer;
+                    transition: all 0.15s;
+                    padding: 20px;
+                    box-sizing: border-box;
+                    text-align: center;
+                }
+                .es-upload-dropzone:hover {
+                    background: #f1f5f9;
+                    border-color: #714b67;
+                }
+                .es-upload-dropzone .upload-icon {
+                    font-size: 32px;
+                    margin-bottom: 10px;
+                }
+                .es-upload-dropzone .upload-text {
+                    font-size: 14px;
+                    color: #64748b;
+                }
+                .es-upload-dropzone .upload-text strong {
+                    color: #714b67;
+                }
+                .es-upload-preview-img {
+                    max-width: 100%;
+                    max-height: 160px;
+                    object-fit: contain;
+                }
+                .es-signature-modal-footer {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 16px;
+                    padding: 16px 24px;
+                    border-top: 1px solid #f1f5f9;
+                    background: #f8fafc;
+                }
+                .es-modal-agreement-text {
+                    font-size: 11px;
+                    color: #64748b;
+                    line-height: 1.4;
+                }
+                .es-modal-footer-buttons {
+                    display: flex;
+                    justify-content: flex-end;
+                    gap: 12px;
+                }
+                .btn-secondary {
+                    background-color: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    margin-right: 10px;
+                }
 
-
-<template id="sign_page" name="Easy Sign - Sign Document">
-<html lang="en" id="esRoot">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <meta name="robots" content="noindex, nofollow"/>
-    <title>Sign Document - Easy Sign</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" t-attf-href="/easy_sign/static/src/css/sign_public.css"/>
-    <style>
-        /* ── Language switch ── */
-        .es-lang-btn {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 6px 14px; border-radius: 20px; border: 1.5px solid rgba(255,255,255,.35);
-            background: rgba(255,255,255,.12); color: #fff; font-size: 13px; font-weight: 700;
-            cursor: pointer; transition: all .2s; font-family: 'Cairo', sans-serif;
-            letter-spacing: .3px;
-        }
-        .es-lang-btn:hover { background: rgba(255,255,255,.22); border-color: rgba(255,255,255,.6); }
-        .es-lang-flag { font-size: 16px; }
-
-        /* ── RTL (Arabic) mode ── */
-        html[dir="rtl"] body,
-        html[dir="rtl"] button,
-        html[dir="rtl"] input,
-        html[dir="rtl"] textarea {
-            font-family: 'Cairo', 'Segoe UI', Arial, sans-serif;
-            text-align: right;
-        }
-
-        /* Flip the two-column layout: sign panel on RIGHT → moves to LEFT in RTL */
-        html[dir="rtl"] .es-main-row { flex-direction: row-reverse; }
-
-        /* Border flips to left side */
-        html[dir="rtl"] .es-pdf-panel { border-right: none; border-left: 1px solid #e5e9f0; }
-
-        /* Navbar: brand on left, actions on right (reversed in RTL) */
-        html[dir="rtl"] .es-navbar { flex-direction: row-reverse; }
-        html[dir="rtl"] .es-navbar-brand { flex-direction: row-reverse; }
-
-        /* Panel header */
-        html[dir="rtl"] .es-panel-header { flex-direction: row-reverse; }
-        html[dir="rtl"] .es-panel-title { flex-direction: row-reverse; }
-
-        /* Signer info */
-        html[dir="rtl"] .es-signer-info { flex-direction: row-reverse; }
-        html[dir="rtl"] .es-signer-details { text-align: right; }
-
-        /* Request info / instructions */
-        html[dir="rtl"] .es-request-info,
-        html[dir="rtl"] .es-instructions,
-        html[dir="rtl"] .es-section-title,
-        html[dir="rtl"] .es-instructions-text,
-        html[dir="rtl"] .es-info-label,
-        html[dir="rtl"] .es-info-value { text-align: right; }
-
-        /* Canvas hint */
-        html[dir="rtl"] .es-canvas-hint { text-align: right; }
-
-        /* Canvas controls */
-        html[dir="rtl"] .es-canvas-controls { flex-direction: row-reverse; }
-
-        /* Decline form */
-        html[dir="rtl"] .es-decline-actions { flex-direction: row-reverse; }
-        html[dir="rtl"] .es-decline-form h6 { text-align: right; }
-
-        /* Messages */
-        html[dir="rtl"] .es-msg { flex-direction: row-reverse; text-align: right; }
-
-        /* Footer */
-        html[dir="rtl"] .es-footer { direction: rtl; }
-
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&amp;display=swap');
-    </style>
-</head>
-<body class="es-body">
-
-    <!-- Navbar -->
-    <nav class="es-navbar">
-        <div class="es-navbar-brand">
-            <span class="es-logo-icon">&#9998;</span>
-            <span class="es-logo-text">Easy Sign</span>
-        </div>
-        <div class="es-navbar-right" style="display:flex;align-items:center;gap:12px;">
-            <span class="es-badge es-badge-pending">
-                <span class="es-i18n" data-en="Signature Required" data-ar="يلزم التوقيع">Signature Required</span>
-            </span>
-            <!-- Language Switch Button -->
-            <button class="es-lang-btn" id="esBtnLang" onclick="esToggleLang()">
-                <span class="es-lang-flag">🌐</span>
-                <span id="esLangLabel">عربي</span>
-            </button>
-        </div>
-    </nav>
-
-    <div class="container-fluid es-container">
-        <div class="row g-0 es-main-row">
-
-            <!-- Left: PDF Viewer -->
-            <div class="col-lg-7 es-pdf-panel">
-                <div class="es-panel-header">
-                    <div class="es-panel-title">
-                        <span class="es-icon">📄</span>
-                        <span class="es-i18n" data-en="Document to Sign" data-ar="الوثيقة المطلوب توقيعها">Document to Sign</span>
-                    </div>
-                    <div class="es-doc-info">
-                        <strong t-esc="sign_request.document_name or sign_request.name"/>
+                /* Navigator and Navline styles */
+                .o_sign_sign_item_navigator {
+                    position: fixed;
+                    left: 0;
+                    top: 25%;
+                    height: 40px;
+                    padding: 0 15px 0 12px;
+                    background: linear-gradient(135deg, #714b67 0%, #52314a 100%);
+                    color: white;
+                    font-family: Arial, sans-serif;
+                    font-size: 12px;
+                    font-weight: bold;
+                    letter-spacing: 0.05em;
+                    text-transform: uppercase;
+                    display: flex;
+                    align-items: center;
+                    border-radius: 0 4px 4px 0;
+                    box-shadow: 2px 2px 8px rgba(0,0,0,0.25);
+                    cursor: pointer;
+                    z-index: 1050;
+                    transition: top 0.3s ease-out, opacity 0.3s ease;
+                    user-select: none;
+                }
+                .o_sign_sign_item_navigator::after {
+                    content: "";
+                    position: absolute;
+                    right: -14px;
+                    top: 0;
+                    width: 0;
+                    height: 0;
+                    border-top: 20px solid transparent;
+                    border-bottom: 20px solid transparent;
+                    border-left: 14px solid #52314a;
+                }
+                .o_sign_sign_item_navigator:hover {
+                    background: linear-gradient(135deg, #52314a 0%, #3a2234 100%);
+                    box-shadow: 2px 2px 12px rgba(0,0,0,0.35);
+                }
+                .o_sign_sign_item_navigator:hover::after {
+                    border-left-color: #3a2234;
+                }
+                .o_sign_sign_item_navline {
+                    position: fixed;
+                    left: 0;
+                    width: 100%;
+                    height: 1px;
+                    border-bottom: 1px dashed rgba(113, 75, 103, 0.4);
+                    pointer-events: none;
+                    z-index: 1040;
+                    transition: top 0.3s ease-out, opacity 0.3s ease;
+                }
+                .sign-item.ui-selected {
+                    box-shadow: 0 0 0 3px rgba(113, 75, 103, 0.4) !important;
+                    border-color: #714b67 !important;
+                    background-color: rgba(113, 75, 103, 0.05);
+                }
+            </style>
+            <div class="es-top-toolbar">
+                <div class="es-toolbar-left" style="display: flex; align-items: center; gap: 15px;">
+                    <t t-if="show_back_button">
+                        <a href="/odoo?action=easy_sign.action_sign_request" class="btn btn-secondary" style="background-color: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; font-weight: bold; display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                            <span style="font-size: 14px;">&#8592;</span> Back
+                        </a>
+                    </t>
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <a href="#" class="es-breadcrumb">... / <t t-esc="sign_request.reference"/></a>
+                        <div class="es-doc-title" style="margin-top: -2px;">
+                            <t t-esc="sign_request.reference"/>
+                            <span style="cursor:pointer; font-size: 14px;" title="Options">&#9881;</span>
+                        </div>
                     </div>
                 </div>
-                <div class="es-pdf-viewer-wrap">
-                    <object t-att-data="document_url" type="application/pdf"
-                            class="es-pdf-object" id="pdfViewer">
-                        <div class="es-pdf-fallback">
-                            <p class="es-i18n" data-en="Your browser cannot display PDF inline." data-ar="المتصفح لا يدعم عرض PDF مباشرة.">Your browser cannot display PDF inline.</p>
-                            <a t-att-href="document_url" class="btn btn-outline-primary" target="_blank">
-                                <span class="es-i18n" data-en="Open PDF in New Tab" data-ar="فتح الملف في تبويب جديد">Open PDF in New Tab</span>
-                            </a>
-                        </div>
-                    </object>
+                <div class="es-toolbar-center">
+                    <span style="cursor:pointer;" title="Previous Page">&#708;</span>
+                    <span>1 of <span id="es-total-pages">1</span></span>
+                    <span style="cursor:pointer;" title="Next Page">&#709;</span>
+                    <span style="color:#495057;">|</span>
+                    <span style="cursor:pointer;" title="Zoom Out">&#8722;</span>
+                    <select>
+                        <option>Automatic Zoom</option>
+                        <option>100%</option>
+                        <option>Fit Page</option>
+                    </select>
+                    <span style="cursor:pointer;" title="Zoom In">&#43;</span>
+                    <span style="color:#495057;">|</span>
+                    <span style="cursor:pointer;" title="Search">&#128269;</span>
                 </div>
-            </div>
-
-            <div class="col-lg-5 es-sign-panel">
-                <div class="es-sign-panel-inner">
-
-                    <div class="es-signer-info">
-                        <div class="es-avatar">
-                            <t t-esc="(item.signer_name or 'S')[0].upper()"/>
+                <div class="es-toolbar-right" style="display: flex; gap: 15px; align-items: center;">
+                    <t t-foreach="signers" t-as="signer">
+                        <div t-attf-class="es-signer-status #{'active' if signer['state'] == 'sent' else 'waiting'}">
+                            <span t-esc="signer['name']"/>
+                            <span>
+                                <t t-if="signer['state'] == 'signed'">Signed</t>
+                                <t t-elif="signer['state'] == 'sent'">Is Signing</t>
+                                <t t-else="">Waiting Signature</t>
+                            </span>
                         </div>
-                        <div class="es-signer-details">
-                            <div class="es-signer-name" t-esc="item.signer_name"/>
-                            <div class="es-signer-email" t-esc="item.signer_email"/>
-                        </div>
-                    </div>
-
-                    <div class="es-request-info">
-                        <p class="es-info-label es-i18n" data-en="Requested by" data-ar="طلب من">Requested by</p>
-                        <p class="es-info-value" t-esc="sign_request.user_id.name"/>
-                        <t t-if="sign_request.expiry_date">
-                            <p class="es-info-label es-i18n" data-en="Expires on" data-ar="تنتهي في">Expires on</p>
-                            <p class="es-info-value es-expiry" t-esc="sign_request.expiry_date"/>
-                        </t>
-                    </div>
-
-                    <div class="es-instructions">
-                        <h5 class="es-section-title es-i18n" data-en="Draw Your Signature" data-ar="ارسم توقيعك">Draw Your Signature</h5>
-                        <p class="es-instructions-text es-i18n"
-                           data-en="Please review the document on the left, then draw your signature in the box below using your mouse or finger."
-                           data-ar="يرجى مراجعة الوثيقة، ثم ارسم توقيعك في المربع أدناه باستخدام الماوس أو إصبعك.">
-                            Please review the document on the left, then draw your signature in the box below using your mouse or finger.
-                        </p>
-                    </div>
-
-                    <div class="es-canvas-wrap">
-                        <canvas id="signatureCanvas" width="480" height="180" class="es-canvas"/>
-                        <div class="es-canvas-hint es-i18n" data-en="Sign here ✍" data-ar="وقّع هنا ✍">Sign here ✍</div>
-                    </div>
-
-                    <div class="es-canvas-controls">
-                        <button id="btnClear" type="button" class="es-btn-clear">
-                            &#8634; <span class="es-i18n" data-en="Clear" data-ar="مسح">Clear</span>
+                    </t>
+                    <!-- Refuse and Delegate Buttons -->
+                    <t t-if="current_role_id">
+                        <button id="es-refuse-btn"
+                            onclick="openRefuseModal()"
+                            style="
+                                align-items: center;
+                                background: transparent;
+                                color: #ff6b6b;
+                                border: 1px solid #ff6b6b;
+                                border-radius: 6px;
+                                padding: 8px 18px;
+                                font-size: 13px;
+                                font-weight: 700;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            "
+                            onmouseover="this.style.background='#ff6b6b'; this.style.color='white'"
+                            onmouseout="this.style.background='transparent'; this.style.color='#ff6b6b'">
+                            Refuse
                         </button>
-                        <span id="canvasStatus" class="es-canvas-status"/>
-                    </div>
-
-                    <button id="btnSign" type="button" class="es-btn-sign" t-att-data-token="token">
-                        <span id="btnSignText">
-                            &#10003; <span class="es-i18n" data-en="Sign Document" data-ar="توقيع الوثيقة">Sign Document</span>
-                        </span>
-                        <span id="btnSignSpinner" class="d-none">
-                            <span class="spinner-border spinner-border-sm me-2" role="status"/>
-                            <span class="es-i18n" data-en="Submitting..." data-ar="جاري الإرسال...">Submitting...</span>
-                        </span>
+                        <button id="es-delegate-btn"
+                            onclick="openDelegateModal()"
+                            style="
+                                align-items: center;
+                                background: transparent;
+                                color: #4dabf7;
+                                border: 1px solid #4dabf7;
+                                border-radius: 6px;
+                                padding: 8px 18px;
+                                font-size: 13px;
+                                font-weight: 700;
+                                cursor: pointer;
+                                transition: all 0.2s;
+                            "
+                            onmouseover="this.style.background='#4dabf7'; this.style.color='white'"
+                            onmouseout="this.style.background='transparent'; this.style.color='#4dabf7'">
+                            Delegate
+                        </button>
+                    </t>
+                    <!-- Top Fill-In Button -->
+                    <button id="es-top-fill-btn"
+                        onclick="fillAllFields()"
+                        style="
+                            display: none;
+                            align-items: center;
+                            gap: 8px;
+                            background: linear-gradient(135deg, #714b67 0%, #52314a 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 8px 18px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            letter-spacing: 0.5px;
+                            box-shadow: 0 2px 8px rgba(113,75,103,0.4);
+                            transition: background 0.2s, box-shadow 0.2s;
+                        "
+                        onmouseover="this.style.background='linear-gradient(135deg,#52314a 0%,#3a2234 100%)'"
+                        onmouseout="this.style.background='linear-gradient(135deg,#714b67 0%,#52314a 100%)'">
+                        <span style="font-size:15px;">&#9998;</span> Fill In
                     </button>
-
-                    <div class="es-decline-section">
-                        <button id="btnShowDecline" type="button" class="es-btn-decline-link">
-                            <span class="es-i18n" data-en="I decline to sign this document" data-ar="أرفض التوقيع على هذه الوثيقة">I decline to sign this document</span>
-                        </button>
-                    </div>
-
-                    <div id="declineForm" class="es-decline-form d-none">
-                        <h6 class="es-section-title es-i18n" data-en="Reason for Declining" data-ar="سبب الرفض">Reason for Declining</h6>
-                        <textarea id="declineReason" rows="3" class="form-control es-textarea">
-                            <t t-att-placeholder="'Optional: provide a reason...'"/>
-                        </textarea>
-                        <div class="es-decline-actions mt-2">
-                            <button id="btnCancelDecline" type="button" class="es-btn-cancel-decline">
-                                <span class="es-i18n" data-en="Cancel" data-ar="إلغاء">Cancel</span>
-                            </button>
-                            <button id="btnConfirmDecline" type="button" class="es-btn-confirm-decline" t-att-data-token="token">
-                                <span class="es-i18n" data-en="Confirm Decline" data-ar="تأكيد الرفض">Confirm Decline</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Messages -->
-                    <div id="msgSuccess" class="es-msg es-msg-success d-none">
-                        <span class="es-msg-icon">&#10004;</span>
-                        <div>
-                            <strong class="es-i18n" data-en="Signed successfully!" data-ar="تم التوقيع بنجاح!">Signed successfully!</strong>
-                            <p class="mb-0 es-i18n" data-en="Thank you. The document has been signed." data-ar="شكراً. تم توقيع الوثيقة.">Thank you. The document has been signed.</p>
-                        </div>
-                    </div>
-                    <div id="msgError" class="es-msg es-msg-error d-none">
-                        <span class="es-msg-icon">&#9888;</span>
-                        <div>
-                            <strong class="es-i18n" data-en="Error" data-ar="خطأ">Error</strong>
-                            <p id="msgErrorText" class="mb-0"/>
-                        </div>
-                    </div>
-                    <div id="msgDeclined" class="es-msg es-msg-declined d-none">
-                        <span class="es-msg-icon">&#10005;</span>
-                        <div>
-                            <strong class="es-i18n" data-en="Signing declined" data-ar="تم رفض التوقيع">Signing declined</strong>
-                            <p class="mb-0 es-i18n" data-en="The requester has been notified." data-ar="تم إشعار مقدم الطلب.">The requester has been notified.</p>
-                        </div>
-                    </div>
-
+                    <!-- Start Signing / Next Field button -->
+                    <button id="es-top-next-btn"
+                        onclick="topNextClick()"
+                        style="
+                            display: none;
+                            align-items: center;
+                            gap: 8px;
+                            background: linear-gradient(135deg, #00a09d 0%, #007a78 100%);
+                            color: white;
+                            border: none;
+                            border-radius: 6px;
+                            padding: 8px 18px;
+                            font-size: 13px;
+                            font-weight: 700;
+                            cursor: pointer;
+                            letter-spacing: 0.5px;
+                            box-shadow: 0 2px 8px rgba(0,160,157,0.35);
+                            transition: background 0.2s;
+                        "
+                        onmouseover="this.style.background='linear-gradient(135deg,#007a78 0%,#005756 100%)'"
+                        onmouseout="this.style.background='linear-gradient(135deg,#00a09d 0%,#007a78 100%)'">
+                        <span style="font-size:15px;">&#9654;</span> <span id="es-top-next-label">Start Signing</span>
+                    </button>
                 </div>
             </div>
-        </div>
-    </div>
+            <div class="container">
+                <div id="o_sign_root" style="padding:24px; position:relative; min-height: 800px; display:flex; flex-direction:column; align-items:center;">
+                    <div id="es-loading" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:10;background:#525659;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+                        <div id="es-loading-text" style="color:white;font-size:18px;">Loading PDF…</div>
+                    </div>
+                    <div id="es-pdf-pages" style="display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;"></div>
+                </div>
+                <div style="text-align: center; margin-bottom: 40px; margin-top: 20px;">
+                    <button id="o_sign_submit" class="btn-primary" style="display: block; width: 100%; padding: 15px; font-size: 18px; font-weight: bold; background: linear-gradient(135deg, #00a09d 0%, #007a78 100%); box-shadow: 0 4px 6px rgba(0,0,0,0.2); cursor: pointer; border: none; border-radius: 8px; color: white;">Start Signing</button>
+                </div>
+            </div>
+            <script>
+<![CDATA[
+            const TEMPLATE_ID = ]]><t t-esc="sign_request.template_id.id"/><![CDATA[;
+            const REQUEST_ID = ]]><t t-esc="sign_request.id"/><![CDATA[;
+            const ACCESS_TOKEN = ']]><t t-esc="access_token"/><![CDATA[';
+            const SIGNER_INFO = ]]><t t-out="signer_info_json"/><![CDATA[;
+            const SIGN_ITEMS = ]]><t t-out="sign_items_json"/><![CDATA[;
+            const PDF_B64 = ]]><t t-out="pdf_b64_json"/><![CDATA[;
+            const CURRENT_ROLE_ID = ]]><t t-esc="current_role_id"/><![CDATA[;
+            const ITEM_VALUES = ]]><t t-out="item_values_json"/><![CDATA[;
 
-    <footer class="es-footer">
-        <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
-        <strong> Easy Sign</strong>
-    </footer>
+            function buildPDFViewerURL(pdfUrl) {
+                // Legacy helper — no longer used
+                return pdfUrl;
+            }
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"/>
-    <script t-attf-src="/easy_sign/static/src/js/sign_public.js"/>
-    <script><![CDATA[
-    // ── Language Switch ──────────────────────────────────────────
-    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
+            let pageWrappers = {};
+            let signItemInputs = {};
+            const signatureData = {};
 
-    function esApplyLang(lang) {
-        var root = document.getElementById('esRoot');
-        var label = document.getElementById('esLangLabel');
-        if (lang === 'ar') {
-            root.setAttribute('dir', 'rtl');
-            root.setAttribute('lang', 'ar');
-            label.textContent = 'English';
-        } else {
-            root.setAttribute('dir', 'ltr');
-            root.setAttribute('lang', 'en');
-            label.textContent = 'عربي';
-        }
-        document.querySelectorAll('.es-i18n').forEach(function(el) {
-            var txt = el.getAttribute('data-' + lang);
-            if (txt) el.textContent = txt;
-        });
-        localStorage.setItem('es_lang', lang);
-        esCurrentLang = lang;
-    }
+            async function initPDFIframe(pdfUrl) {
+                const loadingEl  = document.getElementById('es-loading');
+                const loadingTxt = document.getElementById('es-loading-text');
+                const pagesEl    = document.getElementById('es-pdf-pages');
 
-    function esToggleLang() {
-        esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en');
-    }
+                function showError(msg) {
+                    if (loadingTxt) { loadingTxt.style.color = '#ef4444'; loadingTxt.textContent = msg; }
+                    console.error('[easy_sign sign_page]', msg);
+                }
 
-    // Apply saved language on load
-    document.addEventListener('DOMContentLoaded', function() {
-        esApplyLang(esCurrentLang);
-    });
-    ]]></script>
-</body>
-</html>
-</template>
+                // ── 1. Load PDF.js (Odoo 18 uses ES module build — use import()) ─────────
+                let pdfjsLib = globalThis.pdfjsLib;
 
+                if (!pdfjsLib) {
+                    try {
+                        // pdf.js in Odoo 18 is an ES module (has `export` syntax).
+                        // Dynamic import() handles ES modules correctly; <script> tags do not.
+                        await import('/web/static/lib/pdfjs/build/pdf.js');
+                        pdfjsLib = globalThis.pdfjsLib;
+                    } catch (e) {
+                        showError('Failed to load PDF.js: ' + e.message);
+                        return;
+                    }
+                }
 
-<!-- ═══════════════════════════════════════════════════
-     SUCCESS PAGE
-═══════════════════════════════════════════════════ -->
-<template id="sign_success" name="Easy Sign - Signing Success">
-<html lang="en" id="esRoot">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Document Signed - Easy Sign</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" t-attf-href="/easy_sign/static/src/css/sign_public.css"/>
-    <style>
-        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #2563eb;background:#eff6ff;color:#2563eb;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:20px; }
-        .es-lang-btn:hover { background:#dbeafe; }
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
-        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
-    </style>
-</head>
-<body class="es-body es-result-body">
-    <div class="es-result-card es-result-success">
-        <div class="es-result-icon">&#10004;</div>
+                if (!pdfjsLib) { showError('PDF.js library not found.'); return; }
 
-        <button class="es-lang-btn" onclick="esToggleLang()">
-            🌐 <span id="esLangLabel">عربي</span>
-        </button>
+                // Use an ES-module Worker for pdf.worker.js (also an ES module in Odoo 18)
+                try {
+                    const worker = new Worker(
+                        '/web/static/lib/pdfjs/build/pdf.worker.js',
+                        { type: 'module' }
+                    );
+                    pdfjsLib.GlobalWorkerOptions.workerPort = worker;
+                } catch (e) {
+                    // Fallback: set as string src (PDF.js will try to load it)
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = '/web/static/lib/pdfjs/build/pdf.worker.js';
+                }
 
-        <h2 class="es-result-title">
-            <t t-if="already_done">
-                <span class="es-i18n" data-en="Already Signed" data-ar="تم التوقيع مسبقاً">Already Signed</span>
-            </t>
-            <t t-else="">
-                <span class="es-i18n" data-en="Document Signed!" data-ar="تم توقيع الوثيقة!">Document Signed!</span>
-            </t>
-        </h2>
-        <p class="es-result-message">
-            <t t-if="already_done">
-                <span class="es-i18n" data-en="You have already signed this document. Thank you!" data-ar="لقد وقّعت على هذه الوثيقة مسبقاً. شكراً!">You have already signed this document. Thank you!</span>
-            </t>
-            <t t-else="">
-                <span class="es-i18n" data-en="Thank you" data-ar="شكراً">Thank you</span>,
-                <strong t-esc="item.signer_name"/>!
-                <span class="es-i18n" data-en="Your signature has been recorded successfully." data-ar="تم تسجيل توقيعك بنجاح.">Your signature has been recorded successfully.</span>
-            </t>
-        </p>
-        <t t-if="item and item.signed_date">
-            <p class="es-result-meta">
-                <span class="es-i18n" data-en="Signed on:" data-ar="تاريخ التوقيع:">Signed on:</span>
-                <strong t-esc="item.signed_date"/>
-            </p>
+                // ── 2. Get PDF bytes from server-injected base64 ────────────
+                let pdfData;
+                if (typeof PDF_B64 !== 'undefined' && PDF_B64 && PDF_B64.trim().length > 0) {
+                    try {
+                        const cleanB64 = PDF_B64.replace(/[\r\n\s]/g, '');
+                        const binary = atob(cleanB64);
+                        const bytes = new Uint8Array(binary.length);
+                        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                        pdfData = bytes.buffer;
+                    } catch (e) {
+                        console.warn('[easy_sign sign_page] Base64 decode failed:', e);
+                        pdfData = null;
+                    }
+                }
+                
+                if (!pdfData && pdfUrl) {
+                    // Fallback: fetch from server
+                    try {
+                        const resp = await fetch(pdfUrl, { credentials: 'same-origin' });
+                        if (!resp.ok) throw new Error('HTTP ' + resp.status + ' ' + resp.statusText);
+                        pdfData = await resp.arrayBuffer();
+                    } catch (e) {
+                        showError('Could not load PDF document. Please ensure a PDF file is attached to the document template.');
+                        return;
+                    }
+                }
+
+                if (!pdfData) {
+                    showError('No PDF document attached to this signature request.');
+                    return;
+                }
+
+                // ── 3. Parse PDF ─────────────────────────────────────────
+                let pdfDoc;
+                try {
+                    pdfDoc = await pdfjsLib.getDocument({ data: pdfData }).promise;
+                } catch (e) {
+                    showError('Could not parse PDF: ' + e.message);
+                    return;
+                }
+
+                const numPages = pdfDoc.numPages;
+                if (loadingTxt) loadingTxt.textContent = 'Rendering ' + numPages + ' page(s)…';
+
+                const totalPagesEl = document.getElementById('es-total-pages');
+                if (totalPagesEl) totalPagesEl.innerText = numPages;
+
+                // Done via server-side loops
+
+                // ── 4. Render each page onto a canvas ─────────────────────────
+                const availWidth = Math.min(900, window.innerWidth) - 48;
+
+                for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                    const page = await pdfDoc.getPage(pageNum);
+                    const nativeViewport = page.getViewport({ scale: 1 });
+                    const scale = Math.min(availWidth / nativeViewport.width, 2.0);
+                    const viewport = page.getViewport({ scale });
+
+                    const wrapper = document.createElement('div');
+                    wrapper.id = 'pdf-page-wrapper-' + pageNum;
+                    wrapper.style.cssText = [
+                        'position:relative',
+                        'width:' + Math.round(viewport.width) + 'px',
+                        'height:' + Math.round(viewport.height) + 'px',
+                        'box-shadow:0 4px 12px rgba(0,0,0,0.3)',
+                        'background:#fff',
+                        'flex-shrink:0',
+                    ].join(';');
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width  = Math.round(viewport.width);
+                    canvas.height = Math.round(viewport.height);
+                    canvas.style.cssText = 'display:block;width:100%;height:100%;';
+                    wrapper.appendChild(canvas);
+
+                    pagesEl.appendChild(wrapper);
+
+                    const ctx = canvas.getContext('2d');
+                    await page.render({ canvasContext: ctx, viewport }).promise;
+
+                    pageWrappers[pageNum] = { wrapper };
+                }
+
+                // ── 5. Hide loading overlay ────────────────────────────────
+                if (loadingEl) loadingEl.style.display = 'none';
+
+                // ── 6. Render sign-item overlays ────────────────────────────
+                renderSignItems();
+                initNavigator();
+            }
+
+            let activeItem = null;
+            let navigatorStarted = false;
+            let navigatorEl = null;
+            let navlineEl = null;
+
+            function selectItem(container) {
+                if (activeItem) {
+                    activeItem.classList.remove('ui-selected');
+                }
+                activeItem = container;
+                activeItem.classList.add('ui-selected');
+                navigatorStarted = true;
+                if (navigatorEl && navlineEl) {
+                    const rect = activeItem.getBoundingClientRect();
+                    const centerViewportY = rect.top + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+                    updateRibbonText();
+                }
+            }
+
+            function renderSignItems() {
+                SIGN_ITEMS.forEach(item => {
+                    renderSignItem(item);
+                });
+            }
+
+            function renderSignItem(item) {
+                const pageData = pageWrappers[item.page];
+                if (!pageData) return;
+                
+                const container = document.createElement('div');
+                container.id = `sign-item-${item.id}`;
+                container.className = 'sign-item';
+                container.style.position = 'absolute';
+                container.style.left = (item.posX * 100) + '%';
+                container.style.top = (item.posY * 100) + '%';
+                container.style.width = (item.width * 100) + '%';
+                container.style.height = (item.height * 100) + '%';
+                container.style.boxSizing = 'border-box';
+                
+                const isEditable = (CURRENT_ROLE_ID === 0 || item.responsible_id === CURRENT_ROLE_ID);
+                
+                if (isEditable) {
+                    container.style.border = '1px dashed #000';
+                    container.style.zIndex = 10;
+                    container.style.background = 'rgba(255, 255, 255, 0.5)';
+                    
+                    if (['signature', 'initial'].includes(item.type)) {
+                        container.addEventListener('click', () => {
+                            selectItem(container);
+                            openSignaturePad(item.id);
+                        });
+                        container.innerHTML = '<span style="color: #888; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 11px;">Click to sign</span>';
+                    } else if (item.type === 'checkbox') {
+                        container.innerHTML = '<input type="checkbox" style="margin: auto; display: block; transform: scale(2);">';
+                        const inputEl = container.querySelector('input');
+                        inputEl.addEventListener('click', () => {
+                            selectItem(container);
+                            updateRibbonText();
+                            setTimeout(goToNextSignItem, 300);
+                        });
+                        inputEl.addEventListener('change', () => {
+                            updateRibbonText();
+                        });
+                    } else if (item.type === 'textarea') {
+                        const placeholderText = item.placeholder || item.name || item.typeName || 'Fill in...';
+                        let defaultVal = '';
+                        if (typeof SIGNER_INFO !== 'undefined' && SIGNER_INFO) {
+                            const fnLower = (item.name || item.typeName || '').toLowerCase();
+                            if (fnLower.includes('address') || fnLower.includes('street')) defaultVal = SIGNER_INFO.address || '';
+                        }
+                        container.innerHTML = '<textarea placeholder="' + (placeholderText || '').replace(/"/g, '&quot;') + '" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px; resize: none; font-family: inherit;">' + (defaultVal || '').replace(/</g, '&lt;') + '</textarea>';
+                        const inputEl = container.querySelector('textarea');
+                        inputEl.addEventListener('focus', () => { selectItem(container); });
+                        inputEl.addEventListener('input', () => { updateRibbonText(); });
+                        inputEl.addEventListener('change', () => { updateRibbonText(); });
+                    } else if (item.type === 'date') {
+                        const todayStr = new Date().toISOString().split('T')[0];
+                        container.innerHTML = '<input type="date" value="' + todayStr + '" style="width: 100%; height: 100%; box-sizing: border-box; padding: 3px 5px; background: transparent; border: none; font-size: 13px; font-family: inherit;">';
+                        const inputEl = container.querySelector('input');
+                        inputEl.addEventListener('focus', () => { selectItem(container); });
+                        inputEl.addEventListener('input', () => { updateRibbonText(); });
+                        inputEl.addEventListener('change', () => { updateRibbonText(); });
+                    } else {
+                        const placeholderText = item.placeholder || item.name || item.typeName || 'Fill in...';
+                        let defaultVal = '';
+                        if (typeof SIGNER_INFO !== 'undefined' && SIGNER_INFO) {
+                            const fnLower = (item.name || item.typeName || '').toLowerCase();
+                            if (fnLower.includes('name')) defaultVal = SIGNER_INFO.name || '';
+                            else if (fnLower.includes('email')) defaultVal = SIGNER_INFO.email || '';
+                            else if (fnLower.includes('phone') || fnLower.includes('mobile')) defaultVal = SIGNER_INFO.phone || '';
+                            else if (fnLower.includes('company')) defaultVal = SIGNER_INFO.company || '';
+                            else if (fnLower.includes('address') || fnLower.includes('street')) defaultVal = SIGNER_INFO.address || '';
+                            else if (fnLower.includes('title')) defaultVal = SIGNER_INFO.title || '';
+                            else if (fnLower.includes('city')) defaultVal = SIGNER_INFO.city || '';
+                            else if (fnLower.includes('zip')) defaultVal = SIGNER_INFO.zip || '';
+                        }
+                        container.innerHTML = '<input type="text" placeholder="' + (placeholderText || '').replace(/"/g, '&quot;') + '" value="' + (defaultVal || '').replace(/"/g, '&quot;') + '" style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px; font-family: inherit;">';
+                        const inputEl = container.querySelector('input');
+                        inputEl.addEventListener('focus', () => { selectItem(container); });
+                        inputEl.addEventListener('input', () => { updateRibbonText(); });
+                        inputEl.addEventListener('change', () => { updateRibbonText(); });
+                        inputEl.addEventListener('keypress', (e) => {
+                            if (e.key === 'Enter') { goToNextSignItem(); }
+                        });
+                    }
+                    
+                    signItemInputs[item.id] = { type: item.type, el: container };
+                } else {
+                    container.style.border = '1px solid rgba(0,0,0,0.15)';
+                    container.style.zIndex = 5;
+                    container.style.background = 'rgba(240, 240, 240, 0.3)';
+                    container.style.pointerEvents = 'none';
+                    
+                    const savedVal = ITEM_VALUES[item.id];
+                    if (savedVal) {
+                        const val = savedVal.value;
+                        const frame = savedVal.frame;
+                        if (['signature', 'initial'].includes(item.type)) {
+                            const imgUrl = val || frame;
+                            if (imgUrl) {
+                                container.innerHTML = '<img src="' + imgUrl + '" style="width:100%; height:100%; object-fit:contain; pointer-events:none;">';
+                            } else {
+                                container.innerHTML = '<span style="color: #aaa; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 10px;">Signed</span>';
+                            }
+                        } else if (item.type === 'checkbox') {
+                            container.innerHTML = '<input type="checkbox" disabled' + (val === 'on' ? ' checked' : '') + ' style="margin: auto; display: block; transform: scale(2); pointer-events:none;">';
+                        } else {
+                            container.innerHTML = '<input type="text" disabled style="width: 100%; height: 100%; box-sizing: border-box; padding: 5px; background: transparent; border: none; font-size: 14px; color: #495057;" value="' + (val || '') + '">';
+                        }
+                    } else {
+                        container.innerHTML = '<span style="color: #bbb; margin:auto; display: flex; justify-content: center; align-items: center; height: 100%; font-size: 10px; font-style: italic;">Readonly</span>';
+                    }
+                }
+                
+                pageData.wrapper.appendChild(container);
+            }
+
+            let activeSignatureTab = 'auto';
+            let uploadedImageBase64 = null;
+            let canvasRef = null;
+            let ctxRef = null;
+            let isDrawing = false;
+            let lastX = 0;
+            let lastY = 0;
+
+            function openSignaturePad(itemId) {
+                if (!document.getElementById('es-signature-fonts')) {
+                    const link = document.createElement('link');
+                    link.id = 'es-signature-fonts';
+                    link.rel = 'stylesheet';
+                    link.href = 'https://fonts.googleapis.com/css2?family=Alex+Brush&family=Dancing+Script:wght@700&family=Great+Vibes&family=Pacifico&family=Playball&display=swap';
+                    document.head.appendChild(link);
+                }
+
+                const item = SIGN_ITEMS.find(i => i.id == itemId);
+                const isInitial = item && item.type === 'initial';
+                const defaultText = isInitial ? getInitials(SIGNER_INFO.name) : (SIGNER_INFO.name || '');
+
+                const modal = document.createElement('div');
+                modal.id = 'signature-modal';
+                modal.className = 'es-signature-modal-backdrop';
+                modal.innerHTML = `
+                    <div class="es-signature-modal">
+                        <div class="es-signature-modal-header">
+                            <h5 class="es-signature-modal-title">${isInitial ? 'Adopt Your Initials' : 'Adopt Your Signature'}</h5>
+                            <button type="button" class="es-signature-modal-close" onclick="closeSignaturePad()">&times;</button>
+                        </div>
+                        
+                        <!-- Tabs -->
+                        <div class="es-signature-modal-tabs">
+                            ${SIGNER_INFO && SIGNER_INFO.saved_signature ? `
+                            <button type="button" class="es-signature-tab-btn active" onclick="switchSignatureTab('saved')">
+                                <span class="tab-icon">⭐</span> Saved
+                            </button>` : ''}
+                            <button type="button" class="es-signature-tab-btn ${!(SIGNER_INFO && SIGNER_INFO.saved_signature) ? 'active' : ''}" onclick="switchSignatureTab('auto')">
+                                <span class="tab-icon">⌨</span> Auto
+                            </button>
+                            <button type="button" class="es-signature-tab-btn" onclick="switchSignatureTab('draw')">
+                                <span class="tab-icon">✍</span> Draw
+                            </button>
+                            <button type="button" class="es-signature-tab-btn" onclick="switchSignatureTab('upload')">
+                                <span class="tab-icon">📤</span> Upload
+                            </button>
+                        </div>
+                        
+                        <div class="es-signature-modal-body">
+                            ${SIGNER_INFO && SIGNER_INFO.saved_signature ? `
+                            <!-- Tab: Saved Signature -->
+                            <div class="es-signature-tab-content active" id="tab-content-saved">
+                                <div style="text-align:center; padding: 15px;">
+                                    <p style="color:#cbd5e1; font-size:13px; margin-bottom:12px;">Use your saved electronic signature from your partner profile:</p>
+                                    <div style="background:#fff; border:1px solid #cbd5e1; border-radius:8px; padding:12px; display:inline-block; max-width:100%;">
+                                        <img src="${SIGNER_INFO.saved_signature}" style="max-height:80px; object-fit:contain; display:block; margin:auto;"/>
+                                    </div>
+                                </div>
+                            </div>` : ''}
+
+                            <!-- Tab 1: Auto -->
+                            <div class="es-signature-tab-content ${!(SIGNER_INFO && SIGNER_INFO.saved_signature) ? 'active' : ''}" id="tab-content-auto">
+                                <div class="es-auto-input-group">
+                                    <input type="text" class="es-auto-input" id="es-signer-name-input" value="${defaultText.replace(/"/g, '&quot;')}" placeholder="Type your name..." oninput="updateAutoSignature()"/>
+                                    <select class="es-auto-font-select" id="es-signer-font-select" onchange="updateAutoSignature()">
+                                        <option value="'Dancing Script', cursive">Dancing Script</option>
+                                        <option value="'Pacifico', cursive">Pacifico</option>
+                                        <option value="'Great Vibes', cursive">Great Vibes</option>
+                                        <option value="'Playball', cursive">Playball</option>
+                                        <option value="'Alex Brush', cursive">Alex Brush</option>
+                                    </select>
+                                </div>
+                                <div class="es-auto-preview-container">
+                                    <div class="es-auto-preview" id="es-auto-signature-preview">Your Signature</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Tab 2: Draw -->
+                            <div class="es-signature-tab-content" id="tab-content-draw">
+                                <div class="es-draw-canvas-container">
+                                    <canvas id="signature-pad"></canvas>
+                                    <button type="button" class="es-canvas-clear-btn" onclick="clearSignatureCanvas()">Clear</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Tab 3: Upload -->
+                            <div class="es-signature-tab-content" id="tab-content-upload">
+                                <div class="es-upload-dropzone" id="es-upload-dropzone" onclick="triggerSignatureUpload()">
+                                    <span class="upload-icon">📁</span>
+                                    <span class="upload-text">Drag &amp; drop your signature image here, or <strong>browse</strong></span>
+                                    <input type="file" id="es-signature-file-input" style="display:none;" accept="image/*" onchange="handleSignatureUpload(event)"/>
+                                    <img id="es-upload-preview" class="es-upload-preview-img" style="display:none;"/>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="es-signature-modal-footer">
+                            <span class="es-modal-agreement-text">By clicking Adopt and Sign, I agree that this signature/initials will be as valid as my handwritten signature.</span>
+                            <div class="es-modal-footer-buttons">
+                                <button type="button" class="btn-secondary" onclick="closeSignaturePad()">Cancel</button>
+                                <button type="button" class="btn-primary" style="margin-top:0;" onclick="adoptSignature(${itemId})">Adopt &amp; Sign</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                activeSignatureTab = (SIGNER_INFO && SIGNER_INFO.saved_signature) ? 'saved' : 'auto';
+                uploadedImageBase64 = null;
+                updateAutoSignature();
+
+                canvasRef = modal.querySelector('#signature-pad');
+                ctxRef = canvasRef.getContext('2d');
+                
+                function getPos(e) {
+                    const r = canvasRef.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    return [clientX - r.left, clientY - r.top];
+                }
+                
+                function startDraw(e) {
+                    isDrawing = true;
+                    [lastX, lastY] = getPos(e);
+                    ctxRef.beginPath();
+                    ctxRef.moveTo(lastX, lastY);
+                }
+                
+                function draw(e) {
+                    if (!isDrawing) return;
+                    e.preventDefault();
+                    const [x, y] = getPos(e);
+                    ctxRef.lineTo(x, y);
+                    ctxRef.stroke();
+                    [lastX, lastY] = [x, y];
+                }
+                
+                function endDraw() {
+                    isDrawing = false;
+                }
+                
+                canvasRef.addEventListener('mousedown', startDraw);
+                canvasRef.addEventListener('mousemove', draw);
+                canvasRef.addEventListener('mouseup', endDraw);
+                canvasRef.addEventListener('mouseleave', endDraw);
+                
+                canvasRef.addEventListener('touchstart', startDraw, { passive: false });
+                canvasRef.addEventListener('touchmove', draw, { passive: false });
+                canvasRef.addEventListener('touchend', endDraw);
+            }
+
+            function getInitials(name) {
+                if (!name) return 'MA';
+                return name.split(' ').map(n => n.charAt(0)).join('').toUpperCase();
+            }
+
+            function updateAutoSignature() {
+                const nameInput = document.getElementById('es-signer-name-input');
+                const fontSelect = document.getElementById('es-signer-font-select');
+                const preview = document.getElementById('es-auto-signature-preview');
+                
+                if (nameInput && fontSelect && preview) {
+                    const name = nameInput.value.trim();
+                    const font = fontSelect.value;
+                    
+                    preview.style.fontFamily = font;
+                    preview.textContent = name || 'Your Signature';
+                }
+            }
+            window.updateAutoSignature = updateAutoSignature;
+
+            function switchSignatureTab(tabName) {
+                activeSignatureTab = tabName;
+                
+                const buttons = document.querySelectorAll('.es-signature-tab-btn');
+                buttons.forEach(btn => {
+                    if (btn.getAttribute('onclick').includes(tabName)) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+                
+                const contents = document.querySelectorAll('.es-signature-tab-content');
+                contents.forEach(content => {
+                    if (content.id === 'tab-content-' + tabName) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+                
+                if (tabName === 'auto') {
+                    const input = document.getElementById('es-signer-name-input');
+                    if (input) input.focus();
+                } else if (tabName === 'draw' && canvasRef) {
+                    setTimeout(() => {
+                        const dpr = window.devicePixelRatio || 1;
+                        const rect = canvasRef.getBoundingClientRect();
+                        canvasRef.width = rect.width * dpr;
+                        canvasRef.height = rect.height * dpr;
+                        ctxRef.scale(dpr, dpr);
+                        ctxRef.strokeStyle = '#000000';
+                        ctxRef.lineWidth = 2.5;
+                        ctxRef.lineCap = 'round';
+                        ctxRef.lineJoin = 'round';
+                    }, 50);
+                }
+            }
+            window.switchSignatureTab = switchSignatureTab;
+
+            function clearSignatureCanvas() {
+                if (canvasRef && ctxRef) {
+                    ctxRef.clearRect(0, 0, canvasRef.width, canvasRef.height);
+                    ctxRef.beginPath();
+                }
+            }
+            window.clearSignatureCanvas = clearSignatureCanvas;
+
+            function triggerSignatureUpload() {
+                const fileInput = document.getElementById('es-signature-file-input');
+                if (fileInput) fileInput.click();
+            }
+            window.triggerSignatureUpload = triggerSignatureUpload;
+
+            function handleSignatureUpload(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(evt) {
+                        uploadedImageBase64 = evt.target.result;
+                        const preview = document.getElementById('es-upload-preview');
+                        if (preview) {
+                            preview.src = uploadedImageBase64;
+                            preview.style.display = 'block';
+                        }
+                        
+                        const dropzone = document.getElementById('es-upload-dropzone');
+                        if (dropzone) {
+                            const icon = dropzone.querySelector('.upload-icon');
+                            const text = dropzone.querySelector('.upload-text');
+                            if (icon) icon.style.display = 'none';
+                            if (text) text.style.display = 'none';
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+            window.handleSignatureUpload = handleSignatureUpload;
+
+            function generateAutoSignatureImage(text, font) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 600;
+                canvas.height = 150;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.font = 'bold 55px ' + font;
+                ctx.fillStyle = '#000000';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+                return canvas.toDataURL('image/png');
+            }
+
+            function isCanvasBlank(canvas) {
+                const blank = document.createElement('canvas');
+                blank.width = canvas.width;
+                blank.height = canvas.height;
+                return canvas.toDataURL() === blank.toDataURL();
+            }
+
+            function adoptSignature(itemId) {
+                let dataUrl = null;
+                
+                if (activeSignatureTab === 'saved') {
+                    if (SIGNER_INFO && SIGNER_INFO.saved_signature) {
+                        dataUrl = SIGNER_INFO.saved_signature;
+                    } else {
+                        alert('No saved signature found.');
+                        return;
+                    }
+                } else if (activeSignatureTab === 'auto') {
+                    const nameInput = document.getElementById('es-signer-name-input');
+                    const fontSelect = document.getElementById('es-signer-font-select');
+                    const name = nameInput ? nameInput.value.trim() : '';
+                    const font = fontSelect ? fontSelect.value : "'Dancing Script', cursive";
+                    
+                    if (!name) {
+                        alert('Please type your name for the signature.');
+                        return;
+                    }
+                    dataUrl = generateAutoSignatureImage(name, font);
+                } else if (activeSignatureTab === 'draw') {
+                    if (!canvasRef || isCanvasBlank(canvasRef)) {
+                        alert('Please draw your signature.');
+                        return;
+                    }
+                    dataUrl = canvasRef.toDataURL('image/png');
+                } else if (activeSignatureTab === 'upload') {
+                    if (!uploadedImageBase64) {
+                        alert('Please upload a signature image.');
+                        return;
+                    }
+                    dataUrl = uploadedImageBase64;
+                }
+                
+                if (!dataUrl) return;
+                
+                signatureData[itemId] = dataUrl;
+                const signItem = signItemInputs[itemId];
+                if (signItem) {
+                    const img = document.createElement('img');
+                    img.src = dataUrl;
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    signItem.el.innerHTML = '';
+                    signItem.el.appendChild(img);
+                }
+                
+                closeSignaturePad();
+                updateRibbonText();
+                setTimeout(goToNextSignItem, 400);
+            }
+            window.adoptSignature = adoptSignature;
+
+            function closeSignaturePad() {
+                const modal = document.getElementById('signature-modal');
+                if (modal) modal.remove();
+                canvasRef = null;
+                ctxRef = null;
+            }
+            window.closeSignaturePad = closeSignaturePad;
+
+            function getUncompletedItems() {
+                return SIGN_ITEMS.filter(item => {
+                    if (CURRENT_ROLE_ID !== 0 && item.responsible_id !== CURRENT_ROLE_ID) return false;
+                    const inputInfo = signItemInputs[item.id];
+                    if (!inputInfo) return false;
+                    if (['signature', 'initial'].includes(item.type)) {
+                        return !signatureData[item.id];
+                    } else if (item.type === 'checkbox') {
+                        const inputEl = inputInfo.el.querySelector('input');
+                        return item.required ? (inputEl ? !inputEl.checked : true) : false;
+                    } else {
+                        const inputEl = inputInfo.el.querySelector('input');
+                        return item.required ? (inputEl ? !inputEl.value.trim() : true) : false;
+                    }
+                }).sort((a, b) => {
+                    if (a.page !== b.page) return a.page - b.page;
+                    if (Math.abs(a.posY - b.posY) > 0.005) return a.posY - b.posY;
+                    return a.posX - b.posX;
+                });
+            }
+
+            function getActiveItemMeta() {
+                if (!activeItem) return null;
+                const itemId = Object.keys(signItemInputs).find(key => signItemInputs[key].el === activeItem);
+                if (!itemId) return null;
+                return SIGN_ITEMS.find(item => item.id == itemId);
+            }
+
+            function isFieldFilled(container) {
+                const itemId = Object.keys(signItemInputs).find(key => signItemInputs[key].el === container);
+                if (!itemId) return false;
+                const meta = SIGN_ITEMS.find(item => item.id == itemId);
+                if (!meta) return false;
+
+                if (['signature', 'initial'].includes(meta.type)) {
+                    return !!signatureData[meta.id];
+                } else if (meta.type === 'checkbox') {
+                    const inputEl = container.querySelector('input');
+                    return inputEl ? inputEl.checked : false;
+                } else {
+                    const inputEl = container.querySelector('input, textarea');
+                    return inputEl ? !!inputEl.value.trim() : false;
+                }
+            }
+
+            // Map any field to the signer's actual data from Odoo
+            function getSignerValueForField(meta) {
+                const name = (meta.name || '').toLowerCase();
+                const ph   = (meta.placeholder || '').toLowerCase();
+                const combined = name + ' ' + ph;
+
+                if (combined.includes('date')) {
+                    const d = new Date();
+                    return String(d.getDate()).padStart(2,'0') + '/'
+                         + String(d.getMonth()+1).padStart(2,'0') + '/'
+                         + d.getFullYear();
+                }
+                if (combined.includes('phone') || combined.includes('mobile') || combined.includes('tel')) {
+                    return SIGNER_INFO.phone || '';
+                }
+                if (combined.includes('email') || combined.includes('mail')) {
+                    return SIGNER_INFO.email || '';
+                }
+                if (combined.includes('company') || combined.includes('organisation') || combined.includes('organization') || combined.includes('firm')) {
+                    return SIGNER_INFO.company || '';
+                }
+                if (combined.includes('job') || combined.includes('title') || combined.includes('position') || combined.includes('designation')) {
+                    return SIGNER_INFO.title || '';
+                }
+                if (combined.includes('city') || combined.includes('town')) {
+                    return SIGNER_INFO.city || '';
+                }
+                if (combined.includes('zip') || combined.includes('postal') || combined.includes('pincode') || combined.includes('pin code')) {
+                    return SIGNER_INFO.zip || '';
+                }
+                if (combined.includes('country')) {
+                    return SIGNER_INFO.country || '';
+                }
+                if (combined.includes('state') || combined.includes('province') || combined.includes('region')) {
+                    return SIGNER_INFO.state || '';
+                }
+                if (combined.includes('name') || combined.includes('full name') || combined.includes('fullname')) {
+                    return SIGNER_INFO.name || '';
+                }
+                // Generic text / textarea — return name as default
+                return SIGNER_INFO.name || '';
+            }
+
+            function autoFillActiveField() {
+                if (!activeItem) return;
+                const meta = getActiveItemMeta();
+                if (!meta) return;
+
+                if (['signature', 'initial'].includes(meta.type)) {
+                    openSignaturePad(meta.id);
+                    return;
+                }
+
+                const inputEl = activeItem.querySelector('input, textarea');
+                if (!inputEl) return;
+
+                if (meta.type === 'checkbox') {
+                    inputEl.checked = true;
+                } else {
+                    const val = getSignerValueForField(meta);
+                    if (val) inputEl.value = val;
+                }
+                inputEl.dispatchEvent(new Event('input',  { bubbles: true }));
+                inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            function hasUnsignedSignatureFields() {
+                return SIGN_ITEMS.some(item => {
+                    if (CURRENT_ROLE_ID !== 0 && item.responsible_id !== CURRENT_ROLE_ID) return false;
+                    if (['signature', 'initial'].includes(item.type)) {
+                        return !signatureData[item.id];
+                    }
+                    return false;
+                });
+            }
+
+            function goToFirstUnsignedSignature() {
+                const uncompleted = getUncompletedItems();
+                let sigItem = uncompleted.find(i => ['signature', 'initial'].includes(i.type));
+                if (!sigItem) {
+                    sigItem = SIGN_ITEMS.find(i => {
+                        if (CURRENT_ROLE_ID !== 0 && i.responsible_id !== CURRENT_ROLE_ID) return false;
+                        return ['signature', 'initial'].includes(i.type) && !signatureData[i.id];
+                    });
+                }
+                if (sigItem && signItemInputs[sigItem.id]) {
+                    const info = signItemInputs[sigItem.id];
+                    selectItem(info.el);
+                    const rect = info.el.getBoundingClientRect();
+                    window.scrollTo({ top: rect.top + window.scrollY - window.innerHeight * 0.25, behavior: 'smooth' });
+                    openSignaturePad(sigItem.id);
+                }
+            }
+
+            function updateRibbonText() {
+                if (!navigatorEl) return;
+
+                const uncompleted = getUncompletedItems();
+                const hasUnsignedSigs = hasUnsignedSignatureFields();
+                const submitBtn = document.getElementById('o_sign_submit');
+                if (submitBtn) {
+                    submitBtn.style.display = 'block';
+                    if (hasUnsignedSigs || uncompleted.length > 0) {
+                        submitBtn.textContent = 'Start Signing';
+                        submitBtn.style.background = 'linear-gradient(135deg, #00a09d 0%, #007a78 100%)';
+                    } else {
+                        submitBtn.textContent = 'Validate & Send Completed Document';
+                        submitBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #15803d 100%)';
+                    }
+                }
+
+                if (!activeItem) {
+                    navigatorEl.innerText = 'Click to start';
+                    updateTopButtons();
+                    return;
+                }
+
+                if (activeItem.id === 'o_sign_submit') {
+                    if (hasUnsignedSigs) {
+                        navigatorEl.innerText = 'Sign';
+                    } else {
+                        navigatorEl.innerText = 'Submit';
+                    }
+                    updateTopButtons();
+                    return;
+                }
+
+                if (isFieldFilled(activeItem)) {
+                    navigatorEl.innerText = 'Next';
+                } else {
+                    const itemId = Object.keys(signItemInputs).find(key => signItemInputs[key].el === activeItem);
+                    const meta = SIGN_ITEMS.find(item => item.id == itemId);
+                    if (meta && ['signature', 'initial'].includes(meta.type)) {
+                        navigatorEl.innerText = 'Sign';
+                    } else {
+                        navigatorEl.innerText = 'Fill in';
+                    }
+                }
+                updateTopButtons();
+            }
+
+            function goToNextSignItem() {
+                if (activeItem) {
+                    activeItem.classList.remove('ui-selected');
+                }
+
+                const uncompleted = getUncompletedItems();
+                if (uncompleted.length > 0) {
+                    navigatorStarted = true;
+                    const nextItem = uncompleted[0];
+                    const inputInfo = signItemInputs[nextItem.id];
+                    activeItem = inputInfo.el;
+                    activeItem.classList.add('ui-selected');
+
+                    const rect = activeItem.getBoundingClientRect();
+                    const absoluteTop = rect.top + window.scrollY;
+                    const scrollToY = absoluteTop - (window.innerHeight * 0.25);
+                    window.scrollTo({ top: scrollToY, behavior: 'smooth' });
+
+                    navigatorEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                    navlineEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                    const centerViewportY = window.innerHeight * 0.25 + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+
+                    updateRibbonText();
+
+                    const inputEl = activeItem.querySelector('input, textarea');
+                    if (inputEl && nextItem.type !== 'checkbox') {
+                        inputEl.focus();
+                    }
+                } else if (!hasUnsignedSignatureFields()) {
+                    activeItem = document.getElementById('o_sign_submit');
+                    activeItem.classList.add('ui-selected');
+
+                    const rect = activeItem.getBoundingClientRect();
+                    const absoluteTop = rect.top + window.scrollY;
+                    const scrollToY = absoluteTop - (window.innerHeight * 0.5);
+                    window.scrollTo({ top: scrollToY, behavior: 'smooth' });
+
+                    navigatorEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                    navlineEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                    const centerViewportY = window.innerHeight * 0.5 + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+
+                    updateRibbonText();
+                } else {
+                    goToFirstUnsignedSignature();
+                }
+            }
+
+            // ─── Top toolbar button logic ────────────────────────────────
+            function updateTopButtons() {
+                const fillBtn = document.getElementById('es-top-fill-btn');
+                const nextBtn = document.getElementById('es-top-next-btn');
+                const nextLabel = document.getElementById('es-top-next-label');
+                const submitBtn = document.getElementById('o_sign_submit');
+                if (!fillBtn || !nextBtn) return;
+
+                const uncompleted = getUncompletedItems();
+                const hasUnsignedSigs = hasUnsignedSignatureFields();
+
+                // Show Fill In button only when there are unfilled text-type fields
+                const unfilledText = uncompleted.filter(i => {
+                    const info = signItemInputs[i.id];
+                    return info && !['signature', 'initial', 'checkbox', 'radio'].includes(info.type);
+                });
+                fillBtn.style.display = unfilledText.length > 0 ? 'inline-flex' : 'none';
+
+                // Next/Start/Submit button logic
+                nextBtn.style.display = 'inline-flex';
+                if (hasUnsignedSigs || uncompleted.length > 0) {
+                    nextLabel.textContent = navigatorStarted ? 'Sign Field' : 'Start Signing';
+                } else {
+                    nextLabel.textContent = 'Submit';
+                }
+            }
+
+            function fillAllFields() {
+                // Fill EVERY editable text/textarea field with signer data from Odoo
+                SIGN_ITEMS.forEach(item => {
+                    const info = signItemInputs[item.id];
+                    if (!info) return;
+                    if (['signature', 'initial', 'checkbox', 'radio'].includes(item.type)) return;
+
+                    const inputEl = info.el.querySelector('input, textarea');
+                    if (!inputEl) return;
+
+                    const val = getSignerValueForField(item);
+                    if (val) {
+                        inputEl.value = val;
+                        inputEl.dispatchEvent(new Event('input',  { bubbles: true }));
+                        inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+
+                // After filling text fields, scroll to first unfilled field or unsigned signature
+                const stillUncompleted = getUncompletedItems();
+                if (stillUncompleted.length > 0) {
+                    const firstEl = signItemInputs[stillUncompleted[0].id].el;
+                    const rect = firstEl.getBoundingClientRect();
+                    window.scrollTo({ top: rect.top + window.scrollY - window.innerHeight * 0.3, behavior: 'smooth' });
+                    if (activeItem) activeItem.classList.remove('ui-selected');
+                    activeItem = firstEl;
+                    activeItem.classList.add('ui-selected');
+                    navigatorStarted = true;
+                } else if (hasUnsignedSignatureFields()) {
+                    goToFirstUnsignedSignature();
+                }
+                updateTopButtons();
+                updateRibbonText();
+            }
+
+            function topNextClick() {
+                const label = document.getElementById('es-top-next-label').textContent.trim();
+                const hasUnsignedSigs = hasUnsignedSignatureFields();
+                const uncompleted = getUncompletedItems();
+
+                if (label === 'Submit') {
+                    if (hasUnsignedSigs || uncompleted.length > 0) {
+                        fillAllFields();
+                        goToFirstUnsignedSignature();
+                        return;
+                    }
+                    document.getElementById('o_sign_submit').click();
+                } else if (label === 'Start Signing' || label === 'Sign Document' || label === 'Sign Field' || label === 'Next Field') {
+                    fillAllFields();
+                    if (hasUnsignedSigs) {
+                        goToFirstUnsignedSignature();
+                    } else if (uncompleted.length > 0) {
+                        goToNextSignItem();
+                    } else {
+                        updateTopButtons();
+                    }
+                } else {
+                    goToNextSignItem();
+                }
+                updateTopButtons();
+            }
+
+            function initNavigator() {
+                navigatorEl = document.createElement('div');
+                navigatorEl.className = 'o_sign_sign_item_navigator';
+                navigatorEl.innerText = 'Click to start';
+                navigatorEl.style.display = 'none';
+                document.body.appendChild(navigatorEl);
+
+                navlineEl = document.createElement('div');
+                navlineEl.className = 'o_sign_sign_item_navline';
+                navlineEl.style.display = 'none';
+                document.body.appendChild(navlineEl);
+
+                navigatorEl.addEventListener('click', () => {
+                    const txt = navigatorEl.innerText;
+                    if (txt === 'Click to start' || txt === 'Start Signing') {
+                        fillAllFields();
+                        if (hasUnsignedSignatureFields()) {
+                            goToFirstUnsignedSignature();
+                        } else {
+                            goToNextSignItem();
+                        }
+                    } else if (txt === 'Fill in') {
+                        autoFillActiveField();
+                    } else if (txt === 'Sign') {
+                        goToFirstUnsignedSignature();
+                    } else if (txt === 'Next') {
+                        goToNextSignItem();
+                    } else if (txt === 'Submit') {
+                        document.getElementById('o_sign_submit').click();
+                    }
+                });
+
+                const uncompleted = getUncompletedItems();
+                const hasUnsignedSigs = hasUnsignedSignatureFields();
+
+                if (uncompleted.length > 0) {
+                    navigatorEl.style.display = 'flex';
+                    navlineEl.style.display = 'block';
+
+                    const firstItem = uncompleted[0];
+                    const inputInfo = signItemInputs[firstItem.id];
+                    activeItem = inputInfo.el;
+
+                    const rect = activeItem.getBoundingClientRect();
+                    const centerViewportY = rect.top + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+                } else if (hasUnsignedSigs) {
+                    navigatorEl.style.display = 'flex';
+                    navlineEl.style.display = 'block';
+                    navigatorEl.innerText = 'Start Signing';
+                    goToFirstUnsignedSignature();
+                } else if (SIGN_ITEMS.length > 0) {
+                    navigatorEl.style.display = 'flex';
+                    navlineEl.style.display = 'block';
+                    navigatorEl.innerText = 'Submit';
+                    
+                    activeItem = document.getElementById('o_sign_submit');
+                    const rect = activeItem.getBoundingClientRect();
+                    const centerViewportY = rect.top + rect.height / 2;
+                    navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                    navlineEl.style.top = centerViewportY + 'px';
+                }
+
+                window.addEventListener('scroll', () => {
+                    if (activeItem) {
+                        const rect = activeItem.getBoundingClientRect();
+                        const centerViewportY = rect.top + rect.height / 2;
+                        navigatorEl.style.transition = 'none';
+                        navlineEl.style.transition = 'none';
+                        navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                        navlineEl.style.top = centerViewportY + 'px';
+                        setTimeout(() => {
+                            navigatorEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                            navlineEl.style.transition = 'top 0.3s ease-out, opacity 0.3s ease';
+                        }, 50);
+                    }
+                });
+
+                window.addEventListener('resize', () => {
+                    if (activeItem) {
+                        const rect = activeItem.getBoundingClientRect();
+                        const centerViewportY = rect.top + rect.height / 2;
+                        navigatorEl.style.top = (centerViewportY - 20) + 'px';
+                        navlineEl.style.top = centerViewportY + 'px';
+                    }
+                });
+
+                updateRibbonText();
+            }
+
+            document.getElementById('o_sign_submit').addEventListener('click', async () => {
+                if (hasUnsignedSignatureFields() || getUncompletedItems().length > 0) {
+                    fillAllFields();
+                    goToFirstUnsignedSignature();
+                    return;
+                }
+                let validationError = false;
+                let firstErrorEl = null;
+
+                Object.keys(signItemInputs).forEach(key => {
+                    const item = signItemInputs[key];
+                    const meta = SIGN_ITEMS.find(i => i.id == key);
+                    if (CURRENT_ROLE_ID !== 0 && meta && meta.responsible_id !== CURRENT_ROLE_ID) return;
+
+                    const inputEl = item.el.querySelector('input, textarea');
+                    const val = inputEl ? inputEl.value.trim() : '';
+
+                    if (meta && meta.required) {
+                        if (['signature', 'initial'].includes(item.type)) {
+                            if (!signatureData[key]) {
+                                item.el.style.border = '2px solid #ef4444';
+                                item.el.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+                                if (!validationError) { validationError = true; firstErrorEl = item.el; }
+                            } else {
+                                item.el.style.border = '';
+                                item.el.style.boxShadow = '';
+                            }
+                        } else if (item.type === 'checkbox') {
+                            const chk = item.el.querySelector('input');
+                            if (!chk || !chk.checked) {
+                                item.el.style.border = '2px solid #ef4444';
+                                if (!validationError) { validationError = true; firstErrorEl = item.el; }
+                            } else {
+                                item.el.style.border = '';
+                            }
+                        } else if (val === '') {
+                            item.el.style.border = '2px solid #ef4444';
+                            item.el.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+                            if (!validationError) { validationError = true; firstErrorEl = item.el; }
+                        } else {
+                            item.el.style.border = '';
+                            item.el.style.boxShadow = '';
+                        }
+                    }
+
+                    const fieldName = ((meta && meta.name) || '').toLowerCase();
+                    if (val !== '' && (meta.type === 'email' || fieldName.includes('email') || fieldName.includes('mail'))) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(val)) {
+                            item.el.style.border = '2px solid #ef4444';
+                            item.el.style.boxShadow = '0 0 8px rgba(239,68,68,0.5)';
+                            if (!validationError) {
+                                validationError = true;
+                                firstErrorEl = item.el;
+                                alert('Please enter a valid email address.');
+                            }
+                        }
+                    }
+                });
+
+                if (validationError) {
+                    if (firstErrorEl) {
+                        firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        alert('Please complete all required fields correctly before submitting.');
+                    }
+                    return;
+                }
+
+                const values = {};
+                Object.keys(signItemInputs).forEach(key => {
+                    const item = signItemInputs[key];
+                    if (['signature', 'initial'].includes(item.type)) {
+                        values[key] = signatureData[key];
+                    } else if (item.type === 'checkbox') {
+                        values[key] = item.el.querySelector('input').checked ? 'on' : 'off';
+                    } else {
+                        values[key] = item.el.querySelector('input').value;
+                    }
+                });
+                const formData = new FormData();
+                formData.append('data', JSON.stringify(values));
+                const response = await fetch('/sign/submit/' + REQUEST_ID + '/' + ACCESS_TOKEN, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                if (result.success) {
+                    window.location.reload();
+                }
+            });
+
+            initPDFIframe('/sign/document/' + REQUEST_ID + '/' + ACCESS_TOKEN + '/pdf');
+
+            // Modals logic
+            function openRefuseModal() {
+                document.getElementById('es-refuse-modal').style.display = 'flex';
+            }
+            function closeRefuseModal() {
+                document.getElementById('es-refuse-modal').style.display = 'none';
+            }
+            async function submitRefuse() {
+                const reason = document.getElementById('refuse-reason').value;
+                const formData = new FormData();
+                formData.append('reason', reason);
+                const response = await fetch('/sign/refuse/' + REQUEST_ID + '/' + ACCESS_TOKEN, {
+                    method: 'POST', body: formData
+                });
+                const result = await response.json();
+                if(result.success) window.location.reload();
+            }
+
+            function openDelegateModal() {
+                document.getElementById('es-delegate-modal').style.display = 'flex';
+            }
+            function closeDelegateModal() {
+                document.getElementById('es-delegate-modal').style.display = 'none';
+            }
+            async function submitDelegate() {
+                const new_name = document.getElementById('delegate-name').value;
+                const new_email = document.getElementById('delegate-email').value;
+                const message = document.getElementById('delegate-message').value;
+                const formData = new FormData();
+                formData.append('new_name', new_name);
+                formData.append('new_email', new_email);
+                formData.append('message', message);
+                const response = await fetch('/sign/delegate/' + REQUEST_ID + '/' + ACCESS_TOKEN, {
+                    method: 'POST', body: formData
+                });
+                const result = await response.json();
+                if(result.success) window.location.reload();
+            }
+]]>
+            </script>
+            
+            <!-- Refuse Modal -->
+            <div id="es-refuse-modal" class="es-signature-modal-backdrop" style="display:none; z-index:9999;">
+                <div class="es-signature-modal" style="width: 400px; color:#000;">
+                    <div class="es-signature-modal-header">
+                        <h3 class="es-signature-modal-title">Refuse to Sign</h3>
+                        <button class="es-signature-modal-close" onclick="closeRefuseModal()">&#215;</button>
+                    </div>
+                    <div class="es-signature-modal-body">
+                        <label style="color:#000;">Reason for refusal</label>
+                        <textarea id="refuse-reason" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;" rows="4"></textarea>
+                    </div>
+                    <div class="es-signature-modal-footer">
+                        <div class="es-modal-footer-buttons">
+                            <button class="btn-secondary" onclick="closeRefuseModal()">Cancel</button>
+                            <button class="btn-primary" onclick="submitRefuse()" style="margin-top:0;">Confirm Refusal</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delegate Modal -->
+            <div id="es-delegate-modal" class="es-signature-modal-backdrop" style="display:none; z-index:9999;">
+                <div class="es-signature-modal" style="width: 400px; color:#000;">
+                    <div class="es-signature-modal-header">
+                        <h3 class="es-signature-modal-title">Delegate Signature</h3>
+                        <button class="es-signature-modal-close" onclick="closeDelegateModal()">&#215;</button>
+                    </div>
+                    <div class="es-signature-modal-body" style="display:flex; flex-direction:column; gap:10px;">
+                        <label style="color:#000;">Delegate to Name</label>
+                        <input type="text" id="delegate-name" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"/>
+                        <label style="color:#000;">Delegate to Email</label>
+                        <input type="email" id="delegate-email" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"/>
+                        <label style="color:#000;">Message (Optional)</label>
+                        <textarea id="delegate-message" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;" rows="3"></textarea>
+                    </div>
+                    <div class="es-signature-modal-footer">
+                        <div class="es-modal-footer-buttons">
+                            <button class="btn-secondary" onclick="closeDelegateModal()">Cancel</button>
+                            <button class="btn-primary" onclick="submitDelegate()" style="margin-top:0;">Delegate</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                </body>
+            </html>
         </t>
-        <div class="es-result-footer">
-            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
-            <strong> Easy Sign</strong>
-        </div>
-    </div>
-    <script><![CDATA[
-    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
-    function esApplyLang(lang) {
-        var root = document.getElementById('esRoot');
-        var label = document.getElementById('esLangLabel');
-        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-        root.setAttribute('lang', lang);
-        label.textContent = lang === 'ar' ? 'English' : 'عربي';
-        document.querySelectorAll('.es-i18n').forEach(function(el) {
-            var txt = el.getAttribute('data-' + lang);
-            if (txt) el.textContent = txt;
-        });
-        localStorage.setItem('es_lang', lang);
-        esCurrentLang = lang;
-    }
-    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
-    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
-    ]]></script>
-</body>
-</html>
-</template>
+    </template>
 
-
-<!-- ═══════════════════════════════════════════════════
-     DECLINED PAGE
-═══════════════════════════════════════════════════ -->
-<template id="sign_declined" name="Easy Sign - Signing Declined">
-<html lang="en" id="esRoot">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Signing Declined - Easy Sign</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" t-attf-href="/easy_sign/static/src/css/sign_public.css"/>
-    <style>
-        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #dc2626;background:#fef2f2;color:#dc2626;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:20px; }
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
-        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
-    </style>
-</head>
-<body class="es-body es-result-body">
-    <div class="es-result-card es-result-declined">
-        <div class="es-result-icon">&#10005;</div>
-
-        <button class="es-lang-btn" onclick="esToggleLang()">
-            🌐 <span id="esLangLabel">عربي</span>
-        </button>
-
-        <h2 class="es-result-title">
-            <span class="es-i18n" data-en="Signing Declined" data-ar="تم رفض التوقيع">Signing Declined</span>
-        </h2>
-        <p class="es-result-message">
-            <t t-if="already_done">
-                <span class="es-i18n" data-en="You have already declined to sign this document." data-ar="لقد رفضت التوقيع على هذه الوثيقة مسبقاً.">You have already declined to sign this document.</span>
-            </t>
-            <t t-else="">
-                <span class="es-i18n" data-en="You have declined to sign this document. The requester has been notified." data-ar="لقد رفضت التوقيع على الوثيقة. تم إشعار مقدم الطلب.">You have declined to sign this document. The requester has been notified.</span>
-            </t>
-        </p>
-        <t t-if="item and item.declined_reason">
-            <p class="es-result-meta">
-                <span class="es-i18n" data-en="Reason:" data-ar="السبب:">Reason:</span>
-                <em t-esc="item.declined_reason"/>
-            </p>
+    <template id="sign_already_signed" name="Already Signed">
+        <t>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f0f0f0;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 50px auto;
+                    background-color: white;
+                    padding: 40px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    text-align: center;
+                }
+                h1 {
+                    color: #333;
+                }
+            </style>
+            <div class="container" style="max-width: 900px; width: 90%;">
+                <h1>Document Fully Signed</h1>
+                <p>This document has been fully signed and processed.</p>
+                
+                <div style="margin: 20px 0;">
+                    <a t-attf-href="/sign/download/{{sign_request.id}}/{{sign_request.access_token}}/completed?download=1" 
+                       class="btn btn-primary" 
+                       style="background-color: #00a09d; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold; margin-bottom: 20px;">
+                        <i class="fa fa-download"></i> Download Signed Document
+                    </a>
+                </div>
+                
+                <div style="border: 1px solid #ccc; border-radius: 4px; overflow: hidden; height: 80vh;">
+                    <iframe t-attf-src="/sign/download/{{sign_request.id}}/{{sign_request.access_token}}/completed" width="100%" height="100%" style="border: none;"></iframe>
+                </div>
+            </div>
         </t>
-        <div class="es-result-footer">
-            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
-            <strong> Easy Sign</strong>
-        </div>
-    </div>
-    <script><![CDATA[
-    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
-    function esApplyLang(lang) {
-        var root = document.getElementById('esRoot');
-        var label = document.getElementById('esLangLabel');
-        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-        root.setAttribute('lang', lang);
-        label.textContent = lang === 'ar' ? 'English' : 'عربي';
-        document.querySelectorAll('.es-i18n').forEach(function(el) {
-            var txt = el.getAttribute('data-' + lang);
-            if (txt) el.textContent = txt;
-        });
-        localStorage.setItem('es_lang', lang);
-        esCurrentLang = lang;
-    }
-    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
-    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
-    ]]></script>
-</body>
-</html>
-</template>
+    </template>
 
+    <template id="sign_not_yet_turn" name="Not Yet Your Turn">
+        <t>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f0f2f5;
+                }
+                .container {
+                    max-width: 600px;
+                    margin: 80px auto;
+                    background-color: white;
+                    padding: 48px 40px;
+                    border-radius: 12px;
+                    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+                    text-align: center;
+                }
+                .icon { font-size: 56px; margin-bottom: 16px; }
+                h1 { color: #2d3748; font-size: 24px; margin-bottom: 12px; }
+                p  { color: #718096; font-size: 15px; line-height: 1.6; }
+                .doc-name {
+                    display: inline-block;
+                    background: #edf2ff;
+                    color: #3b5bdb;
+                    border-radius: 6px;
+                    padding: 4px 12px;
+                    font-weight: 600;
+                    margin-top: 8px;
+                }
+                .note {
+                    margin-top: 24px;
+                    padding: 12px 16px;
+                    background: #fffbeb;
+                    border-left: 4px solid #f59e0b;
+                    border-radius: 4px;
+                    font-size: 13px;
+                    color: #78350f;
+                    text-align: left;
+                }
+            </style>
+            <div class="container">
+                <div class="icon">&#9203;</div>
+                <h1>Not Your Turn Yet</h1>
+                <p>You have been invited to sign:</p>
+                <span class="doc-name" t-esc="sign_request.reference"/>
+                <p style="margin-top:16px;">Please wait — a previous signer must complete their signature before you can proceed. You will receive an email notification when it is your turn.</p>
+                <div class="note">
+                    &#9432;&#160; <strong>Tip:</strong> You can safely close this page. We will send you a fresh link when it is your turn to sign.
+                </div>
+            </div>
+        </t>
+    </template>
 
-<!-- ═══════════════════════════════════════════════════
-     INVALID / EXPIRED PAGE
-═══════════════════════════════════════════════════ -->
-<template id="sign_invalid" name="Easy Sign - Invalid Link">
-<html lang="en" id="esRoot">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>Invalid Link - Easy Sign</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-    <link rel="stylesheet" t-attf-href="/easy_sign/static/src/css/sign_public.css"/>
-    <style>
-        .es-lang-btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:20px;border:1.5px solid #f59e0b;background:#fffbeb;color:#92400e;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:20px; }
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&amp;display=swap');
-        html[dir="rtl"] { font-family: 'Cairo', sans-serif; }
-    </style>
-</head>
-<body class="es-body es-result-body">
-    <div class="es-result-card es-result-invalid">
-        <div class="es-result-icon">&#9888;</div>
+    <template id="sign_pdf_iframe_templates">
+    </template>
 
-        <button class="es-lang-btn" onclick="esToggleLang()">
-            🌐 <span id="esLangLabel">عربي</span>
-        </button>
+    <template id="sign_otp_verification" name="OTP Verification">
+        <t>
+            &lt;!DOCTYPE html&gt;
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Security Verification</title>
+                    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"/>
+                    <style>
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            background: #0f172a;
+                            color: #f1f5f9;
+                            margin: 0;
+                            padding: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                        }
+                        .container {
+                            background: #1e293b;
+                            border: 1px solid #334155;
+                            border-radius: 16px;
+                            padding: 40px;
+                            width: 100%;
+                            max-width: 420px;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                            box-sizing: border-box;
+                            text-align: center;
+                        }
+                        .icon {
+                            width: 56px;
+                            height: 56px;
+                            background: rgba(113, 75, 103, 0.2);
+                            color: #714b67;
+                            border-radius: 50%;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 24px;
+                            margin-bottom: 20px;
+                        }
+                        h1 {
+                            font-size: 20px;
+                            font-weight: 700;
+                            margin: 0 0 10px 0;
+                            color: #ffffff;
+                        }
+                        p {
+                            font-size: 14px;
+                            color: #94a3b8;
+                            line-height: 1.5;
+                            margin: 0 0 24px 0;
+                        }
+                        .input-group {
+                            margin-bottom: 20px;
+                            text-align: left;
+                        }
+                        label {
+                            display: block;
+                            font-size: 13px;
+                            font-weight: 500;
+                            margin-bottom: 6px;
+                            color: #cbd5e1;
+                        }
+                        input[type="text"] {
+                            width: 100%;
+                            padding: 12px 16px;
+                            background: #0f172a;
+                            border: 1px solid #334155;
+                            border-radius: 8px;
+                            font-size: 20px;
+                            color: #ffffff;
+                            box-sizing: border-box;
+                            transition: border-color 0.15s;
+                            text-align: center;
+                            letter-spacing: 4px;
+                        }
+                        input[type="text"]:focus {
+                            border-color: #714b67;
+                            outline: none;
+                        }
+                        .btn-primary {
+                            display: block;
+                            width: 100%;
+                            padding: 12px;
+                            background: linear-gradient(135deg, #714b67 0%, #52314a 100%);
+                            color: #ffffff;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 15px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                        }
+                        .btn-primary:hover {
+                            background: linear-gradient(135deg, #52314a 0%, #3a2234 100%);
+                        }
+                        .btn-link {
+                            background: transparent;
+                            border: none;
+                            color: #4dabf7;
+                            font-size: 13px;
+                            cursor: pointer;
+                            margin-top: 15px;
+                            text-decoration: underline;
+                        }
+                        #error-msg {
+                            color: #ef4444;
+                            font-size: 13px;
+                            margin-bottom: 15px;
+                            display: none;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">&#128274;</div>
+                        <h1>Security Verification</h1>
+                        <p>This document requires extra security. We will send a One-Time Password (OTP) to <b><t t-esc="signer_email"/></b>.</p>
+                        
+                        <div id="step-send">
+                            <button id="btn-send-otp" class="btn-primary" onclick="sendOTP()">Send OTP Code</button>
+                        </div>
 
-        <h2 class="es-result-title" t-esc="error_title or 'Invalid Link'"/>
-        <p class="es-result-message" t-esc="error_message or 'This signing link is invalid or has expired.'"/>
-        <div class="es-result-footer">
-            <span class="es-i18n" data-en="Secured by" data-ar="مؤمّن بواسطة">Secured by</span>
-            <strong> Easy Sign</strong>
-        </div>
-    </div>
-    <script><![CDATA[
-    var esCurrentLang = localStorage.getItem('es_lang') || 'en';
-    function esApplyLang(lang) {
-        var root = document.getElementById('esRoot');
-        var label = document.getElementById('esLangLabel');
-        root.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
-        root.setAttribute('lang', lang);
-        label.textContent = lang === 'ar' ? 'English' : 'عربي';
-        document.querySelectorAll('.es-i18n').forEach(function(el) {
-            var txt = el.getAttribute('data-' + lang);
-            if (txt) el.textContent = txt;
-        });
-        localStorage.setItem('es_lang', lang);
-        esCurrentLang = lang;
-    }
-    function esToggleLang() { esApplyLang(esCurrentLang === 'en' ? 'ar' : 'en'); }
-    document.addEventListener('DOMContentLoaded', function() { esApplyLang(esCurrentLang); });
-    ]]></script>
-</body>
-</html>
-</template>
+                        <div id="step-verify" style="display:none;">
+                            <div id="error-msg"></div>
+                            <div class="input-group">
+                                <input type="text" id="otp-input" placeholder="000000" maxlength="6" autocomplete="off"/>
+                            </div>
+                            <button id="btn-verify-otp" class="btn-primary" onclick="verifyOTP()">Verify &amp; Continue</button>
+                            <button class="btn-link" onclick="sendOTP()">Resend Code</button>
+                        </div>
+                    </div>
 
+                    <script>
+                    <![CDATA[
+                        const request_id = ]]><t t-esc="sign_request.id"/><![CDATA[;
+                        const access_token = ']]><t t-esc="access_token"/><![CDATA[';
+
+                        async function sendOTP() {
+                            const btn = document.getElementById('btn-send-otp');
+                            btn.textContent = 'Sending...';
+                            btn.disabled = true;
+
+                            try {
+                                const response = await fetch('/sign/send_otp/' + request_id + '/' + access_token, { 
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ params: {} })
+                                });
+                                const result = await response.json();
+                                if (result.result && result.result.success) {
+                                    document.getElementById('step-send').style.display = 'none';
+                                    document.getElementById('step-verify').style.display = 'block';
+                                    document.getElementById('error-msg').style.display = 'none';
+                                } else {
+                                    alert('Failed to send OTP. Please try again.');
+                                }
+                            } catch (e) {
+                                alert('Error sending OTP.');
+                            } finally {
+                                btn.textContent = 'Send OTP Code';
+                                btn.disabled = false;
+                            }
+                        }
+
+                        async function verifyOTP() {
+                            const otp = document.getElementById('otp-input').value;
+                            if (!otp || otp.length < 6) return;
+
+                            const btn = document.getElementById('btn-verify-otp');
+                            btn.textContent = 'Verifying...';
+                            btn.disabled = true;
+
+                            try {
+                                const response = await fetch('/sign/verify_otp/' + request_id + '/' + access_token, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ params: { otp: otp } })
+                                });
+                                const result = await response.json();
+                                if (result.result && result.result.success) {
+                                    window.location.reload();
+                                } else {
+                                    const errMsg = document.getElementById('error-msg');
+                                    errMsg.textContent = (result.result && result.result.error) ? result.result.error : 'Invalid OTP.';
+                                    errMsg.style.display = 'block';
+                                }
+                            } catch (e) {
+                                alert('Error verifying OTP.');
+                            } finally {
+                                btn.textContent = 'Verify & Continue';
+                                btn.disabled = false;
+                            }
+                        }
+                    ]]>
+                    </script>
+                </body>
+            </html>
+        </t>
+    </template>
+
+    <template id="sign_share_template" name="Share Template Input Form">
+        <t>
+            &lt;!DOCTYPE html&gt;
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Sign Document - <t t-esc="template.name"/></title>
+                    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"/>
+                    <style>
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            background: #0f172a;
+                            color: #f1f5f9;
+                            margin: 0;
+                            padding: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                        }
+                        .container {
+                            background: #1e293b;
+                            border: 1px solid #334155;
+                            border-radius: 16px;
+                            padding: 40px;
+                            width: 100%;
+                            max-width: 480px;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                            box-sizing: border-box;
+                        }
+                        .header {
+                            text-align: center;
+                            margin-bottom: 30px;
+                        }
+                        .logo {
+                            width: 48px;
+                            height: 48px;
+                            background: linear-gradient(135deg, #71639e, #5c5082);
+                            border-radius: 12px;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 22px;
+                            font-weight: 700;
+                            color: white;
+                            margin-bottom: 16px;
+                        }
+                        h1 {
+                            font-size: 20px;
+                            font-weight: 700;
+                            margin: 0 0 8px 0;
+                            color: #ffffff;
+                        }
+                        .subtitle {
+                            font-size: 13px;
+                            color: #94a3b8;
+                            margin: 0;
+                        }
+                        .form-group {
+                            margin-bottom: 20px;
+                        }
+                        .form-group-title {
+                            font-size: 11px;
+                            font-weight: 600;
+                            text-transform: uppercase;
+                            letter-spacing: 0.05em;
+                            color: #71639e;
+                            margin-bottom: 10px;
+                            border-bottom: 1px solid #334155;
+                            padding-bottom: 4px;
+                        }
+                        label {
+                            display: block;
+                            font-size: 13px;
+                            font-weight: 500;
+                            margin-bottom: 6px;
+                            color: #cbd5e1;
+                        }
+                        input[type="text"], input[type="email"] {
+                            width: 100%;
+                            padding: 10px 14px;
+                            background: #0f172a;
+                            border: 1px solid #334155;
+                            border-radius: 8px;
+                            color: #ffffff;
+                            font-size: 14px;
+                            outline: none;
+                            transition: border-color 0.15s;
+                            box-sizing: border-box;
+                        }
+                        input[type="text"]:focus, input[type="email"]:focus {
+                            border-color: #71639e;
+                        }
+                        .btn-submit {
+                            width: 100%;
+                            padding: 12px;
+                            background: linear-gradient(135deg, #71639e, #5c5082);
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            transition: all 0.15s;
+                            margin-top: 10px;
+                        }
+                        .btn-submit:hover {
+                            opacity: 0.95;
+                            transform: translateY(-1px);
+                        }
+                        .btn-submit:active {
+                            transform: translateY(0);
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <div class="logo">&#9997;</div>
+                            <h1>Sign Document</h1>
+                            <p class="subtitle"><t t-esc="template.name"/></p>
+                        </div>
+                        
+                        <form t-attf-action="/sign/share/#{template.id}/#{template.share_token}/submit" method="POST">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            
+                            <t t-foreach="roles" t-as="role">
+                                <div class="form-group">
+                                    <div class="form-group-title"><t t-esc="role.name"/> Information</div>
+                                    <div style="margin-bottom: 12px;">
+                                        <label>Full Name</label>
+                                        <input type="text" t-attf-name="name_#{role.id}" required="required" placeholder="Enter full name..."/>
+                                    </div>
+                                    <div>
+                                        <label>Email Address</label>
+                                        <input type="email" t-attf-name="email_#{role.id}" required="required" placeholder="Enter email address..."/>
+                                    </div>
+                                </div>
+                            </t>
+                            
+                            <button type="submit" class="btn-submit">Start Signing</button>
+                        </form>
+                    </div>
+                </body>
+            </html>
+        </t>
+    </template>
+
+    <template id="sign_expired_template" name="Template Expired">
+        <t>
+            &lt;!DOCTYPE html&gt;
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Link Expired</title>
+                    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"/>
+                    <style>
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            background: #0f172a;
+                            color: #f1f5f9;
+                            margin: 0;
+                            padding: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                        }
+                        .container {
+                            background: #1e293b;
+                            border: 1px solid #334155;
+                            border-radius: 16px;
+                            padding: 40px;
+                            width: 100%;
+                            max-width: 480px;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                            text-align: center;
+                            box-sizing: border-box;
+                        }
+                        .icon {
+                            width: 56px;
+                            height: 56px;
+                            background: rgba(239, 68, 68, 0.1);
+                            color: #ef4444;
+                            border-radius: 50%;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 28px;
+                            margin-bottom: 20px;
+                        }
+                        h1 {
+                            font-size: 22px;
+                            font-weight: 700;
+                            margin: 0 0 10px 0;
+                            color: #ffffff;
+                        }
+                        p {
+                            font-size: 14px;
+                            color: #94a3b8;
+                            line-height: 1.5;
+                            margin: 0 0 24px 0;
+                        }
+                        .btn-home {
+                            display: inline-block;
+                            padding: 10px 20px;
+                            background: #334155;
+                            color: #f1f5f9;
+                            text-decoration: none;
+                            border-radius: 8px;
+                            font-size: 13px;
+                            font-weight: 600;
+                            transition: background 0.15s;
+                        }
+                        .btn-home:hover {
+                            background: #475569;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">&#9888;</div>
+                        <h1>Link Expired</h1>
+                        <p>This document template is no longer eligible to be signed because the expiration date (<t t-esc="template.valid_until"/>) has been reached.</p>
+                        <a href="/" class="btn-home">Go to Homepage</a>
+                    </div>
+                </body>
+            </html>
+        </t>
+    </template>
+
+    <template id="sign_request_expired_template" name="Signature Request Expired">
+        <t>
+            &lt;!DOCTYPE html&gt;
+            <html>
+                <head>
+                    <meta charset="utf-8"/>
+                    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                    <title>Request Expired</title>
+                    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"/>
+                    <style>
+                        body {
+                            font-family: 'Inter', sans-serif;
+                            background: #0f172a;
+                            color: #f1f5f9;
+                            margin: 0;
+                            padding: 0;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            min-height: 100vh;
+                        }
+                        .container {
+                            background: #1e293b;
+                            border: 1px solid #334155;
+                            border-radius: 16px;
+                            padding: 40px;
+                            width: 100%;
+                            max-width: 480px;
+                            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+                            text-align: center;
+                            box-sizing: border-box;
+                        }
+                        .icon {
+                            width: 56px;
+                            height: 56px;
+                            background: rgba(239, 68, 68, 0.1);
+                            color: #ef4444;
+                            border-radius: 50%;
+                            display: inline-flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 28px;
+                            margin-bottom: 20px;
+                        }
+                        h1 {
+                            font-size: 22px;
+                            font-weight: 700;
+                            margin: 0 0 10px 0;
+                            color: #ffffff;
+                        }
+                        p {
+                            font-size: 14px;
+                            color: #94a3b8;
+                            line-height: 1.5;
+                            margin: 0 0 24px 0;
+                        }
+                        .btn-home {
+                            display: inline-block;
+                            padding: 10px 20px;
+                            background: #334155;
+                            color: #f1f5f9;
+                            text-decoration: none;
+                            border-radius: 8px;
+                            font-size: 13px;
+                            font-weight: 600;
+                            transition: background 0.15s;
+                        }
+                        .btn-home:hover {
+                            background: #475569;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="icon">&#9888;</div>
+                        <h1>Request Expired</h1>
+                        <p>This signature request has expired on <t t-esc="validity_date"/> and can no longer be signed.</p>
+                        <a href="/" class="btn-home">Go to Homepage</a>
+                    </div>
+                </body>
+            </html>
+        </t>
+    </template>
 </odoo>

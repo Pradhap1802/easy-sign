@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_sign_item_type_list" model="ir.ui.view">
+            <field name="name">sign.item.type.list</field>
+            <field name="model">sign.item.type</field>
+            <field name="arch" type="xml">
+                <list string="Signature Fields">
+                    <field name="name" string="Field Name"/>
+                    <field name="item_type" string="Type"/>
+                    <field name="opt_model_id" string="Linked to"/>
+                    <field name="opt_field_id" string="Linked field"/>
+                    <field name="auto_update" string="Update Field"/>
+                    <field name="is_mandatory" string="Mandatory"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_sign_item_type_form" model="ir.ui.view">
+            <field name="name">sign.item.type.form</field>
+            <field name="model">sign.item.type</field>
+            <field name="arch" type="xml">
+                <form string="Signature Field">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="name"/>
+                                <field name="item_type"/>
+                                <field name="tip"/>
+                                <field name="placeholder"/>
+                            </group>
+                            <group>
+                                <field name="opt_model_id"/>
+                                <field name="opt_field_id"/>
+                                <field name="auto_update"/>
+                                <field name="is_mandatory"/>
+                            </group>
+                            <group string="Default Size">
+                                <field name="default_width"/>
+                                <field name="default_height"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>

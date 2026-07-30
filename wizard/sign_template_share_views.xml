@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sign_template_share_form" model="ir.ui.view">
+        <field name="name">sign.template.share.form</field>
+        <field name="model">sign.template.share</field>
+        <field name="arch" type="xml">
+            <form string="Share Template">
+                <group>
+                    <field name="share_url" widget="CopyClipboardChar" string="Share Link" class="oe_inline"/>
+                    <field name="valid_until" string="Valid Until"/>
+                </group>
+                <footer>
+                    <button name="action_update_validity" string="Save" type="object" class="oe_highlight"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

@@ -1,240 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <data>
+        <record id="view_sign_request_form" model="ir.ui.view">
+            <field name="name">sign.request.form</field>
+            <field name="model">sign.request</field>
+            <field name="arch" type="xml">
+                <form string="Sign Request">
+                    <header>
+                        <button name="go_to_edit_template" string="Edit Template" type="object" invisible="state in ('signed', 'canceled')" class="oe_highlight"/>
+                        <button name="action_send_reminder" string="Send Reminder" type="object" invisible="state != 'sent'" class="btn-secondary"/>
+                        <button name="cancel" string="Cancel" type="object" invisible="state != 'sent'" class="btn-danger"/>
+                        <button name="go_to_signable_document" string="Sign Document" type="object" invisible="state != 'sent'" class="oe_highlight"/>
+                        <button name="get_completed_document" string="Download Signed Document" type="object" invisible="state != 'signed'"/>
+                        <field name="state" widget="statusbar" statusbar_visible="sent,signed,canceled"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="reference" class="oe_inline"/>
+                            </h1>
+                        </div>
+                        <group>
+                            <group string="Document">
+                                <field name="document" filename="document_filename"/>
+                                <field name="document_filename" invisible="1"/>
+                                <field name="template_id"/>
+                                <field name="subject"/>
+                                <field name="cc_emails"/>
+                                <field name="active" invisible="1"/>
+                            </group>
+                            <group string="Info">
+                                <field name="progress" string="Progress"/>
+                                <field name="completion_date"/>
+                                <field name="validity_date" string="Valid Until"/>
+                                <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Signers" name="signers" invisible="not signer_ids">
+                                <field name="signer_ids" readonly="1">
+                                    <list>
+                                        <field name="sequence" string="Seq"/>
+                                        <field name="role_id"/>
+                                        <field name="partner_id"/>
+                                        <field name="state" widget="badge" decoration-success="state == 'signed'" decoration-info="state == 'sent'" decoration-muted="state == 'draft'"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
 
+        <record id="view_sign_request_list" model="ir.ui.view">
+            <field name="name">sign.request.list</field>
+            <field name="model">sign.request</field>
+            <field name="arch" type="xml">
+                <list string="Sign Requests" js_class="sign_request_list">
+                    <field name="create_date" string="Date"/>
+                    <field name="reference" string="Name"/>
+                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" string="Tags"/>
+                    <field name="create_uid" string="Sent by"/>
+                    <field name="state" string="Status" widget="badge" decoration-success="state == 'signed'" decoration-info="state == 'sent'" decoration-danger="state == 'canceled'"/>
+                    <field name="validity_date" string="Valid Until"/>
+                    <button name="go_to_signable_document" string="Sign" type="object" icon="fa-pencil" class="btn-link" invisible="state != 'sent'"/>
+                    <button name="get_completed_document" string="Download" type="object" icon="fa-download" class="btn-link" invisible="state != 'signed'"/>
+                </list>
+            </field>
+        </record>
 
-    <record id="view_sign_request_list" model="ir.ui.view">
-        <field name="name">sign.request.list</field>
-        <field name="model">sign.request</field>
-        <field name="arch" type="xml">
-            <list string="Signature Requests" decoration-success="state == 'signed'"
-                  decoration-muted="state in ('cancelled', 'expired')"
-                  decoration-info="state == 'sent'"
-                  decoration-warning="state == 'draft'">
-                <field name="name"/>
-                <field name="document_name"/>
-                <field name="user_id"/>
-                <field name="signers_count" string="Signers"/>
-                <field name="signed_count" string="Signed"/>
-                <field name="expiry_date"/>
-                <field name="state"
-                       widget="badge"
-                       decoration-success="state == 'signed'"
-                       decoration-info="state == 'sent'"
-                       decoration-muted="state in ('cancelled', 'expired')"
-                       decoration-warning="state == 'draft'"/>
-            </list>
-        </field>
-    </record>
-
-
-    <record id="view_sign_request_form" model="ir.ui.view">
-        <field name="name">sign.request.form</field>
-        <field name="model">sign.request</field>
-        <field name="arch" type="xml">
-            <form string="Signature Request">
-                <header>
-                    <button name="action_send"
-                            string="Send for Signature"
-                            type="object"
-                            class="btn-primary"
-                            invisible="state != 'draft'"
-                            confirm="This will send signing invitation emails to all signers. Continue?"/>
-                    <button name="action_cancel"
-                            string="Cancel"
-                            type="object"
-                            class="btn-danger"
-                            invisible="state not in ('draft', 'sent')"
-                            confirm="Are you sure you want to cancel this signature request?"/>
-                    <button name="action_reset_to_draft"
-                            string="Reset to Draft"
-                            type="object"
-                            invisible="state not in ('cancelled', 'expired')"/>
-                    <button name="action_download_signed"
-                            string="Download Signed Document"
-                            type="object"
-                            class="btn-success"
-                            invisible="state != 'signed' or not signed_document"/>
-                    <field name="state"
-                           widget="statusbar"
-                           statusbar_visible="draft,sent,signed"/>
-                </header>
-                <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button class="oe_stat_button"
-                                type="object"
-                                name="action_send"
-                                icon="fa-paper-plane"
-                                invisible="state != 'draft'">
-                            <div class="o_stat_info">
-                                <span class="o_stat_text">Send</span>
+        <record id="view_sign_request_kanban" model="ir.ui.view">
+            <field name="name">sign.request.kanban</field>
+            <field name="model">sign.request</field>
+            <field name="arch" type="xml">
+                <kanban string="Sign Requests" class="o_kanban_mobile" js_class="sign_request_kanban">
+                    <field name="state"/>
+                    <templates>
+                        <t t-name="card">
+                            <div t-attf-class="oe_kanban_global_click">
+                                <div class="oe_kanban_content">
+                                    <strong><field name="reference"/></strong>
+                                    <div>
+                                        <field name="template_id"/>
+                                    </div>
+                                    <div class="text-right">
+                                        <field name="progress"/>
+                                    </div>
+                                </div>
                             </div>
-                        </button>
-                    </div>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" readonly="1"/>
-                        </h1>
-                    </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
 
-                    <div class="alert alert-success mb-3"
-                         invisible="state != 'signed'">
-                        <strong>All parties have signed this document.</strong>
-                        The signed document is available for download.
-                    </div>
-                    <div class="alert alert-warning mb-3"
-                         invisible="state != 'sent'">
-                        <strong>Waiting for signatures:</strong>
-                        <field name="signed_count" readonly="1"/> of
-                        <field name="signers_count" readonly="1"/> signers have completed signing.
-                    </div>
-
-                    <group>
-                        <group string="Document">
-                            <field name="document"
-                                   widget="binary"
-                                   string="PDF Document"
-                                   filename="document_name"
-                                   readonly="state != 'draft'"/>
-                            <field name="document_name"
-                                   invisible="1"/>
-                            <field name="expiry_date"
-                                   readonly="state != 'draft'"/>
-                            <field name="user_id"
-                                   readonly="state != 'draft'"/>
-                        </group>
-                        <group string="Email Settings">
-                            <field name="subject"
-                                   readonly="state != 'draft'"/>
-                        </group>
+        <record id="view_sign_request_search" model="ir.ui.view">
+            <field name="name">sign.request.search</field>
+            <field name="model">sign.request</field>
+            <field name="arch" type="xml">
+                <search string="Search Requests">
+                    <field name="reference" string="Name"/>
+                    <field name="tag_ids" string="Tags"/>
+                    <filter string="To Sign" name="to_sign" domain="[('state', '=', 'sent')]"/>
+                    <filter string="Signed" name="signed" domain="[('state', '=', 'signed')]"/>
+                    <separator/>
+                    <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Status" name="group_by_state" context="{'group_by': 'state'}"/>
+                        <filter string="Tags" name="group_by_tags" context="{'group_by': 'tag_ids'}"/>
                     </group>
+                </search>
+            </field>
+        </record>
 
-                    <group string="Invitation Message">
-                        <field name="message"
-                               widget="html"
-                               nolabel="1"
-                               readonly="state != 'draft'"/>
-                    </group>
-
-                    <group string="Signed Document" invisible="state != 'signed'">
-                        <field name="signed_document"
-                               widget="binary"
-                               filename="signed_document_name"
-                               string="Download Signed PDF"
-                               readonly="1"/>
-                        <field name="signed_document_name" invisible="1"/>
-                    </group>
-
-                    <notebook>
-                        <page string="Signers" name="signers">
-                            <field name="request_item_ids"
-                                   readonly="state != 'draft'">
-                                <list editable="bottom">
-                                    <field name="signer_name"/>
-                                    <field name="signer_email"/>
-                                    <field name="partner_id"
-                                           optional="show"/>
-                                    <field name="state"
-                                           widget="badge"
-                                           decoration-success="state == 'signed'"
-                                           decoration-info="state in ('sent', 'viewed')"
-                                           decoration-danger="state == 'declined'"
-                                           decoration-muted="state in ('cancelled',)"/>
-                                    <field name="signed_date"
-                                           optional="show"/>
-                                    <field name="sign_url"
-                                           widget="url"
-                                           optional="show"
-                                           string="Signing Link"/>
-                                    <field name="ip_address"
-                                           optional="hide"/>
-                                    <field name="declined_reason"
-                                           optional="hide"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <!-- Audit Log Tab -->
-                        <page string="Audit Log" name="audit_log">
-                            <field name="log_ids" readonly="1">
-                                <list>
-                                    <field name="date"/>
-                                    <field name="signer_name"/>
-                                    <field name="signer_email"/>
-                                    <field name="action"
-                                           widget="badge"
-                                           decoration-success="action == 'signed'"
-                                           decoration-info="action in ('sent', 'viewed')"
-                                           decoration-danger="action == 'declined'"
-                                           decoration-muted="action == 'cancelled'"/>
-                                    <field name="ip_address"/>
-                                    <field name="notes" optional="show"/>
-                                </list>
-                            </field>
-                        </page>
-                    </notebook>
-                </sheet>
-                <chatter/>
-            </form>
-        </field>
-    </record>
-
-
-    <record id="view_sign_request_search" model="ir.ui.view">
-        <field name="name">sign.request.search</field>
-        <field name="model">sign.request</field>
-        <field name="arch" type="xml">
-            <search string="Search Signature Requests">
-                <field name="name" string="Reference"/>
-                <field name="document_name" string="Document"/>
-                <field name="user_id" string="Requested By"/>
-                <separator/>
-                <filter string="Draft"
-                        name="filter_draft"
-                        domain="[('state', '=', 'draft')]"/>
-                <filter string="Sent / Pending"
-                        name="filter_sent"
-                        domain="[('state', '=', 'sent')]"/>
-                <filter string="Fully Signed"
-                        name="filter_signed"
-                        domain="[('state', '=', 'signed')]"/>
-                <filter string="Expired"
-                        name="filter_expired"
-                        domain="[('state', '=', 'expired')]"/>
-                <filter string="Cancelled"
-                        name="filter_cancelled"
-                        domain="[('state', '=', 'cancelled')]"/>
-                <separator/>
-                <filter string="My Requests"
-                        name="filter_my"
-                        domain="[('user_id', '=', uid)]"/>
-                <group expand="0" string="Group By">
-                    <filter string="State"
-                            name="group_state"
-                            context="{'group_by': 'state'}"/>
-                    <filter string="Requested By"
-                            name="group_user"
-                            context="{'group_by': 'user_id'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
-
-
-    <record id="action_sign_request" model="ir.actions.act_window">
-        <field name="name">Signature Requests</field>
-        <field name="res_model">sign.request</field>
-        <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="view_sign_request_search"/>
-        <field name="context">{'search_default_filter_my': 1}</field>
-        <field name="help" type="html">
-            <p class="o_view_nocontent_smiling_face">
-                Create your first signature request
-            </p>
-            <p>
-                Upload a PDF document and add signers. Each signer will receive a
-                unique link to review and sign the document.
-            </p>
-        </field>
-    </record>
-
+        <record id="action_sign_request" model="ir.actions.act_window">
+            <field name="name">Sign Requests</field>
+            <field name="res_model">sign.request</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="search_view_id" ref="view_sign_request_search"/>
+            <field name="context">{'search_default_active': 1}</field>
+            <field name="path">sign-requests</field>
+        </record>
+    </data>
 </odoo>

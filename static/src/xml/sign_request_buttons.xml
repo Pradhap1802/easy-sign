@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="easy_sign.SignRequestListView.Buttons" t-inherit="web.ListView.Buttons" t-inherit-mode="primary">
+        <xpath expr="//div[hasclass('o_list_buttons')]" position="inside">
+            <button type="button" class="btn btn-secondary d-none d-xl-inline-flex" t-on-click="onClickUploadPdf">
+                Upload PDF
+            </button>
+        </xpath>
+    </t>
+
+    <t t-name="easy_sign.SignRequestKanbanView.Buttons" t-inherit="web.KanbanView.Buttons" t-inherit-mode="primary">
+        <xpath expr="//div[hasclass('o_cp_buttons')]" position="inside">
+            <button type="button" class="btn btn-secondary" t-on-click="onClickUploadPdf">
+                Upload PDF
+            </button>
+        </xpath>
+    </t>
+
+</templates>

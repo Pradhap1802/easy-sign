@@ -1,4 +1,15 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_sign_request_user,sign.request user,model_sign_request,base.group_user,1,1,1,1
-access_sign_request_item_user,sign.request.item user,model_sign_request_item,base.group_user,1,1,1,1
-access_sign_log_user,sign.log user,model_sign_log,base.group_user,1,1,1,0
+easy_sign.access_sign_template,access.sign.template,easy_sign.model_sign_template,base.group_user,1,1,1,1
+easy_sign.access_sign_item,access.sign.item,easy_sign.model_sign_item,base.group_user,1,1,1,1
+easy_sign.access_sign_item_type,access.sign.item.type,easy_sign.model_sign_item_type,base.group_user,1,1,1,1
+easy_sign.access_sign_item_role,access.sign.item.role,easy_sign.model_sign_item_role,base.group_user,1,1,1,1
+easy_sign.access_sign_request,access.sign.request,easy_sign.model_sign_request,base.group_user,1,1,1,1
+easy_sign.access_sign_log,access.sign.log,easy_sign.model_sign_log,base.group_user,1,1,1,1
+easy_sign.access_sign_request_item_value,access.sign.request.item.value,easy_sign.model_sign_request_item_value,base.group_user,1,1,1,1
+easy_sign.access_sign_upload_pdf_wizard,access.sign.upload.pdf.wizard,easy_sign.model_sign_upload_pdf_wizard,base.group_user,1,1,1,1
+easy_sign.access_sign_request_signer,access.sign.request.signer,easy_sign.model_sign_request_signer,base.group_user,1,1,1,1
+easy_sign.access_sign_template_signer,access.sign.template.signer,easy_sign.model_sign_template_signer,base.group_user,1,1,1,1
+easy_sign.access_sign_template_share,access.sign.template.share,easy_sign.model_sign_template_share,base.group_user,1,1,1,1
+easy_sign.access_sign_template_sign_now_wizard,access.sign.template.sign.now.wizard,easy_sign.model_sign_template_sign_now_wizard,base.group_user,1,1,1,1
+easy_sign.access_sign_template_sign_now_signer,access.sign.template.sign.now.signer,easy_sign.model_sign_template_sign_now_signer,base.group_user,1,1,1,1
+easy_sign.access_sign_tag,access.sign.tag,easy_sign.model_sign_tag,base.group_user,1,1,1,1

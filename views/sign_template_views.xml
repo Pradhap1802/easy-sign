@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_sign_template_form" model="ir.ui.view">
+            <field name="name">sign.template.form</field>
+            <field name="model">sign.template</field>
+            <field name="arch" type="xml">
+                <form string="Sign Template">
+                    <header>
+                        <button name="go_to_custom_template" string="Edit Template" type="object" class="oe_highlight"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_title">
+                            <h1><field name="name"/></h1>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="user_id" string="Responsible"/>
+                                <field name="num_pages" string="Number of pages"/>
+                                <field name="active" invisible="1"/>
+                            </group>
+                             <group>
+                                 <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                             </group>
+                        </group>
+                    </sheet>
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_sign_template_list" model="ir.ui.view">
+            <field name="name">sign.template.list</field>
+            <field name="model">sign.template</field>
+            <field name="arch" type="xml">
+                <list string="Sign Templates" js_class="sign_request_list">
+                    <field name="name"/>
+                    <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                    <field name="user_id"/>
+                    <field name="num_pages"/>
+                    <field name="active"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_sign_template_kanban" model="ir.ui.view">
+            <field name="name">sign.template.kanban</field>
+            <field name="model">sign.template</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_view" sample="1" js_class="sign_request_kanban">
+                    <field name="id"/>
+                    <field name="name"/>
+                    <field name="user_id"/>
+                    <field name="request_in_progress_count"/>
+                    <field name="request_signed_count"/>
+                    <field name="is_favorite"/>
+                    <field name="tag_ids"/>
+                    <templates>
+                        <t t-name="card">
+                            <div class="oe_kanban_global_click p-3 d-flex flex-column justify-content-between" style="min-height: 110px; border-radius: 8px; border-left: 5px solid #71639e;">
+                                <div class="d-flex flex-column mb-2 w-100">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap w-100">
+                                        <field name="is_favorite" widget="boolean_favorite" nolabel="1"/>
+                                        <h5 class="o_kanban_record_title font-weight-bold mb-0 text-truncate" style="font-size: 14px;">
+                                            <field name="name"/>
+                                        </h5>
+                                    </div>
+                                    <!-- Tag badges under title -->
+                                    <div class="mt-1" onclick="event.stopPropagation();">
+                                        <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between mt-3 w-100 flex-wrap gap-3">
+                                    <!-- Left Section: creator user avatar + name -->
+                                    <div class="d-flex align-items-center gap-2">
+                                        <field name="user_id" widget="many2one_avatar_user"/>
+                                        <div class="d-flex flex-column lh-sm">
+                                            <span class="fw-bold" style="font-size: 12px; color: #cbd5e1;"><field name="user_id"/></span>
+                                            <span style="font-size: 10px; color: #64748b;">Creator</span>
+                                        </div>
+                                    </div>
+                                    <!-- Middle Section: Stats counts -->
+                                    <div class="d-flex gap-4 align-items-center justify-content-center" style="font-size: 13px;">
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="font-weight-bold text-info" style="font-size: 16px; color: #0d9488 !important;"><field name="request_in_progress_count"/></span>
+                                            <span style="color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 500;">In Progress</span>
+                                        </div>
+                                        <div class="d-flex flex-column align-items-center">
+                                            <span class="font-weight-bold text-info" style="font-size: 16px; color: #0d9488 !important;"><field name="request_signed_count"/></span>
+                                            <span style="color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 500;">Signed</span>
+                                        </div>
+                                    </div>
+                                    <!-- Right Section: Action Buttons -->
+                                    <div class="d-flex gap-2 align-items-center" onclick="event.stopPropagation();">
+                                        <button name="go_to_custom_template" type="object" class="btn btn-secondary btn-sm px-3 py-1 fw-bold text-white" style="background-color: #475569; border-color: #475569; font-size: 12px; border-radius: 4px;">Edit</button>
+                                        <button name="action_sign_now_wizard" type="object" class="btn btn-primary btn-sm px-3 py-1 fw-bold text-white" style="background-color: #71639e; border-color: #71639e; font-size: 12px; border-radius: 4px;">Sign Now</button>
+                                        <button name="action_share_wizard" type="object" class="btn btn-secondary btn-sm px-3 py-1 fw-bold text-white" style="background-color: #475569; border-color: #475569; font-size: 12px; border-radius: 4px;">Share</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <record id="view_sign_template_search" model="ir.ui.view">
+            <field name="name">sign.template.search</field>
+            <field name="model">sign.template</field>
+            <field name="arch" type="xml">
+                <search string="Search Templates">
+                    <field name="name" string="Template"/>
+                    <field name="user_id"/>
+                    <field name="tag_ids" string="Tags"/>
+                    <filter string="My Favorites" name="my_favorites" domain="[('is_favorite', '=', True)]"/>
+                    <filter string="My Templates" name="my_templates" domain="[('user_id', '=', uid)]"/>
+                    <separator/>
+                    <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                    <group expand="0" string="Group By">
+                        <filter string="Responsible" name="responsible" context="{'group_by': 'user_id'}"/>
+                        <filter string="Tags" name="group_by_tags" context="{'group_by': 'tag_ids'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_sign_template" model="ir.actions.act_window">
+            <field name="name">Sign Templates</field>
+            <field name="res_model">sign.template</field>
+            <field name="view_mode">kanban,list,form</field>
+            <field name="search_view_id" ref="view_sign_template_search"/>
+            <field name="context">{'search_default_active': 1}</field>
+        </record>
+
+    </data>
+</odoo>

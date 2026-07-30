@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+        <record id="sign_item_type_signature" model="sign.item.type">
+            <field name="name">Signature</field>
+            <field name="item_type">signature</field>
+            <field name="tip">Sign</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.04</field>
+        </record>
+        <record id="sign_item_type_initial" model="sign.item.type">
+            <field name="name">Initials</field>
+            <field name="item_type">initial</field>
+            <field name="tip">Initial</field>
+            <field name="default_width">0.10</field>
+            <field name="default_height">0.04</field>
+        </record>
+        <record id="sign_item_type_name" model="sign.item.type">
+            <field name="name">Name</field>
+            <field name="item_type">text</field>
+            <field name="tip">Name</field>
+            <field name="opt_model_id" ref="base.model_res_partner"/>
+            <field name="opt_field_id" search="[('model', '=', 'res.partner'), ('name', '=', 'name')]"/>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_email" model="sign.item.type">
+            <field name="name">Email</field>
+            <field name="item_type">text</field>
+            <field name="tip">Email</field>
+            <field name="opt_model_id" ref="base.model_res_partner"/>
+            <field name="opt_field_id" search="[('model', '=', 'res.partner'), ('name', '=', 'email')]"/>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_phone" model="sign.item.type">
+            <field name="name">Phone</field>
+            <field name="item_type">text</field>
+            <field name="tip">Phone</field>
+            <field name="opt_model_id" ref="base.model_res_partner"/>
+            <field name="opt_field_id" search="[('model', '=', 'res.partner'), ('name', '=', 'phone')]"/>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_company" model="sign.item.type">
+            <field name="name">Company</field>
+            <field name="item_type">text</field>
+            <field name="tip">Company</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_text" model="sign.item.type">
+            <field name="name">Text</field>
+            <field name="item_type">text</field>
+            <field name="tip">Text</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+        <record id="sign_item_type_textarea" model="sign.item.type">
+            <field name="name">Multiline Text</field>
+            <field name="item_type">textarea</field>
+            <field name="tip">Multiline Text</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.04</field>
+        </record>
+        <record id="sign_item_type_checkbox" model="sign.item.type">
+            <field name="name">Checkbox</field>
+            <field name="item_type">checkbox</field>
+            <field name="tip">Checkbox</field>
+            <field name="default_width">0.02</field>
+            <field name="default_height">0.02</field>
+        </record>
+        <record id="sign_item_type_radio" model="sign.item.type">
+            <field name="name">Radio</field>
+            <field name="item_type">radio</field>
+            <field name="tip">Radio</field>
+            <field name="default_width">0.02</field>
+            <field name="default_height">0.02</field>
+        </record>
+        <record id="sign_item_type_date" model="sign.item.type">
+            <field name="name">Date</field>
+            <field name="item_type">date</field>
+            <field name="tip">Date</field>
+            <field name="default_width">0.15</field>
+            <field name="default_height">0.015</field>
+        </record>
+
+        <record id="sign_item_role_default" model="sign.item.role">
+            <field name="name">Signer 1</field>
+            <field name="default" eval="True"/>
+            <field name="sequence">1</field>
+        </record>
+        <record id="sign_item_role_signer2" model="sign.item.role">
+            <field name="name">Signer 2</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">2</field>
+        </record>
+        <record id="sign_item_role_signer3" model="sign.item.role">
+            <field name="name">Signer 3</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">3</field>
+        </record>
+        <record id="sign_item_role_signer4" model="sign.item.role">
+            <field name="name">Signer 4</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">4</field>
+        </record>
+        <record id="sign_item_role_signer5" model="sign.item.role">
+            <field name="name">Signer 5</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">5</field>
+        </record>
+        <record id="sign_item_role_signer6" model="sign.item.role">
+            <field name="name">Signer 6</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">6</field>
+        </record>
+        <record id="sign_item_role_signer7" model="sign.item.role">
+            <field name="name">Signer 7</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">7</field>
+        </record>
+        <record id="sign_item_role_signer8" model="sign.item.role">
+            <field name="name">Signer 8</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">8</field>
+        </record>
+        <record id="sign_item_role_signer9" model="sign.item.role">
+            <field name="name">Signer 9</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">9</field>
+        </record>
+        <record id="sign_item_role_signer10" model="sign.item.role">
+            <field name="name">Signer 10</field>
+            <field name="default" eval="False"/>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- Cron to automatically check and cancel/expire invalid/expired signature requests daily -->
+        <record id="ir_cron_check_expired_signature_requests" model="ir.cron">
+            <field name="name">Sign: Check Expired Signature Requests</field>
+            <field name="model_id" ref="model_sign_request"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_check_expired()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <!-- Cron to automatically send signature request reminders -->
+        <record id="ir_cron_auto_send_reminders" model="ir.cron">
+            <field name="name">Easy Sign: Send Auto Reminders</field>
+            <field name="model_id" ref="model_sign_request"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_send_auto_reminders()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="True"/>
+        </record>
+    </data>
+</odoo>
