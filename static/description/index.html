@@ -133,7 +133,16 @@
         <!-- Banner Feature Showcase Section -->
         <section class="Banner-Showcase" style="padding: 40px 0; width: 100%;">
             <div class="container text-center">
-                <img src="banner.png" class="img-fluid rounded shadow-lg" style="max-width: 100%; border-radius: 16px;" alt="Easy Sign Feature Banner"/>
+                <video
+                    src="sign_flow.mp4"
+                    class="img-fluid rounded shadow-lg"
+                    style="max-width: 100%; border-radius: 16px; display: block; margin: 0 auto;"
+                    autoplay
+                    muted
+                    loop
+                    playsinline>
+                    Your browser does not support the video tag.
+                </video>
             </div>
         </section>
 
@@ -231,6 +240,17 @@
                             </div>
                             <h5 class="m-0" style="color:#000; font-weight:bold">Completed PDF Document Generation</h5>
                             <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Merges all completed signatures and filled form text directly into the final PDF attachment upon completion.</p>
+                        </div>
+                    </div>
+
+                    <!-- 10. Auto Reminders & CC Notifications -->
+                    <div class="col-lg-4">
+                        <div class="mb-4 d-flex flex-column justify-content-center gap-3 feature-card" style="border-radius:12px; border:1px solid #B6BCCD; background:#FFF; padding:32px; min-height: 240px;">
+                            <div class="d-flex justify-content-center align-items-center icon-box" style="background-color:#714b67; border-radius:8px; height:45px; width:42px">
+                                <i class="fa fa-bell" style="color:white; font-size:20px;" aria-hidden="true"></i>
+                            </div>
+                            <h5 class="m-0" style="color:#000; font-weight:bold">Auto Reminders &amp; CC Notifications</h5>
+                            <p class="m-0" style="font-size:15px; color:#64728f; font-weight:400;">Automatically resends pending signature reminder emails every 3 days via scheduled CRON, and distributes the completed signed document to all configured CC recipients.</p>
                         </div>
                     </div>
 
